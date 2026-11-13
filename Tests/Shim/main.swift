@@ -525,6 +525,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testAnIgnoredDisplayIsOptional", { ($0 as! EngineRulesTests).testAnIgnoredDisplayIsOptional() }),
         ("testNearestSlotByCentre", { ($0 as! EngineRulesTests).testNearestSlotByCentre() }),
         ("testDuplicateIdentityOfAConfiguredDisplayIsAmbiguous", { ($0 as! EngineRulesTests).testDuplicateIdentityOfAConfiguredDisplayIsAmbiguous() }),
+        ("testTheDockChangingDisplayIsNotADisplayChange", { ($0 as! EngineRulesTests).testTheDockChangingDisplayIsNotADisplayChange() }),
     ]),
 ]
 

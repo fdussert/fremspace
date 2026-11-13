@@ -141,6 +141,12 @@ final class Engine {
     private var unsupportedPolicyLogged: Set<String> = []
     private var trustTimer: Timer?
     private var screenToken: NSObjectProtocol?
+    /// The displays as they were at the last notice from macOS (see `displaysChange`).
+    private var knownDisplays: [DisplayArea] = []
+
+    private static func displayAreas() -> [DisplayArea] {
+        Displays.connected().map { DisplayArea(identity: $0.identity, frame: $0.frameAX, visible: $0.visibleAX) }
+    }
 
     let drawers: DrawerController
     /// Sends windows to the desktop they belong on.
@@ -834,13 +840,31 @@ final class Engine {
         screenToken = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            // Displays changed: every placement may point at a display that is gone, and no drawer
-            // member may stay parked.
-            self?.drawers.restoreAll()
-            self?.resetPlacements()
-            self?.chooseConfiguration()
-            self?.scheduleApply()
+            guard let self else { return }
+            let now = Self.displayAreas()
+            let change = displaysChange(from: self.knownDisplays, to: now)
+            self.knownDisplays = now
+            switch change {
+            case .none:
+                break
+            case .visibleArea:
+                // The Dock or a menu bar took or gave room: the slots have other frames, and the
+                // open drawers too. The closed ones stay parked.
+                Log.engine.notice("the room left by the Dock or the menu bar changed on a display: layouts re-applied")
+                self.resetPlacements()
+                self.scheduleApply()
+                self.drawers.visibleAreaChanged()
+            case .displays:
+                // Every placement may point at a display that is gone, and no drawer member may
+                // stay parked.
+                Log.engine.notice("the displays changed (\(now.count) connected): drawer members back on screen, configuration chosen again")
+                self.drawers.restoreAll()
+                self.resetPlacements()
+                self.chooseConfiguration()
+                self.scheduleApply()
+            }
         }
+        knownDisplays = Self.displayAreas()
         // While the session is locked no app shows its windows: what start could not read is read
         // when the owner is back (seen 2026-11-10: a start behind the lock screen sorted 0 windows
         // and forgot who was in the drawers).

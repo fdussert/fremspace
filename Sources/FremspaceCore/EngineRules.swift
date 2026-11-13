@@ -20,6 +20,36 @@ public func chooseConfiguration(_ config: Config, connected: [DisplayIdentity]) 
     return best?.configuration
 }
 
+/// A connected display: the whole of it, and the room the menu bar and the Dock leave.
+public struct DisplayArea: Equatable {
+    public var identity: DisplayIdentity
+    public var frame: CGRect
+    public var visible: CGRect
+
+    public init(identity: DisplayIdentity, frame: CGRect, visible: CGRect) {
+        self.identity = identity
+        self.frame = frame
+        self.visible = visible
+    }
+}
+
+/// What macOS means when it says the screens changed. It says so for a display plugged in,
+/// unplugged, moved or resized, and also when only the room left to windows changes: the Dock
+/// shown on another display, a menu bar that hides (owner, 2026-11-13: taking the Dock to the
+/// display of the drawers brought both drawers out, as an unplugged display does).
+public enum DisplaysChange: Equatable {
+    case none
+    /// The same displays at the same places: the layouts fit another room, nothing else moves.
+    case visibleArea
+    case displays
+}
+
+public func displaysChange(from old: [DisplayArea], to new: [DisplayArea]) -> DisplaysChange {
+    guard old.count == new.count,
+          old.allSatisfy({ was in new.contains { $0.identity == was.identity && $0.frame == was.frame } }) else { return .displays }
+    return old.allSatisfy(new.contains) ? .none : .visibleArea
+}
+
 /// The slot whose frame centre is closest to the centre of `frame`: where the user dropped a window.
 public func nearestSlot(to frame: CGRect, among frames: [String: CGRect]) -> String? {
     func distance(_ r: CGRect) -> CGFloat {

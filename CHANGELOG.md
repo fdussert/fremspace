@@ -31,6 +31,7 @@ The first version to be packaged.
   in the window's slot or on its display; the same shortcut stacks them again. The second window
   is asked of the app through its "New Window" menu item; an app that has none is left alone.
 - **Drawers.** Windows parked off the side of a display, slid in and out by a shortcut.
+  The Dock taken to another display leaves the closed drawers closed.
 - **Restore after login.** The apps that have a slot are opened and every window is put back.
   What is remembered for that (titles, a browser's tab titles, a document's address) is listed in
   `SECURITY.md`; a window that did not come back is forgotten after 90 days.

@@ -526,6 +526,15 @@ final class DrawerController {
         retryBringBack(after: [1, 3, 10, 30], round: bringBackRound)
     }
 
+    /// The Dock or a menu bar took or gave room on a display: the open drawers are placed again in
+    /// the room there is now. The closed ones stay parked.
+    func visibleAreaChanged() {
+        guard isActive() else { return }
+        for display in Set(state.allMembers.compactMap { state.display(of: $0) }) where state.isOpen(display) {
+            place(display)
+        }
+    }
+
     /// Members whose drawer is open (or was opened to bring everything back) and whose window
     /// could not be moved to its place: an app busy past the Accessibility timeout. They are still
     /// off screen, so the parked file keeps them (`parkedMembers`) and they are tried again.

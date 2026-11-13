@@ -11,6 +11,23 @@ final class EngineRulesTests: XCTestCase {
         Configuration(id: UUID(), name: name, displays: displays.map { DisplaySpec(identity: $0, spaces: []) })
     }
 
+    func testTheDockChangingDisplayIsNotADisplayChange() {
+        func area(_ identity: DisplayIdentity, x: CGFloat, dock: CGFloat = 0) -> DisplayArea {
+            DisplayArea(identity: identity, frame: CGRect(x: x, y: 0, width: 1000, height: 800),
+                        visible: CGRect(x: x, y: 30, width: 1000, height: 770 - dock))
+        }
+        let before = [area(laptop, x: 0, dock: 60), area(left, x: 1000)]
+        // The same notice from macOS, and nothing about the displays is different.
+        XCTAssertEqual(displaysChange(from: before, to: [area(left, x: 1000), area(laptop, x: 0, dock: 60)]), .none)
+        // The Dock went from the laptop to the left display: only the room it leaves changed.
+        XCTAssertEqual(displaysChange(from: before, to: [area(laptop, x: 0), area(left, x: 1000, dock: 60)]), .visibleArea)
+        // A display unplugged, plugged in, moved in the arrangement or given another resolution.
+        XCTAssertEqual(displaysChange(from: before, to: [area(laptop, x: 0, dock: 60)]), .displays)
+        XCTAssertEqual(displaysChange(from: before, to: before + [area(right, x: 2000)]), .displays)
+        XCTAssertEqual(displaysChange(from: before, to: [area(laptop, x: 0, dock: 60), area(left, x: -1000)]), .displays)
+        XCTAssertEqual(displaysChange(from: before, to: [area(laptop, x: 0, dock: 60), area(right, x: 1000)]), .displays)
+    }
+
     func testPicksConfigurationWithMostMatchingDisplays() {
         let config = Config(configurations: [configuration("Train", [laptop]),
                                              configuration("Desk", [laptop, left, right])])
