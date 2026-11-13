@@ -264,7 +264,9 @@ struct Sidebar: View {
     }
 
     private var lists: some View {
-            VStack(alignment: .leading, spacing: 2) {
+            // Asked once for the whole list, not by each row.
+            let unsaved = session.unsaved
+            return VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 2) {
                     groupLabel("Configurations")
                     Spacer(minLength: 0)
@@ -309,14 +311,17 @@ struct Sidebar: View {
                 }
                 .padding(.trailing, 4)
                 ForEach(Array(session.config.configurations.enumerated()), id: \.element.id) { i, configuration in
-                    row(i, configuration)
+                    row(i, configuration, unsaved: unsaved.configurations.contains(configuration.id))
                 }
                 if session.config.configurations.isEmpty {
                     Text("None yet").font(.callout).foregroundColor(.secondary).padding(.horizontal, 8).padding(.vertical, 4)
                 }
                 // Not the app's name: it is already the window's title.
                 groupLabel("Settings").padding(.top, 14)
-                ForEach(SettingsPage.allCases) { page in pageRow(page) }
+                ForEach(SettingsPage.allCases) { page in
+                    pageRow(page, unsaved: page == .general ? unsaved.general : page == .shortcuts ? unsaved.shortcuts
+                                           : page == .scenes ? unsaved.scenes : false)
+                }
             }
             .padding(.horizontal, 8).padding(.top, 8).padding(.bottom, 8)
     }
@@ -334,11 +339,9 @@ struct Sidebar: View {
             .accessibilityLabel("Unsaved changes")
     }
 
-    private func pageRow(_ page: SettingsPage) -> some View {
+    private func pageRow(_ page: SettingsPage, unsaved: Bool) -> some View {
         let selected = session.settingsPage == page
         let badge = page.badge(session)
-        let unsaved = session.unsaved
-        let changed = page == .general ? unsaved.general : page == .shortcuts ? unsaved.shortcuts : page == .scenes ? unsaved.scenes : false
         return Button {
             session.settingsPage = page
         } label: {
@@ -356,7 +359,7 @@ struct Sidebar: View {
                 } else if let badge {
                     Text(badge).font(.caption).foregroundColor(selected ? .white.opacity(0.8) : .secondary)
                 }
-                if changed { unsavedDot(selected: selected) }
+                if unsaved { unsavedDot(selected: selected) }
             }
             .padding(.horizontal, 8).padding(.vertical, 6)
             .foregroundColor(selected ? .white : .primary)
@@ -369,7 +372,7 @@ struct Sidebar: View {
     }
 
     @ViewBuilder
-    private func row(_ i: Int, _ configuration: Configuration) -> some View {
+    private func row(_ i: Int, _ configuration: Configuration, unsaved: Bool) -> some View {
         let selected = i == session.selection.configuration && session.settingsPage == nil
         // Scenes and Share are about one configuration: it stays marked, quietly, while they are shown.
         let concerned = i == session.selection.configuration && session.settingsPage?.isOfAConfiguration == true
@@ -398,7 +401,7 @@ struct Sidebar: View {
                     .foregroundColor(selected ? .white : .primary)
                     .help("Fremspace applies this configuration now")
             }
-            if session.unsaved.configurations.contains(configuration.id) { unsavedDot(selected: selected) }
+            if unsaved { unsavedDot(selected: selected) }
         }
         .padding(.horizontal, 8).padding(.vertical, 6)
         .foregroundColor(selected ? .white : .primary)

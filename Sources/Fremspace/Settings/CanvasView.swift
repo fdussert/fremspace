@@ -81,44 +81,44 @@ struct DesktopTabs: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: Self.spacing) {
                     ScrollViewReader { scroll in
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: Self.spacing) {
-                            // The two ends of the row, to scroll to: the tabs themselves are left
-                            // alone, their identity is what their drag is built on.
-                            Color.clear.frame(width: 0, height: 0).id(Self.start)
-                            ForEach(display.spaces.indices, id: \.self) { i in
-                                tab(i, display.spaces[i], count: display.spaces.count, preview: preview)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: Self.spacing) {
+                                // The two ends of the row, to scroll to: the tabs themselves are left
+                                // alone, their identity is what their drag is built on.
+                                Color.clear.frame(width: 0, height: 0).id(Self.start)
+                                ForEach(display.spaces.indices, id: \.self) { i in
+                                    tab(i, display.spaces[i], count: display.spaces.count, preview: preview)
+                                }
+                                Color.clear.frame(width: 0, height: 0).id(Self.end)
                             }
-                            Color.clear.frame(width: 0, height: 0).id(Self.end)
+                            .coordinateSpace(name: "desktopTabs")
+                            .onPreferenceChange(TabFrames.self) { frames = $0 }
+                            // Room for the lifted tab's shadow.
+                            .padding(.vertical, 3)
+                            .background(GeometryReader { proxy in
+                                // Where the row is in its window, as it scrolls.
+                                let frame = proxy.frame(in: .named("desktopTabsWindow"))
+                                Color.clear.preference(key: TabsOutOfSight.self,
+                                                       value: TabsOutOfSight.Sides(leading: frame.minX < -1, trailing: frame.maxX > rowWidth + 1))
+                            })
                         }
-                        .coordinateSpace(name: "desktopTabs")
-                        .onPreferenceChange(TabFrames.self) { frames = $0 }
-                        // Room for the lifted tab's shadow.
-                        .padding(.vertical, 3)
+                        .coordinateSpace(name: "desktopTabsWindow")
                         .background(GeometryReader { proxy in
-                            // Where the row is in its window, as it scrolls.
-                            let frame = proxy.frame(in: .named("desktopTabsWindow"))
-                            Color.clear.preference(key: TabsOutOfSight.self,
-                                                   value: TabsOutOfSight.Sides(leading: frame.minX < -1, trailing: frame.maxX > rowWidth + 1))
+                            Color.clear.onAppear { rowWidth = proxy.size.width }
+                                .onChange(of: proxy.size.width) { rowWidth = $0 }
                         })
-                    }
-                    .coordinateSpace(name: "desktopTabsWindow")
-                    .background(GeometryReader { proxy in
-                        Color.clear.onAppear { rowWidth = proxy.size.width }
-                            .onChange(of: proxy.size.width) { rowWidth = $0 }
-                    })
-                    .onPreferenceChange(TabsOutOfSight.self) { more = $0 }
-                    // A row cut in the middle of a name said nothing: it fades where there is more.
-                    .mask(HStack(spacing: 0) {
-                        LinearGradient(colors: [.black.opacity(more.leading ? 0 : 1), .black], startPoint: .leading, endPoint: .trailing)
-                            .frame(width: Self.fade)
-                        Color.black
-                        LinearGradient(colors: [.black, .black.opacity(more.trailing ? 0 : 1)], startPoint: .leading, endPoint: .trailing)
-                            .frame(width: Self.fade)
-                    })
-                    // The fade alone shows nothing when the row is cut between two tabs.
-                    .overlay(alignment: .leading) { if more.leading { onward("chevron.left", "Earlier desktops") { scroll.scrollTo(Self.start, anchor: .leading) } } }
-                    .overlay(alignment: .trailing) { if more.trailing { onward("chevron.right", "More desktops") { scroll.scrollTo(Self.end, anchor: .trailing) } } }
+                        .onPreferenceChange(TabsOutOfSight.self) { more = $0 }
+                        // A row cut in the middle of a name said nothing: it fades where there is more.
+                        .mask(HStack(spacing: 0) {
+                            LinearGradient(colors: [.black.opacity(more.leading ? 0 : 1), .black], startPoint: .leading, endPoint: .trailing)
+                                .frame(width: Self.fade)
+                            Color.black
+                            LinearGradient(colors: [.black, .black.opacity(more.trailing ? 0 : 1)], startPoint: .leading, endPoint: .trailing)
+                                .frame(width: Self.fade)
+                        })
+                        // The fade alone shows nothing when the row is cut between two tabs.
+                        .overlay(alignment: .leading) { if more.leading { onward("chevron.left", "Earlier desktops") { scroll.scrollTo(Self.start, anchor: .leading) } } }
+                        .overlay(alignment: .trailing) { if more.trailing { onward("chevron.right", "More desktops") { scroll.scrollTo(Self.end, anchor: .trailing) } } }
                     }
                     // Beside the row, not at its end: with many desktops it scrolled out of reach.
                     Button { session.addDesktop() } label: {
@@ -149,8 +149,8 @@ struct DesktopTabs: View {
         let lifted = drag?.index == i
         let movable = count > 1
         let shape = RoundedRectangle(cornerRadius: 6)
-        // A plain view with a tap and a drag, not a Button: a Button swallows the drag.
         let gripped = movable && (lifted || hovered == i)
+        // A plain view with a tap and a drag, not a Button: a Button swallows the drag.
         return HStack(spacing: 6) {
             // The grip takes the number's place under the pointer: six dots on every tab at all
             // times were a fourth thing to read on each.
