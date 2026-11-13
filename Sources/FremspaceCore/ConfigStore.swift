@@ -50,7 +50,9 @@ public struct ConfigStore {
         do {
             data = try Data(contentsOf: url)
         } catch {
-            throw ConfigError.corrupt("Cannot read \(url.path): \(error.localizedDescription)")
+            // The name of the file, not its path: the reason is shown in the status and written
+            // to the log, and the path carries the name of the home folder.
+            throw ConfigError.corrupt("Cannot read \(url.lastPathComponent): \(error.localizedDescription)")
         }
         // The version is checked first, so a newer file is reported as such rather than as
         // corrupt when its shape changed.

@@ -196,8 +196,17 @@ final class WindowCommands {
             engine.configurationSaved()
             return true
         } catch {
-            Log.app.error("configuration not changed: \(String(describing: error), privacy: .public)")
-            notify("The configuration file could not be changed: \(error)")
+            // The log keeps what kind of error it was; what it says (it can quote the file) is for
+            // the owner, in the notification.
+            let kind: String
+            switch error as? ConfigError {
+            case .newerVersion?: kind = "written by a newer version"
+            case .corrupt?: kind = "unreadable"
+            case .changedOnDisk?: kind = "changed meanwhile"
+            case nil: kind = "could not be written"
+            }
+            Log.app.error("configuration not changed: \(kind, privacy: .public)")
+            notify("The configuration file could not be changed: \(error)", logged: false)
             return false
         }
     }
@@ -211,9 +220,10 @@ final class WindowCommands {
 
     private var notificationsAllowed: Bool?
 
-    /// A short confirmation in Notification Center (logged too).
-    func notify(_ text: String) {
-        Log.app.notice("\(text, privacy: .public)")
+    /// A short confirmation in Notification Center, logged too unless the caller logs its own
+    /// (a text that quotes a file).
+    func notify(_ text: String, logged: Bool = true) {
+        if logged { Log.app.notice("\(text, privacy: .public)") }
         let center = UNUserNotificationCenter.current()
         let post = {
             let content = UNMutableNotificationContent()

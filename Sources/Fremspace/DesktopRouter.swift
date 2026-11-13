@@ -371,7 +371,8 @@ final class DesktopRouter {
             return
         }
         if Self.dryRun {
-            Log.engine.notice("dry run: would send window \(id) \(info.bundleID, privacy: .public) \"\(info.title, privacy: .public)\" to desktop \(target.index + 1) of \(target.display.name, privacy: .public)")
+            // No title: a window's title never goes to the log.
+            Log.engine.notice("dry run: would send window \(id) \(info.bundleID, privacy: .public) to desktop \(target.index + 1) of \(target.display.name, privacy: .public)")
             return
         }
         let from = Spaces.spaceIndex(ofWindow: id)

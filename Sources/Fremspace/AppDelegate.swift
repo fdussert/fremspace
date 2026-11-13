@@ -185,7 +185,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case .scene(let name):
                 if !palette.showScene(named: name) { Log.app.notice("link: no scene named \(name, privacy: .public)") }
             case nil:
-                Log.app.notice("link not understood: \(url.absoluteString, privacy: .public)")
+                // Its verb, not the whole address: what follows is whatever the sender wrote.
+                Log.app.notice("link not understood (verb: \(url.host ?? "none", privacy: .public))")
             }
         }
     }
