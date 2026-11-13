@@ -162,7 +162,13 @@ struct DesktopTabs: View {
             var transaction = Transaction()
             transaction.disablesAnimations = true
             withTransaction(transaction) {
-                let label = session.displaySpec?.spaces[drag.index].label ?? ""
+                // An undo or another display in the meantime: the tab that was dragged may be gone.
+                guard let spaces = session.displaySpec?.spaces, spaces.indices.contains(drag.index),
+                      spaces.indices.contains(preview.target) else {
+                    self.drag = nil
+                    return
+                }
+                let label = spaces[drag.index].label
                 session.moveDesktop(from: drag.index, to: preview.target)
                 self.drag = nil
                 session.status = Status(kind: .info, text: "\u{201C}\(label.isEmpty ? "Untitled" : label)\u{201D} is now desktop \(preview.target + 1). On save, the windows of each desktop move with it.")

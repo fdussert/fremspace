@@ -26,6 +26,12 @@ extension EditSession {
             status = Status(kind: .warning, text: "This display is not connected: there is nothing to capture.")
             return
         }
+        // With desktops moved and not saved, the engine would answer for the desktop that has this
+        // position on screen: another desktop's windows would become this one's layout.
+        guard !hasUnsavedDesktopOrder(on: identity) else {
+            status = Status(kind: .warning, text: "Save the new order of the desktops first, then capture.")
+            return
+        }
         let configurations = config.configurations
         guard configurations.indices.contains(selection.configuration),
               let real = engine.realDesktop(configuration: configurations[selection.configuration].id, display: identity,

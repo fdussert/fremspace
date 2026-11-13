@@ -462,7 +462,7 @@ struct StatusBar: View {
             Spacer(minLength: 8)
             Button("Revert") { session.revert() }
                 .disabled(!session.isDirty)
-                .help("Drop every change since the last save")
+                .help("Go back to the saved file (Undo brings your changes back)")
             Button("Save") { session.save() }
                 .keyboardShortcut("s", modifiers: .command)
                 .buttonStyle(.borderedProminent)

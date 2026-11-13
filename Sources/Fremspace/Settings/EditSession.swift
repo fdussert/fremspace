@@ -281,16 +281,25 @@ final class EditSession: ObservableObject {
         }
     }
 
-    /// Back to the file as it is now (it may have changed outside the editor).
+    /// Back to the file as it is now (it may have changed outside the editor). One step that Undo
+    /// takes back: Revert sits beside Save, and a slip there used to cost every change since the
+    /// last save, the only thing in the window that could not be undone.
     func revert() {
+        let before = Snapshot(config: config, removedDesktops: removedDesktops)
         if let onDisk = try? store.load() { saved = onDisk }
+        guard before.config != saved || !before.removedDesktops.isEmpty else {
+            status = nil
+            return
+        }
+        undoStack.append(before)
+        if undoStack.count > Self.undoLimit { undoStack.removeFirst() }
+        redoStack.removeAll()
         restoring = true
         config = saved
         restoring = false
-        undoStack = []
-        redoStack = []
         removedDesktops = []
-        status = nil
+        lastChange = .distantPast
+        status = Status(kind: .info, text: "Back to the saved file. Undo brings your changes back.")
         normalizeSelection()
     }
 
@@ -646,6 +655,13 @@ final class EditSession: ObservableObject {
     /// Desktops removed or moved since the last save, in order: on save, their uuid links and
     /// remembered windows go or follow, so that no desktop inherits another's.
     private var removedDesktops: [RemovedDesktop] = []
+
+    /// Whether desktops of `display` were moved or removed and not saved yet: until then a position
+    /// in the editor is not the position macOS has, and nothing may be read from the real desktop.
+    func hasUnsavedDesktopOrder(on display: DisplayIdentity) -> Bool {
+        guard let id = configuration?.id else { return false }
+        return removedDesktops.contains { $0.configuration == id && $0.display == display }
+    }
 
     func addDesktop() {
         checkpoint()
