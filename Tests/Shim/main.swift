@@ -298,6 +298,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testLockOnFreeDesktopCreatesALayout", { ($0 as! ConfigCommandsTests).testLockOnFreeDesktopCreatesALayout() }),
         ("testLockAddsALockedSlotWithProfile", { ($0 as! ConfigCommandsTests).testLockAddsALockedSlotWithProfile() }),
         ("testOverlapJoinsTheSlotOverlappedMost", { ($0 as! ConfigCommandsTests).testOverlapJoinsTheSlotOverlappedMost() }),
+        ("testAWindowThatOnlyBrushesASlotGetsItsOwn", { ($0 as! ConfigCommandsTests).testAWindowThatOnlyBrushesASlotGetsItsOwn() }),
+        ("testASlotThatWouldSnapOverAnotherIsNotMade", { ($0 as! ConfigCommandsTests).testASlotThatWouldSnapOverAnotherIsNotMade() }),
         ("testJoiningTwiceAddsNoDuplicateRule", { ($0 as! ConfigCommandsTests).testJoiningTwiceAddsNoDuplicateRule() }),
         ("testOneRuleIsWrittenAsRule", { try ($0 as! ConfigCommandsTests).testOneRuleIsWrittenAsRule() }),
         ("testRulesRoundTrip", { try ($0 as! ConfigCommandsTests).testRulesRoundTrip() }),

@@ -2,9 +2,13 @@ import CoreGraphics
 
 /// "Lock on this desktop": the window's current frame becomes a locked slot for its app (and
 /// profile). A window over existing slots joins the one it overlaps most (that slot then takes this
-/// app too); else a new slot, snapped to the editor's grid. No layout (a free desktop) gets a layout
-/// with that one slot. Nil when the frame snaps to nothing.
-public func lockHere(layout: Layout?, window: WindowInfo, frame: CGRect, visible: CGRect) -> (layout: Layout, slotID: String)? {
+/// app too), when the two share at least `joinShare` of the smaller of them: a window that only
+/// brushes a slot by a point is beside it, not in it. Else a new slot, snapped to the editor's
+/// grid. No layout (a free desktop) gets a layout with that one slot. Nil when the frame snaps to
+/// nothing, or onto a slot that is there: the grid can pull a window that sits beside a slot over
+/// it, and two slots that overlap are a layout the editor then refuses to save.
+public func lockHere(layout: Layout?, window: WindowInfo, frame: CGRect, visible: CGRect,
+                     joinShare: Double = 0.25) -> (layout: Layout, slotID: String)? {
     let rule = Rule(bundleID: window.bundleID, profile: window.profile)
     var layout = layout ?? Layout(slots: [])
     let unit = UnitRect(x: Double((frame.minX - visible.minX) / visible.width),
@@ -12,13 +16,14 @@ public func lockHere(layout: Layout?, window: WindowInfo, frame: CGRect, visible
                         w: Double(frame.width / visible.width), h: Double(frame.height / visible.height))
     let overlapped = layout.slots.indices
         .map { (index: $0, area: overlapArea(layout.slots[$0].rect, unit)) }
-        .filter { $0.area > 0.0001 }
+        .filter { $0.area > 0.0001 && $0.area >= joinShare * min(unit.w * unit.h, layout.slots[$0.index].rect.w * layout.slots[$0.index].rect.h) }
         .max { $0.area < $1.area }
     if let overlapped {
         if !layout.slots[overlapped.index].rules.contains(rule) { layout.slots[overlapped.index].rules.append(rule) }
         return (layout, layout.slots[overlapped.index].id)
     }
-    guard let rect = snappedRect(frame, visible: visible) else { return nil }
+    guard let rect = snappedRect(frame, visible: visible),
+          !layout.slots.contains(where: { overlaps($0.rect, rect) }) else { return nil }
     let id = uniqueID(for: window.bundleID, among: layout.slots.map(\.id))
     layout.slots.append(Slot(id: id, rect: rect, rule: rule, locked: true))
     return (layout, id)

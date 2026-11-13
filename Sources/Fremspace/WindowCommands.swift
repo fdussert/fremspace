@@ -97,13 +97,20 @@ final class WindowCommands {
         }
         var label = ""
         var slotID = ""
+        var noRoom = false
         let saved = editConfiguration(desktop) { space in
             guard let result = lockHere(layout: space.layout, window: window.info, frame: window.frame,
-                                        visible: display.visibleAX) else { return false }
+                                        visible: display.visibleAX) else {
+                noRoom = true
+                return false
+            }
             space.layout = result.layout
             label = space.label
             slotID = result.slotID
             return true
+        }
+        if noRoom {
+            notify("No slot can be made where this window is: put it clear of the other slots, or well onto the one that should take it.")
         }
         guard saved else { return }
         engine.unrelease(window.id)
