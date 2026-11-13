@@ -60,16 +60,16 @@ enum MainMenu {
             // The desktops are the tabs of the window: the keys every tabbed app has. Not ⇧⌘] and ⇧⌘[,
             // which cannot be typed on a keyboard that has its brackets behind ⌥.
             item("Next Desktop", #selector(SettingsWindow.stepDesktop(_:)), "\t", [.control], tag: 1),
-            item("Previous Desktop", #selector(SettingsWindow.stepDesktop(_:)), "\t", [.control, .shift], tag: -1),
+            item("Previous Desktop", #selector(SettingsWindow.stepDesktop(_:)), backTab, [.control, .shift], tag: -1),
         ]
-        // ⌘1 to ⌘9: named after the desktops of the display being edited when the menu opens.
+        // ⌘1 to ⌘9: shown and named after the desktops of the display being edited (`reflect`).
         for number in 1...9 {
             layout.append(item("Desktop \(number)", #selector(SettingsWindow.showDesktop(_:)), "\(number)", tag: number - 1))
         }
         layout += [
             .separator(),
             item("Next Display", #selector(SettingsWindow.stepDisplay(_:)), "\t", [.control, .option], tag: 1),
-            item("Previous Display", #selector(SettingsWindow.stepDisplay(_:)), "\t", [.control, .option, .shift], tag: -1),
+            item("Previous Display", #selector(SettingsWindow.stepDisplay(_:)), backTab, [.control, .option, .shift], tag: -1),
         ]
         main.addItem(submenu("Layout", layout))
 
@@ -100,6 +100,10 @@ enum MainMenu {
             }
         }
     }
+
+    /// What ⇧⇥ sends: a back tab, not a tab with Shift. A key equivalent written as a tab with Shift
+    /// in its mask is not the key the keyboard sends.
+    private static let backTab = "\u{19}"
 
     /// The arrow keys as key equivalents, in the order of the tags: left, right, up, down.
     private static let arrows = [NSLeftArrowFunctionKey, NSRightArrowFunctionKey, NSUpArrowFunctionKey, NSDownArrowFunctionKey]
