@@ -744,6 +744,12 @@ struct DrawerRail: View {
     private func column(_ drawer: DrawerSpec?, apps: Bool) -> some View {
         let name = edge == .left ? "Left drawer" : "Right drawer"
         let rules = drawer?.layout.slots.flatMap(\.rules) ?? []
+        // The apps of the windows sent to this drawer by hand, each once: fainter, they are not
+        // in the configuration.
+        var seen = Set(rules.map(\.bundleID))
+        let guests = (drawer?.layout.slots ?? []).flatMap { slot in
+            session.displaySpec.map { session.drawerGuests(on: $0.identity, edge: edge, slot: slot).map(\.bundleID) } ?? []
+        }.filter { seen.insert($0).inserted }
         return VStack(spacing: 8) {
             Image(systemName: drawer == nil ? "plus" : edge == .left ? "sidebar.left" : "sidebar.right")
                 .font(.system(size: 12, weight: .medium))
@@ -756,12 +762,17 @@ struct DrawerRail: View {
                     .rotationEffect(.degrees(edge == .left ? -90 : 90))
                     .frame(width: 16, height: 110)
             }
-            if apps, !rules.isEmpty {
+            if apps, !(rules.isEmpty && guests.isEmpty) {
                 VStack(spacing: 4) {
                     // A handful: the rail says a drawer has apps, the drawer's own screen says which.
                     ForEach(Array(rules.prefix(4).enumerated()), id: \.offset) { _, rule in
                         if let icon = AppIcons.icon(rule.bundleID) {
                             Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16)
+                        }
+                    }
+                    ForEach(Array(guests.prefix(2)), id: \.self) { bundleID in
+                        if let icon = AppIcons.icon(bundleID) {
+                            Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16).opacity(0.55)
                         }
                     }
                 }
@@ -898,7 +909,7 @@ struct SlotTile: View {
             .overlay {
                 GeometryReader { geometry in
                     content(tileFit(width: geometry.size.width, height: geometry.size.height,
-                                    apps: apps.filter { AppIcons.icon($0.bundleID) != nil }.count, states: states.count))
+                                    apps: apps.filter { AppIcons.icon($0.bundleID) != nil }.count + guestApps.count, states: states.count))
                 }
             }
             .overlay(shape.strokeBorder(Color.white, lineWidth: selected ? 2.5 : 0))
@@ -930,6 +941,12 @@ struct SlotTile: View {
 
     /// The apps to draw: every rule of a layout slot, the real ones of a drawer slot.
     private var apps: [Rule] { isDrawer ? drawerApps(slot) : slot.rules }
+
+    /// The apps sent here by hand that have an icon to draw, each once however many windows.
+    private var guestApps: [String] {
+        var seen = Set(apps.map(\.bundleID))
+        return guests.filter { AppIcons.icon($0) != nil && seen.insert($0).inserted }
+    }
 
     /// A drawer slot no app is sent to by itself: a good slot (it takes what the owner sends to the
     /// drawer), so it is quiet, not orange like a layout slot that still needs its app.
@@ -992,13 +1009,24 @@ struct SlotTile: View {
         return slot.rules.map { rule in appName(rule.bundleID) + (rule.profile.map { " – \($0)" } ?? "") }.joined(separator: " + ")
     }
 
-    /// The icon of each app the slot takes, in a row, in the band the text leaves them.
+    /// The icon of each app the slot takes, in a row, in the band the text leaves them. Then the
+    /// apps of the windows sent here by hand, as large (owner, 2026-11-13) and inside a dashed
+    /// line: they are in the drawer now, not in the configuration.
     private func icons(side: CGFloat) -> some View {
         HStack(spacing: side / 5) {
             ForEach(Array(apps.enumerated()), id: \.offset) { _, rule in
                 if let icon = AppIcons.icon(rule.bundleID) {
                     Image(nsImage: icon).resizable().interpolation(.high).frame(width: side, height: side)
                         .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+                }
+            }
+            ForEach(guestApps, id: \.self) { bundleID in
+                if let icon = AppIcons.icon(bundleID) {
+                    Image(nsImage: icon).resizable().interpolation(.high).frame(width: side, height: side)
+                        .opacity(0.8)
+                        .overlay(RoundedRectangle(cornerRadius: side / 4)
+                            .strokeBorder(Color.white.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                            .padding(-side / 14))
                 }
             }
         }
