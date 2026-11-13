@@ -75,6 +75,44 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(after, broken)
     }
 
+    func testAWindowCommandsSaveLeavesTheBackupOfTheLastEditorSave() throws {
+        let store = ConfigStore(url: url)
+        let a = config(named: "A"), b = config(named: "B"), c = config(named: "C")
+        func backup() throws -> Config {
+            try JSONDecoder().decode(Config.self, from: Data(contentsOf: url.appendingPathExtension("bak")))
+        }
+        // The first write of a file has nothing to back up; a command's write then makes the backup
+        // that is missing.
+        try store.save(a)
+        try store.save(b, expecting: a, replacingBackup: false)
+        let first = try backup()
+        XCTAssertEqual(first, a)
+        // And leaves the one that is there.
+        try store.save(c, expecting: b, replacingBackup: false)
+        let second = try backup()
+        XCTAssertEqual(second, a)
+        let now = try store.load()
+        XCTAssertEqual(now, c)
+    }
+
+    func testAConfigFileThatIsALinkIsWrittenThroughIt() throws {
+        let elsewhere = dir.appendingPathComponent("dotfiles")
+        try FileManager.default.createDirectory(at: elsewhere, withIntermediateDirectories: true)
+        let real = elsewhere.appendingPathComponent("fremspace.json")
+        let a = config(named: "A"), b = config(named: "B")
+        try ConfigStore(url: real).save(a)
+        try FileManager.default.createSymbolicLink(at: url, withDestinationURL: real)
+        let store = ConfigStore(url: url)
+        try store.save(b, expecting: a)
+        // Still a link, and the file it points to holds what was saved.
+        let destination = try FileManager.default.destinationOfSymbolicLink(atPath: url.path)
+        XCTAssertEqual(URL(fileURLWithPath: destination).lastPathComponent, "fremspace.json")
+        let written = try ConfigStore(url: real).load()
+        XCTAssertEqual(written, b)
+        let backup = try JSONDecoder().decode(Config.self, from: Data(contentsOf: url.appendingPathExtension("bak")))
+        XCTAssertEqual(backup, a)
+    }
+
     func testNewerVersionIsRejectedWithoutOverwrite() throws {
         let bytes = Data(#"{"version":2,"configurations":[]}"#.utf8)
         try bytes.write(to: url)

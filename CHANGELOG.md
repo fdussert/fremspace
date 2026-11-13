@@ -58,6 +58,8 @@ The first version to be packaged.
 - **Commands that change the layouts** ("Lock on this desktop", "Make focusable", swapping two
   slots, an edge resized with "resize layouts" on) write the config file at once. While the editor
   holds changes that are not saved they do nothing and say why, so that the editor can always save.
+  `config.json.bak` is the file as it was before the editor's last Save: these commands leave it.
+  A config file that is a link (kept with your dotfiles) is written through the link.
 - **An editor** for the layouts. It opens on the displays it found and one button to set them up,
   with a desktop per desktop macOS has; a free desktop offers "Capture this desktop" where its
   layout will be. Each slot's tile says what is particular to it (Focus, unlocked, several apps)

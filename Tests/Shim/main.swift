@@ -18,6 +18,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testDisplayWithoutIgnoredIsManaged", { try ($0 as! ConfigStoreTests).testDisplayWithoutIgnoredIsManaged() }),
 ("testRoundTrip", { try ($0 as! ConfigStoreTests).testRoundTrip() }),
         ("testSaveKeepsBackup", { try ($0 as! ConfigStoreTests).testSaveKeepsBackup() }),
+        ("testAWindowCommandsSaveLeavesTheBackupOfTheLastEditorSave", { try ($0 as! ConfigStoreTests).testAWindowCommandsSaveLeavesTheBackupOfTheLastEditorSave() }),
+        ("testAConfigFileThatIsALinkIsWrittenThroughIt", { try ($0 as! ConfigStoreTests).testAConfigFileThatIsALinkIsWrittenThroughIt() }),
         ("testAFileThatChangedIsToldFromOneThatIsGoneOrUnreadable", { try ($0 as! ConfigStoreTests).testAFileThatChangedIsToldFromOneThatIsGoneOrUnreadable() }),
         ("testSaveOverAFileThatCannotBeReadIsRefusedAndLeavesIt", { try ($0 as! ConfigStoreTests).testSaveOverAFileThatCannotBeReadIsRefusedAndLeavesIt() }),
         ("testNewerVersionIsRejectedWithoutOverwrite", { try ($0 as! ConfigStoreTests).testNewerVersionIsRejectedWithoutOverwrite() }),

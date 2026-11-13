@@ -23,9 +23,10 @@ public enum ConfigFileState: Equatable {
     case unreadable(String)
 }
 
-/// Reads and writes the configuration file. Never loses a configuration: writes are atomic and
-/// the previous file is kept as `config.json.bak`; a file that cannot be read is never overwritten
-/// by `load`.
+/// Reads and writes the configuration file. Never loses a configuration: writes are atomic, the
+/// file as it was before the editor's last Save is kept as `config.json.bak`, and a file that
+/// cannot be read is never overwritten by `load`. The file may be a link (kept in a dotfiles
+/// checkout): the file it points to is replaced, the link stays.
 public struct ConfigStore {
     public let url: URL
 
@@ -87,35 +88,48 @@ public struct ConfigStore {
         }
     }
 
-    /// Writes `config.json.tmp`, copies the current file to `config.json.bak`, then renames the
-    /// temporary file over `config.json` (an atomic replace: there is always a whole file).
     /// Saves `config` only when the file still holds `previous` (what the caller read): a change
     /// made meanwhile by someone else is never overwritten.
-    public func save(_ config: Config, expecting previous: Config) throws {
+    public func save(_ config: Config, expecting previous: Config, replacingBackup: Bool = true) throws {
         guard (try? load()) == previous else { throw ConfigError.changedOnDisk }
-        try save(config)
+        try save(config, replacingBackup: replacingBackup)
     }
 
-    public func save(_ config: Config) throws {
+    /// Writes a temporary file beside the configuration, copies the current file to
+    /// `config.json.bak`, then renames the temporary file over the configuration (an atomic
+    /// replace: there is always a whole file).
+    /// `replacingBackup`: false for the small edits of a window command (two slots swapped, a
+    /// window locked, an edge moved). Each of those used to replace the one backup, so that after
+    /// a mistake saved in the editor and one swap the backup held the mistake. They leave it as
+    /// it is; a file that has no backup yet still gets one.
+    public func save(_ config: Config, replacingBackup: Bool = true) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(config)
         let fm = FileManager.default
         try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let tmp = url.appendingPathExtension("tmp")
+        // Through a link: renamed over the link itself, the temporary file would replace it with
+        // a plain file, and the file it pointed to would silently stop following.
+        let target = url.resolvingSymlinksInPath()
+        let tmp = target.appendingPathExtension("tmp")
         try data.write(to: tmp)
+        // On the disk before it takes the place of the configuration.
+        if let handle = try? FileHandle(forWritingTo: tmp) {
+            try? handle.synchronize()
+            try? handle.close()
+        }
         do {
-            if fm.fileExists(atPath: url.path) {
+            if fm.fileExists(atPath: target.path), replacingBackup || !fm.fileExists(atPath: backupURL.path) {
                 if fm.fileExists(atPath: backupURL.path) {
                     try fm.removeItem(at: backupURL)
                 }
-                try fm.copyItem(at: url, to: backupURL)
+                try fm.copyItem(at: target, to: backupURL)
             }
         } catch {
             try? fm.removeItem(at: tmp)
             throw error
         }
-        guard rename(tmp.path, url.path) == 0 else {
+        guard rename(tmp.path, target.path) == 0 else {
             let code = errno
             try? fm.removeItem(at: tmp)
             throw CocoaError(.fileWriteUnknown,

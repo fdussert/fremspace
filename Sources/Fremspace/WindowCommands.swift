@@ -167,8 +167,9 @@ final class WindowCommands {
         return display.spaces[desktop.index]
     }
 
-    /// Reads the configuration file, changes one desktop of the active configuration, saves it
-    /// (previous file kept as .bak) and reloads. An unreadable file is refused, like the editor does.
+    /// Reads the configuration file, changes one desktop of the active configuration, saves it and
+    /// reloads. The backup stays the file as it was before the editor's last Save (see
+    /// `ConfigStore.save`). An unreadable file is refused, like the editor does.
     private func editConfiguration(_ desktop: ConfiguredDesktop, _ change: (inout SpaceSpec) -> Bool) -> Bool {
         let store = engine.configStore
         // Written now, the file would no longer be the one the editor read: its Save would be
@@ -191,7 +192,7 @@ final class WindowCommands {
                 NSSound.beep()
                 return false
             }
-            try store.save(config, expecting: original)
+            try store.save(config, expecting: original, replacingBackup: false)
             engine.configurationSaved()
             return true
         } catch {
