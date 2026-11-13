@@ -61,17 +61,34 @@ struct DesktopTabs: View {
 
     private static let spacing: CGFloat = 4
     private static let fade: CGFloat = 28
+    private static let start = "desktopTabsStart"
+    private static let end = "desktopTabsEnd"
+
+    /// On a side of the row that has tabs out of sight: says so, and goes there.
+    private func onward(_ symbol: String, _ name: String, _ go: @escaping () -> Void) -> some View {
+        Button { withAnimation(.easeOut(duration: 0.2)) { go() } } label: {
+            Image(systemName: symbol).font(.caption.weight(.bold)).frame(width: 18, height: 24).contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .help(name)
+        .accessibilityLabel(name)
+    }
 
     var body: some View {
         if let display = session.displaySpec, !display.ignored {
             let preview = self.preview(count: display.spaces.count)
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: Self.spacing) {
+                    ScrollViewReader { scroll in
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: Self.spacing) {
+                            // The two ends of the row, to scroll to: the tabs themselves are left
+                            // alone, their identity is what their drag is built on.
+                            Color.clear.frame(width: 0, height: 0).id(Self.start)
                             ForEach(display.spaces.indices, id: \.self) { i in
                                 tab(i, display.spaces[i], count: display.spaces.count, preview: preview)
                             }
+                            Color.clear.frame(width: 0, height: 0).id(Self.end)
                         }
                         .coordinateSpace(name: "desktopTabs")
                         .onPreferenceChange(TabFrames.self) { frames = $0 }
@@ -98,6 +115,10 @@ struct DesktopTabs: View {
                         LinearGradient(colors: [.black, .black.opacity(more.trailing ? 0 : 1)], startPoint: .leading, endPoint: .trailing)
                             .frame(width: Self.fade)
                     })
+                    // The fade alone shows nothing when the row is cut between two tabs.
+                    .overlay(alignment: .leading) { if more.leading { onward("chevron.left", "Earlier desktops") { scroll.scrollTo(Self.start, anchor: .leading) } } }
+                    .overlay(alignment: .trailing) { if more.trailing { onward("chevron.right", "More desktops") { scroll.scrollTo(Self.end, anchor: .trailing) } } }
+                    }
                     // Beside the row, not at its end: with many desktops it scrolled out of reach.
                     Button { session.addDesktop() } label: {
                         Image(systemName: "plus").frame(width: 24, height: 24).contentShape(Rectangle())
