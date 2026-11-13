@@ -332,29 +332,34 @@ struct SettingsPageView: View {
         case .share:
             ShareEditor(session: session)
         case .maintenance:
+            // Each line says what one gets, its button says the verb: "Re-apply the layouts" beside a
+            // button "Re-apply" said it twice. The command's own name stays what the search finds
+            // and what VoiceOver reads on the button.
             PageSection(.maintenanceLayouts) {
-                command(.reapply, "Puts every window back in its slot and on its desktop." + hint("reapply"), verb: "Re-apply", action: actions.reapply)
-                command(.restoreEverything, "Like at login: opens the apps that have a slot and puts every window back.",
+                command(.reapply, "Every window back in its slot and on its desktop", detail: hint("reapply"), verb: "Re-apply", action: actions.reapply)
+                command(.restoreEverything, "As at login: the apps that have a slot opened, every window put back",
                         verb: "Restore", action: actions.restoreEverything)
             }
             PageSection(.maintenanceWindows) {
-                command(.bringBack, "Drawer windows and windows lost off screen.", verb: "Bring back", action: actions.bringBack)
+                command(.bringBack, "The windows of the drawers and those lost off screen, back in view", verb: "Bring back", action: actions.bringBack)
             }
             PageSection(.maintenanceFile) {
-                command(.openConfigFile, "In your default editor.", verb: "Open", done: "Opened", action: actions.openConfigFile)
-                command(.reloadConfig, "After editing it by hand.", verb: "Reload", done: "Reloaded", action: actions.reloadConfig)
+                command(.openConfigFile, "The file, in your default editor", verb: "Open", done: "Opened", action: actions.openConfigFile)
+                command(.reloadConfig, "The file read again, after an edit by hand", verb: "Reload", done: "Reloaded", action: actions.reloadConfig)
             }
             PageSection(.maintenanceDiagnostics) {
-                command(.copyDiagnostics, "Displays, desktops, windows and Fremspace's state, to the clipboard.",
+                command(.copyDiagnostics, "Displays, desktops, windows and Fremspace's state, on the clipboard",
                         verb: "Copy", done: "Copied", action: actions.copyDiagnostics)
-                command(.dumpWindows, "Writes every window Fremspace sees to a file and opens it.",
+                command(.dumpWindows, "Every window Fremspace sees, in a file that opens",
                         verb: "Dump", done: "Written", action: actions.dumpWindows)
             }
         }
     }
 
-    private func command(_ row: SettingRow, _ detail: String, verb: String, done: String = "Done", action: @escaping () -> Void) -> some View {
-        CommandRow(title: row.title, detail: detail, verb: verb, done: done, action: action).modifier(marked(row))
+    private func command(_ row: SettingRow, _ what: String, detail: String = "", verb: String, done: String = "Done",
+                         action: @escaping () -> Void) -> some View {
+        CommandRow(title: what, detail: detail.trimmingCharacters(in: .whitespaces), verb: verb, done: done, name: row.title, action: action)
+            .modifier(marked(row))
     }
 
     /// The command's shortcut as the owner set it, to end a detail line; nothing when it has none.
@@ -454,17 +459,20 @@ struct FoldSection<Content: View>: View {
 /// A command of a page: what it does, a button named by its verb, and for a few seconds what it did.
 struct CommandRow: View {
     let title: String
+    /// Under the title; empty when the title says it all.
     let detail: String
     let verb: String
     var done = "Done"
+    /// The command's name for VoiceOver, when the title is a description of what one gets.
+    var name: String?
     let action: () -> Void
     @State private var ranAt: Date?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                HelpText(detail)
+                Text(title).fixedSize(horizontal: false, vertical: true)
+                if !detail.isEmpty { HelpText(detail) }
             }
             Spacer(minLength: 4)
             if ranAt != nil {
@@ -479,7 +487,7 @@ struct CommandRow: View {
                     if ranAt == at { withAnimation { ranAt = nil } }
                 }
             }
-            .accessibilityLabel(title)
+            .accessibilityLabel(name ?? title)
         }
     }
 }
