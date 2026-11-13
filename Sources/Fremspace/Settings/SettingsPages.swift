@@ -731,6 +731,11 @@ struct ScenesEditor: View {
         slot.rules.map { appName($0.bundleID) + ($0.profile.map { " \u{2013} \($0)" } ?? "") }.joined(separator: ", ")
     }
 
+    /// Every choice as wide as the others: at their natural widths their right edges were ragged.
+    private static let choice: CGFloat = 220
+    /// A line the scene leaves as it is steps back, so that what the scene does stands out.
+    private static let untouched = 0.55
+
     /// One line of a display: what it is about, then the choice.
     private func line<Content: View>(_ title: String, detail: Bool = false, @ViewBuilder _ content: () -> Content) -> some View {
         HStack(spacing: 8) {
@@ -748,35 +753,39 @@ struct ScenesEditor: View {
             VStack(alignment: .leading, spacing: 18) {
                 ForEach(Array(configuration.scenes.enumerated()), id: \.element.id) { index, scene in
                     VStack(alignment: .leading, spacing: 8) {
+                        // Which scene this is and its shortcut, over its name: a bare field at the top
+                        // of a card did not say what it named.
                         HStack(spacing: 8) {
-                            TextField("Name", text: Binding(
-                                get: { scene.name },
-                                set: { name in session.updateScene(scene.id) { $0.name = name } }))
-                                .textFieldStyle(.roundedBorder).frame(maxWidth: 260)
-                                .accessibilityLabel("Name of scene \(index + 1)")
-                            Spacer(minLength: 4)
+                            Text("Scene \(index + 1)").font(.subheadline.weight(.semibold)).foregroundColor(.secondary)
                             if index < 4 {
-                                Text(session.shortcutLabel("scene.\(index + 1)")).font(.callout).foregroundColor(.secondary)
+                                Text(session.shortcutLabel("scene.\(index + 1)")).font(.subheadline).foregroundColor(.secondary)
                             }
+                            Spacer(minLength: 4)
                             Button {
                                 session.removeScene(scene.id)
                             } label: {
                                 Image(systemName: "trash").hitTarget()
                             }
                             .buttonStyle(.borderless)
+                            .help("Delete this scene (Undo brings it back)")
                             .accessibilityLabel("Delete the scene \(scene.name)")
                         }
+                        TextField("Name", text: Binding(
+                            get: { scene.name },
+                            set: { name in session.updateScene(scene.id) { $0.name = name } }))
+                            .textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+                            .accessibilityLabel("Name of scene \(index + 1)")
                         ForEach(displays, id: \.identity) { display in
                             line(display.displayName) {
                                 Picker("", selection: Binding(
                                     get: { scene.desktop(on: display.identity) ?? -1 },
                                     set: { choice in session.updateScene(scene.id) { $0.set(choice < 0 ? nil : choice, on: display.identity) } })) {
-                                    Text("Stays as it is").tag(-1)
+                                    Text("No change").tag(-1)
                                     ForEach(Array(display.spaces.enumerated()), id: \.offset) { position, space in
                                         Text("\(position + 1). \(space.label)").tag(position)
                                     }
                                 }
-                                .labelsHidden().fixedSize().frame(width: 240, alignment: .leading)
+                                .labelsHidden().frame(width: Self.choice).opacity(scene.desktop(on: display.identity) == nil ? Self.untouched : 1)
                                 .accessibilityLabel("Desktop of \(display.displayName) in the scene \(scene.name)")
                             }
                             // Focus is of a slot: only on a desktop the scene names, among the slots Focus enlarges.
@@ -786,12 +795,12 @@ struct ScenesEditor: View {
                                     Picker("", selection: Binding(
                                         get: { scene.focus(on: display.identity).flatMap { id in slots.contains { $0.id == id } ? id : nil } ?? "" },
                                         set: { choice in session.updateScene(scene.id) { $0.setFocus(choice.isEmpty ? nil : choice, on: display.identity) } })) {
-                                        Text("Stays as it is").tag("")
+                                        Text("No change").tag("")
                                         ForEach(slots, id: \.id) { slot in
                                             Text(slotName(slot)).tag(slot.id)
                                         }
                                     }
-                                    .labelsHidden().fixedSize().frame(width: 240, alignment: .leading)
+                                    .labelsHidden().frame(width: Self.choice).opacity(scene.focus(on: display.identity) == nil ? Self.untouched : 1)
                                     .accessibilityLabel("Slot in Focus on \(display.displayName) in the scene \(scene.name)")
                                 }
                             }
@@ -802,11 +811,11 @@ struct ScenesEditor: View {
                                         set: { choice in
                                             session.updateScene(scene.id) { $0.setDrawer(choice < 0 ? nil : choice == 1, edge: drawer.edge, on: display.identity) }
                                         })) {
-                                        Text("Stays as it is").tag(-1)
+                                        Text("No change").tag(-1)
                                         Text("Open").tag(1)
                                         Text("Closed").tag(0)
                                     }
-                                    .labelsHidden().fixedSize().frame(width: 240, alignment: .leading)
+                                    .labelsHidden().frame(width: Self.choice).opacity(scene.drawer(drawer.edge, on: display.identity) == nil ? Self.untouched : 1)
                                     .accessibilityLabel("\(drawer.edge == .left ? "Left" : "Right") drawer of \(display.displayName) in the scene \(scene.name)")
                                 }
                             }
