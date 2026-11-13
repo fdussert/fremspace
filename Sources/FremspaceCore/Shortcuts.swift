@@ -30,6 +30,15 @@ public struct Shortcut: Codable, Equatable {
         guard keyCode != nil else { return true }
         return modifiers.allSatisfy(Shortcut.modifierNames.contains) && modifiers.contains { $0 != "shift" }
     }
+
+    /// A shortcut that works but that apps use themselves: Command alone (⌘C, ⌘W and ⌘Q are every
+    /// app's) or Option alone (it types a character), with or without Shift. A global shortcut takes
+    /// the keys from every app, so the owner is told before saving one of these.
+    public var isAnAppsOwn: Bool {
+        guard keyCode != nil else { return false }
+        let held = modifiers.filter { $0 != "shift" }
+        return held == ["command"] || held == ["option"]
+    }
 }
 
 /// The command already using `shortcut` among `effective` (command id → its shortcut), other than

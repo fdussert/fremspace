@@ -491,7 +491,7 @@ struct ShortcutsEditor: View {
     /// The command whose shortcut is being typed.
     @State private var recording: String?
     @State private var monitor: Any?
-    /// What is wrong with the shortcut just typed, under its row.
+    /// What is wrong with the shortcut just typed, or what to know about it, under its row.
     @State private var problem: (id: String, text: String)?
 
     var body: some View {
@@ -531,6 +531,10 @@ struct ShortcutsEditor: View {
             }
         }
         .onDisappear { stopRecording() }
+        // While a shortcut is being typed every hot key is off: that must end when the owner leaves
+        // for another window or another app, not only when a key is typed here.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in stopRecording() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in stopRecording() }
     }
 
     /// Every word typed is in the command's name or its shortcut, whatever the case and the accents.
@@ -550,9 +554,7 @@ struct ShortcutsEditor: View {
                 Spacer(minLength: 4)
                 if changed {
                     Button {
-                        session.checkpoint()
-                        session.config.shortcuts[entry.id] = nil
-                        problem = nil
+                        reset(entry)
                     } label: {
                         Image(systemName: "arrow.uturn.backward")
                     }
@@ -577,6 +579,21 @@ struct ShortcutsEditor: View {
                     .labelStyle(StatusLabelStyle(color: .orange)).font(.callout)
             }
         }
+    }
+
+    /// Back to the default, unless another command took it meanwhile: two commands on one shortcut
+    /// would leave one of them dead.
+    private func reset(_ entry: ShortcutCatalog.Entry) {
+        var without = session.config.shortcuts
+        without[entry.id] = nil
+        if let other = shortcutConflict(entry.defaultShortcut, for: entry.id, effective: ShortcutCatalog.effective(without)),
+           let title = ShortcutCatalog.entries.first(where: { $0.id == other })?.title {
+            problem = (entry.id, "\(ShortcutCatalog.label(entry.defaultShortcut)) is now \u{201C}\(title)\u{201D}. Change that one first.")
+            return NSSound.beep()
+        }
+        session.checkpoint()
+        session.config.shortcuts[entry.id] = nil
+        problem = nil
     }
 
     private func startRecording(_ id: String) {
@@ -618,7 +635,10 @@ struct ShortcutsEditor: View {
         let fallback = ShortcutCatalog.entries.first { $0.id == id }?.defaultShortcut
         // Typing the default again is the same as resetting.
         session.config.shortcuts[id] = shortcut == fallback ? nil : shortcut
-        problem = nil
+        // Taken, with a word about what it costs: ⌘W typed to close this window lands here too.
+        problem = shortcut.isAnAppsOwn
+            ? (id, "\(ShortcutCatalog.label(shortcut)) is a shortcut apps use themselves: once saved, Fremspace takes it from every app.")
+            : nil
         stopRecording()
     }
 }

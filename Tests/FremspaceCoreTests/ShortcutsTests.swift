@@ -28,6 +28,15 @@ final class ShortcutsTests: XCTestCase {
         XCTAssertFalse(Shortcut(keyCode: 40, modifiers: ["Command"]).isUsable)
     }
 
+    func testCommandAloneOrOptionAloneIsAnAppsOwnShortcut() {
+        XCTAssertTrue(Shortcut(keyCode: 13, modifiers: ["command"]).isAnAppsOwn)
+        XCTAssertTrue(Shortcut(keyCode: 13, modifiers: ["shift", "command"]).isAnAppsOwn)
+        XCTAssertTrue(Shortcut(keyCode: 37, modifiers: ["option"]).isAnAppsOwn)
+        XCTAssertFalse(Shortcut(keyCode: 37, modifiers: ["control"]).isAnAppsOwn)
+        XCTAssertFalse(Shortcut(keyCode: 37, modifiers: ["option", "command"]).isAnAppsOwn)
+        XCTAssertFalse(Shortcut(keyCode: nil, modifiers: ["command"]).isAnAppsOwn)
+    }
+
     func testConflictNamesTheOtherCommand() {
         let hyperL = Shortcut(keyCode: 37, modifiers: ["control", "option", "command"])
         let effective = ["drawerLeft": hyperL, "pause": Shortcut(keyCode: 35, modifiers: ["control", "option", "command"]),
