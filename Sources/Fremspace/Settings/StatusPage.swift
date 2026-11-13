@@ -106,7 +106,6 @@ struct StatusPage: View {
             Spacer(minLength: 8)
             if let fix = item.fix {
                 Button(verb(fix)) { run(fix) }
-                    .controlSize(.small)
                     .accessibilityLabel("\(verb(fix)): \(item.title)")
             }
         }

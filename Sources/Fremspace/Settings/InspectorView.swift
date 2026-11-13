@@ -83,7 +83,9 @@ struct InspectorSection<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.subheadline.weight(.semibold)).foregroundColor(.secondary)
+            // The size of the rows it heads, and darker: smaller and fainter than them, a title
+            // read as a caption.
+            Text(title).font(.system(size: 13, weight: .semibold)).accessibilityAddTraits(.isHeader)
             InspectorCard { content }
         }
     }
@@ -143,6 +145,8 @@ struct SwitchRow: View {
     var atOnce = false
     /// What the detail has no room for, behind "More…".
     var more: String?
+    /// A small switch, for the inspector's narrow column; a page has room for a regular one.
+    var compact = false
     @Binding var isOn: Bool
 
     var body: some View {
@@ -156,7 +160,7 @@ struct SwitchRow: View {
                 if let more { MoreHelp(text: more) }
             }
             Spacer(minLength: 4)
-            Toggle(title, isOn: $isOn).labelsHidden().toggleStyle(.switch).controlSize(.small)
+            Toggle(title, isOn: $isOn).labelsHidden().toggleStyle(.switch).controlSize(compact ? .small : .regular)
         }
     }
 }
@@ -261,18 +265,19 @@ struct SlotInspector: View {
                         .textFieldStyle(.roundedBorder)
                 }
                 SwiftUI.Divider()
-                SwitchRow(title: "Locked", detail: "The window snaps back when it is moved or resized.",
+                SwitchRow(title: "Locked", detail: "The window snaps back when it is moved or resized.", compact: true,
                           isOn: Binding(get: { slot.locked }, set: { on in update { $0.locked = on } }))
                 SwitchRow(title: "Focus enlarges this slot",
                           detail: "\(focusShortcut) gives it the whole display, and back.",
                           more: "With the keyboard in this slot, the Focus shortcut gives it the whole display; the same shortcut gives the display back. Any number of slots of a desktop can have it. From a window that is in none of them, the shortcut enlarges the one furthest left.",
+                          compact: true,
                           isOn: Binding(
                             get: { session.spaceSpec.map { focusSlots($0).contains { $0.id == slot.id } } ?? false },
                             set: { on in
                                 session.checkpoint()
                                 session.updateSpace { $0 = settingFocus($0, slot: slot.id, on: on) }
                             }))
-                SwitchRow(title: "Open at login", detail: "Restore opens the app when it is not running.",
+                SwitchRow(title: "Open at login", detail: "Restore opens the app when it is not running.", compact: true,
                           isOn: Binding(get: { slot.launchAtLogin }, set: { on in update { $0.launchAtLogin = on } }))
                 SwiftUI.Divider()
                 sizeLine
@@ -595,7 +600,7 @@ struct DisplayInspector: View {
                 }
                 .font(.callout)
             }
-            SwitchRow(title: "Ignore this display", detail: "Fremspace never touches the windows on it.",
+            SwitchRow(title: "Ignore this display", detail: "Fremspace never touches the windows on it.", compact: true,
                       isOn: Binding(
                         get: { session.displaySpec?.ignored ?? false },
                         set: { on in

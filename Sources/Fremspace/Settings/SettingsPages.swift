@@ -232,7 +232,6 @@ struct SettingsPageView: View {
                                 .font(.callout).fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 4)
                             Button("Add a free desktop") { session.addFreeDesktop(to: configuration.id) }
-                                .controlSize(.small)
                         }
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
@@ -287,7 +286,6 @@ struct SettingsPageView: View {
                             .font(.callout).fixedSize(horizontal: false, vertical: true)
                         Spacer(minLength: 4)
                         Button("Open Privacy settings") { WindowPreviews.openSettings() }
-                            .controlSize(.small)
                     }
                     .padding(8)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
@@ -376,14 +374,15 @@ struct PageSection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Text(title).font(.subheadline.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                // As large as the rows it heads and in their colour: smaller and fainter, a
+                // section's name read as a caption.
+                Text(title).font(.system(size: 13, weight: .semibold)).accessibilityAddTraits(.isHeader)
                 if let badge {
-                    Text(badge).font(.caption)
+                    Text(badge).font(.caption).foregroundColor(.secondary)
                         .padding(.horizontal, 6).padding(.vertical, 1)
                         .background(Capsule().fill(Color.primary.opacity(0.08)))
                 }
             }
-            .foregroundColor(.secondary)
             VStack(alignment: .leading, spacing: 10) { content }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -413,17 +412,16 @@ struct FoldSection<Content: View>: View {
                 withAnimation(.easeOut(duration: 0.15)) { open.toggle() }
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "chevron.right").font(.caption2.weight(.bold))
+                    Image(systemName: "chevron.right").font(.caption2.weight(.bold)).foregroundColor(.secondary)
                         .rotationEffect(.degrees(open ? 90 : 0))
-                    Text(title).font(.subheadline.weight(.semibold))
+                    Text(title).font(.system(size: 13, weight: .semibold))
                     if let badge {
-                        Text(badge).font(.caption)
+                        Text(badge).font(.caption).foregroundColor(.secondary)
                             .padding(.horizontal, 6).padding(.vertical, 1)
                             .background(Capsule().fill(Color.primary.opacity(0.08)))
                     }
                     Spacer(minLength: 0)
                 }
-                .foregroundColor(.secondary)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -466,7 +464,6 @@ struct CommandRow: View {
                     if ranAt == at { withAnimation { ranAt = nil } }
                 }
             }
-            .controlSize(.small)
             .accessibilityLabel(title)
         }
     }
@@ -837,8 +834,7 @@ struct ShareEditor: View {
         if let configuration = session.configuration, let export = session.shareExport {
             let report = export.report
             PageSection("Export") {
-                Text("\u{201C}\(configuration.name)\u{201D} as it is in the editor, in one file to post or to send. Whoever loads it adds your desktops beside theirs.")
-                    .foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                HelpText("\u{201C}\(configuration.name)\u{201D} as it is in the editor, in one file to post or to send. Whoever loads it adds your desktops beside theirs.")
                 row("In the file") {
                     Text([count(report.displays, "display"), count(report.desktops, "desktop"), count(report.slots, "slot"),
                           count(report.drawers, "drawer"), count(report.scenes, "scene")].joined(separator: ", "))
@@ -855,9 +851,8 @@ struct ShareEditor: View {
                 let filters = session.shareFilters
                 if !filters.profiles.isEmpty || !filters.titles.isEmpty {
                     Toggle("Include browser profiles and window title filters", isOn: $session.shareWithFilters)
-                    Text((session.shareWithFilters ? "In the file as you typed them: " : "Left out, because they are free text that can name an employer or a customer: ")
-                         + (filters.profiles.map { "profile \u{201C}\($0)\u{201D}" } + filters.titles.map { "title \u{201C}\($0)\u{201D}" }).joined(separator: ", ") + ".")
-                        .font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                    HelpText((session.shareWithFilters ? "In the file as you typed them: " : "Left out, because they are free text that can name an employer or a customer: ")
+                             + (filters.profiles.map { "profile \u{201C}\($0)\u{201D}" } + filters.titles.map { "title \u{201C}\($0)\u{201D}" }).joined(separator: ", ") + ".")
                 }
                 HStack(spacing: 8) {
                     Button("Export\u{2026}") { session.exportLayout() }
@@ -868,8 +863,7 @@ struct ShareEditor: View {
                 }
             }
             PageSection("Add a layout") {
-                Text("A layout adds its desktops after yours on the displays you choose, its drawers on the edges still free, and its scenes with the desktops they show. Nothing of yours is replaced, and nothing changes on screen until you save.")
-                    .foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                HelpText("A layout adds its desktops after yours on the displays you choose, its drawers on the edges still free, and its scenes with the desktops they show. Nothing of yours is replaced, and nothing changes on screen until you save.")
                 if let pending = session.pendingImport {
                     pendingImport(pending, into: configuration)
                 } else {
@@ -879,7 +873,7 @@ struct ShareEditor: View {
                                 Text(item.layout.name).lineLimit(1)
                                 Text(item.layout.displays.map { "\($0.name): \($0.desktops.map(\.label).joined(separator: ", "))" }.joined(separator: " \u{00B7} ")
                                      + (item.layout.scenes.isEmpty ? "" : " \u{00B7} \(count(item.layout.scenes.count, "scene"))"))
-                                    .font(.caption).foregroundColor(.secondary).lineLimit(2)
+                                    .font(.subheadline).foregroundColor(.secondary).lineLimit(2)
                             }
                             Spacer(minLength: 8)
                             Button("Add\u{2026}") { session.readImport(item.url) }
@@ -897,8 +891,7 @@ struct ShareEditor: View {
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
                     }
                     if session.library.isEmpty {
-                        Text("The library is empty: keep a configuration in it, or put a layout file from somebody else in its folder.")
-                            .font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                        HelpText("The library is empty: keep a configuration in it, or put a layout file from somebody else in its folder.")
                     }
                     HStack(spacing: 8) {
                         Button("Add from a file\u{2026}") { session.chooseImport() }
@@ -918,15 +911,14 @@ struct ShareEditor: View {
         let layout = pending.layout
         VStack(alignment: .leading, spacing: 8) {
             Text("\u{201C}\(layout.name)\u{201D}").font(.headline)
-            Text("\(pending.file), written by Fremspace \(layout.app). \(count(layout.displays.count, "display")), \(count(layout.displays.reduce(0) { $0 + $1.desktops.count }, "desktop")), \(count(layout.scenes.count, "scene")).")
-                .font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+            HelpText("\(pending.file), written by Fremspace \(layout.app). \(count(layout.displays.count, "display")), \(count(layout.displays.reduce(0) { $0 + $1.desktops.count }, "desktop")), \(count(layout.scenes.count, "scene")).")
             ForEach(Array(layout.displays.enumerated()), id: \.offset) { position, display in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(display.name).lineLimit(1)
                         Text(display.desktops.map(\.label).joined(separator: ", ")
                              + (display.drawers.isEmpty ? "" : " \u{00B7} \(count(display.drawers.count, "drawer"))"))
-                            .font(.caption).foregroundColor(.secondary).lineLimit(2)
+                            .font(.subheadline).foregroundColor(.secondary).lineLimit(2)
                     }
                     .frame(width: 260, alignment: .leading)
                     Image(systemName: "arrow.right").foregroundColor(.secondary)
@@ -944,15 +936,12 @@ struct ShareEditor: View {
             }
             let missing = session.importMissingApps
             if !missing.isEmpty {
-                Text("Not on this Mac: \(missing.joined(separator: ", ")). Their slots are added and stay empty.")
-                    .font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                HelpText("Not on this Mac: \(missing.joined(separator: ", ")). Their slots are added and stay empty.")
             }
             if session.importHasFilters {
-                Text("The file names browser profiles or window title filters: they are the author's, change them to yours in the slots.")
-                    .font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                HelpText("The file names browser profiles or window title filters: they are the author's, change them to yours in the slots.")
             }
-            Text("macOS needs as many desktops as the configuration lists: after you save, the Status page offers to add the ones that are missing.")
-                .font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+            HelpText("macOS needs as many desktops as the configuration lists: after you save, the Status page offers to add the ones that are missing.")
             HStack(spacing: 8) {
                 Button("Add to \u{201C}\(configuration.name)\u{201D}") { session.applyImport() }
                     .keyboardShortcut(.defaultAction)
