@@ -43,6 +43,14 @@ public struct Remembered: Codable, Equatable {
         self.entries = entries
     }
 
+    private enum CodingKeys: String, CodingKey { case entries }
+
+    /// An entry that cannot be read is left out, the others are kept (see `FremspaceState`).
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        entries = c.readable([RememberedPlacement].self, forKey: .entries)
+    }
+
     /// Replaces the entry of the same window in the same configuration. Window ids start again
     /// after a reboot: an entry last seen before `idsSince` (the boot) belongs to another window and
     /// is kept.

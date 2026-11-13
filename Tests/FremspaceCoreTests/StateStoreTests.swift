@@ -39,6 +39,48 @@ final class StateStoreTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
     }
 
+    func testAnEntryThatCannotBeReadDoesNotLoseTheRest() throws {
+        let url = try temporaryURL()
+        // The second drawer member has no process, the second pair no slot, the palette's counts
+        // are not counts, and one remembered window is only half there.
+        let json = #"""
+        {"desktopLinks":{"links":{"k":[null,"U2"]}},
+         "drawerMembers":[
+           {"window":{"id":42,"pid":7},"bundleID":"com.apple.finder","display":{"vendor":1,"model":2,"serial":3,"name":"DELL"},"slot":"left.top"},
+           {"window":{"id":43},"bundleID":"com.apple.finder","slot":"left.top"}],
+         "takenOutOfDrawers":[{"id":44,"pid":8},"nonsense"],
+         "splits":[{"left":{"id":1,"pid":2},"right":{"id":3,"pid":2},"slotID":"web"},{"left":{"id":5,"pid":2}}],
+         "paletteUses":"many",
+         "remembered":{"entries":[{"windowID":9}]}}
+        """#
+        try Data(json.utf8).write(to: url)
+        let state = StateStore(url: url).load()
+        XCTAssertEqual(state.desktopLinks.links["k"], [nil, "U2"])
+        XCTAssertEqual(state.drawerMembers.map(\.window.id), [42])
+        XCTAssertEqual(state.takenOutOfDrawers, [SavedWindow(id: 44, pid: 8)])
+        XCTAssertEqual(state.splits.map(\.slotID), ["web"])
+        XCTAssertEqual(state.paletteUses, [:])
+        XCTAssertEqual(state.remembered.entries, [])
+        // Read, not set aside as corrupt.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path + ".corrupt"))
+    }
+
+    func testTheFileSaysItsVersionAndALaterOneIsKeptBeforeItIsRewritten() throws {
+        let url = try temporaryURL()
+        let store = StateStore(url: url)
+        try store.save(FremspaceState())
+        let written = try Data(contentsOf: url)
+        XCTAssertTrue(String(decoding: written, as: UTF8.self).contains("\"version\" : \(FremspaceState.currentVersion)"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path + ".newer"))
+        // A later build's file, with something this build does not know.
+        let later = Data(#"{"version":9,"paletteUses":{"app":3},"somethingNew":[1,2]}"#.utf8)
+        try later.write(to: url)
+        XCTAssertEqual(store.load().paletteUses, ["app": 3])
+        let kept = try Data(contentsOf: URL(fileURLWithPath: url.path + ".newer"))
+        XCTAssertEqual(kept, later)
+    }
+
     func testOldStateWithoutRememberedLoads() throws {
         let url = try temporaryURL()
         try Data(#"{"desktopLinks":{"links":{"k":[null,"U2"]}}}"#.utf8).write(to: url)

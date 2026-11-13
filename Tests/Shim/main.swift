@@ -58,6 +58,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testOldStateWithoutRememberedLoads", { try ($0 as! StateStoreTests).testOldStateWithoutRememberedLoads() }),
         ("testRoundTripAndMissingFile", { try ($0 as! StateStoreTests).testRoundTripAndMissingFile() }),
         ("testCorruptFileLoadsEmptyAndIsKept", { try ($0 as! StateStoreTests).testCorruptFileLoadsEmptyAndIsKept() }),
+        ("testAnEntryThatCannotBeReadDoesNotLoseTheRest", { try ($0 as! StateStoreTests).testAnEntryThatCannotBeReadDoesNotLoseTheRest() }),
+        ("testTheFileSaysItsVersionAndALaterOneIsKeptBeforeItIsRewritten", { try ($0 as! StateStoreTests).testTheFileSaysItsVersionAndALaterOneIsKeptBeforeItIsRewritten() }),
         ("testFocusedSlotsAreKeptAndOlderStatesHaveNone", { try ($0 as! StateStoreTests).testFocusedSlotsAreKeptAndOlderStatesHaveNone() }),
         ("testDrawerMembersAreKeptAndOlderStatesHaveNone", { try ($0 as! StateStoreTests).testDrawerMembersAreKeptAndOlderStatesHaveNone() }),
         ("testASavedWindowIsAliveOnlyInTheSameProcess", { ($0 as! StateStoreTests).testASavedWindowIsAliveOnlyInTheSameProcess() }),

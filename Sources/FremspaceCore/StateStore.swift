@@ -3,6 +3,10 @@ import Foundation
 /// What Fremspace learns while it runs (desktop links, and in plan 3 where windows belong), kept
 /// apart from the configuration so that the configuration file is only written by the owner.
 public struct FremspaceState: Codable, Equatable {
+    /// The format of `state.json`, written in it. A build that reads a later one keeps a copy
+    /// before it writes its own (see `StateStore.load`).
+    public static let currentVersion = 1
+
     public var desktopLinks: DesktopLinks
     public var remembered: Remembered
     /// The slots enlarged with the Focus hotkey, so that a restart of Fremspace does not shrink them
@@ -38,19 +42,51 @@ public struct FremspaceState: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case desktopLinks, remembered, focused, drawerMembers, takenOutOfDrawers, paletteUses, splits, hyperMapping
+        case version, desktopLinks, remembered, focused, drawerMembers, takenOutOfDrawers, paletteUses, splits, hyperMapping
     }
 
+    /// Each part is read on its own, and each list entry by entry: one entry with a key missing
+    /// (written by another build, or by hand) used to make the whole file "corrupt", set aside
+    /// with everything Fremspace remembered. What cannot be read is left out, the rest is kept.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        desktopLinks = try c.decodeIfPresent(DesktopLinks.self, forKey: .desktopLinks) ?? DesktopLinks()
-        remembered = try c.decodeIfPresent(Remembered.self, forKey: .remembered) ?? Remembered()
-        focused = try c.decodeIfPresent([FocusedSlot].self, forKey: .focused) ?? []
-        drawerMembers = try c.decodeIfPresent([SavedDrawerMember].self, forKey: .drawerMembers) ?? []
-        takenOutOfDrawers = try c.decodeIfPresent([SavedWindow].self, forKey: .takenOutOfDrawers) ?? []
-        paletteUses = try c.decodeIfPresent([String: Int].self, forKey: .paletteUses) ?? [:]
-        splits = try c.decodeIfPresent([SavedSplit].self, forKey: .splits) ?? []
-        hyperMapping = try c.decodeIfPresent(HyperMapping.self, forKey: .hyperMapping)
+        desktopLinks = (try? c.decodeIfPresent(DesktopLinks.self, forKey: .desktopLinks)).flatMap { $0 } ?? DesktopLinks()
+        remembered = (try? c.decodeIfPresent(Remembered.self, forKey: .remembered)).flatMap { $0 } ?? Remembered()
+        focused = c.readable([FocusedSlot].self, forKey: .focused)
+        drawerMembers = c.readable([SavedDrawerMember].self, forKey: .drawerMembers)
+        takenOutOfDrawers = c.readable([SavedWindow].self, forKey: .takenOutOfDrawers)
+        paletteUses = (try? c.decodeIfPresent([String: Int].self, forKey: .paletteUses)).flatMap { $0 } ?? [:]
+        splits = c.readable([SavedSplit].self, forKey: .splits)
+        hyperMapping = (try? c.decodeIfPresent(HyperMapping.self, forKey: .hyperMapping)).flatMap { $0 }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(Self.currentVersion, forKey: .version)
+        try c.encode(desktopLinks, forKey: .desktopLinks)
+        try c.encode(remembered, forKey: .remembered)
+        try c.encode(focused, forKey: .focused)
+        try c.encode(drawerMembers, forKey: .drawerMembers)
+        try c.encode(takenOutOfDrawers, forKey: .takenOutOfDrawers)
+        try c.encode(paletteUses, forKey: .paletteUses)
+        try c.encode(splits, forKey: .splits)
+        try c.encodeIfPresent(hyperMapping, forKey: .hyperMapping)
+    }
+}
+
+/// An entry of a list that may not be readable: nil then, instead of an error for the whole list.
+private struct Readable<T: Decodable>: Decodable {
+    let value: T?
+
+    init(from decoder: Decoder) throws {
+        value = try? T(from: decoder)
+    }
+}
+
+extension KeyedDecodingContainer {
+    /// The entries of a list that can be read; none when the list is missing or is not a list.
+    func readable<T: Decodable>(_ type: [T].Type, forKey key: Key) -> [T] {
+        ((try? decodeIfPresent([Readable<T>].self, forKey: key)).flatMap { $0 } ?? []).compactMap(\.value)
     }
 }
 
@@ -168,7 +204,18 @@ public struct StateStore {
 
     public func load() -> FremspaceState {
         guard let data = try? Data(contentsOf: url) else { return FremspaceState() }
-        if let state = try? JSONDecoder().decode(FremspaceState.self, from: data) { return state }
+        if let state = try? JSONDecoder().decode(FremspaceState.self, from: data) {
+            // Written by a later Fremspace: this build keeps what it understands and will write
+            // the file without the rest two seconds later. The later build's file is kept beside
+            // it, for the day that build is back.
+            struct Header: Decodable { var version: Int? }
+            if let version = (try? JSONDecoder().decode(Header.self, from: data))?.version, version > FremspaceState.currentVersion {
+                let kept = url.deletingLastPathComponent().appendingPathComponent(url.lastPathComponent + ".newer")
+                try? FileManager.default.removeItem(at: kept)
+                try? FileManager.default.copyItem(at: url, to: kept)
+            }
+            return state
+        }
         let kept = url.deletingLastPathComponent().appendingPathComponent(url.lastPathComponent + ".corrupt")
         try? FileManager.default.removeItem(at: kept)
         try? FileManager.default.moveItem(at: url, to: kept)
