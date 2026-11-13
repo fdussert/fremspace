@@ -882,14 +882,19 @@ struct ShareEditor: View {
         "\(number) \(one)\(number == 1 ? "" : "s")"
     }
 
+    /// "3 displays, 8 desktops": what there is none of is not listed ("0 scenes" said nothing).
+    private func counts(_ pairs: [(Int, String)]) -> String {
+        pairs.filter { $0.0 > 0 }.map { count($0.0, $0.1) }.joined(separator: ", ")
+    }
+
     var body: some View {
         if let configuration = session.configuration, let export = session.shareExport {
             let report = export.report
             PageSection("Export") {
                 HelpText("\u{201C}\(configuration.name)\u{201D} as it is in the editor, in one file to post or to send. Whoever loads it adds your desktops beside theirs.")
                 row("In the file") {
-                    Text([count(report.displays, "display"), count(report.desktops, "desktop"), count(report.slots, "slot"),
-                          count(report.drawers, "drawer"), count(report.scenes, "scene")].joined(separator: ", "))
+                    Text(counts([(report.displays, "display"), (report.desktops, "desktop"), (report.slots, "slot"),
+                                 (report.drawers, "drawer"), (report.scenes, "scene")]))
                 }
                 row("Apps") {
                     Text(report.apps.isEmpty ? "None" : report.apps.map(appName).joined(separator: ", "))
@@ -907,18 +912,22 @@ struct ShareEditor: View {
                              + (filters.profiles.map { "profile \u{201C}\($0)\u{201D}" } + filters.titles.map { "title \u{201C}\($0)\u{201D}" }).joined(separator: ", ") + ".")
                 }
                 HStack(spacing: 8) {
+                    // The page's main action; the two others are other ways to the same file.
                     Button("Export\u{2026}") { session.exportLayout() }
+                        .buttonStyle(.borderedProminent)
                     Button("Copy") { session.copyLayout() }
                         .help("The same text on the clipboard")
                     Button("Keep in the library") { session.keepInLibrary() }
                         .help("A copy among the layouts below, to add to another configuration later")
                 }
             }
-            PageSection("Add a layout") {
-                HelpText("A layout adds its desktops after yours on the displays you choose, its drawers on the edges still free, and its scenes with the desktops they show. Nothing of yours is replaced, and nothing changes on screen until you save.")
+            PageSection("Import") {
+                // A file being placed takes the section: it was a card inside the card, under a
+                // paragraph that no longer applied.
                 if let pending = session.pendingImport {
                     pendingImport(pending, into: configuration)
                 } else {
+                    HelpText("A layout file adds its desktops after yours on the displays you choose, its drawers on the edges still free, and its scenes with the desktops they show. Nothing of yours is replaced, and nothing changes on screen until you save.")
                     ForEach(session.library) { item in
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
                             VStack(alignment: .leading, spacing: 2) {
@@ -963,7 +972,7 @@ struct ShareEditor: View {
         let layout = pending.layout
         VStack(alignment: .leading, spacing: 8) {
             Text("\u{201C}\(layout.name)\u{201D}").font(.headline)
-            HelpText("\(pending.file), written by Fremspace \(layout.app). \(count(layout.displays.count, "display")), \(count(layout.displays.reduce(0) { $0 + $1.desktops.count }, "desktop")), \(count(layout.scenes.count, "scene")).")
+            HelpText("\(pending.file), written by Fremspace \(layout.app). \(counts([(layout.displays.count, "display"), (layout.displays.reduce(0) { $0 + $1.desktops.count }, "desktop"), (layout.scenes.count, "scene")])).")
             ForEach(Array(layout.displays.enumerated()), id: \.offset) { position, display in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -1002,7 +1011,5 @@ struct ShareEditor: View {
                 Button("Cancel") { session.pendingImport = nil }
             }
         }
-        .padding(12)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
     }
 }
