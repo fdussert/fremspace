@@ -292,8 +292,11 @@ private struct TabsOutOfSight: PreferenceKey {
 
     static var defaultValue = Sides()
 
+    /// Only the row says something; whatever else is asked answers "no", in an order that is not
+    /// ours to rely on: the row's word must not be lost to it.
     static func reduce(value: inout Sides, nextValue: () -> Sides) {
-        value = nextValue()
+        let next = nextValue()
+        value = Sides(leading: value.leading || next.leading, trailing: value.trailing || next.trailing)
     }
 }
 
