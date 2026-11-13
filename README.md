@@ -77,6 +77,10 @@ open dist/Fremspace.app
 - **Window previews** are off unless you switch them on. They need a second permission, Screen
   Recording, which macOS asks for at that moment; the pictures stay in memory and are never written
   or sent anywhere.
+- **Notifications.** A few commands confirm what they did with a notification ("Lock on this
+  desktop", "Make focusable", "Bring every window back on screen", "Copy diagnostics"). macOS asks
+  whether Fremspace may show notifications the first time one of them runs; refused, the commands
+  work the same and their confirmation only goes to the log.
 - **The map under the notch** is on unless you switch it off, on a Mac with a notch. While it is
   open Fremspace filters key presses too: with the pointer on the map, the arrow keys, Return and
   Escape are the map's; every other key goes to the app in front.
