@@ -470,11 +470,11 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     @objc private func openConfig() {
         let fm = FileManager.default
         if fm.fileExists(atPath: store.url.path) {
-            NSWorkspace.shared.open(store.url)
+            engine.openForOwner(store.url)
         } else {
             let dir = store.url.deletingLastPathComponent()
             try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
-            NSWorkspace.shared.open(dir)
+            engine.openForOwner(dir)
         }
     }
 
@@ -486,7 +486,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         do {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try WindowDump.text(windows: windows).write(to: url, atomically: true, encoding: .utf8)
-            NSWorkspace.shared.open(url)
+            engine.openForOwner(url)
         } catch {
             Log.app.error("Dump windows failed: \(error.localizedDescription, privacy: .public)")
         }

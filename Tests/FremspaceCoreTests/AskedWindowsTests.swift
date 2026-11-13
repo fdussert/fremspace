@@ -1,0 +1,30 @@
+import XCTest
+@testable import FremspaceCore
+
+final class AskedWindowsTests: XCTestCase {
+    private let finder = "com.example.files"
+    private let start = Date(timeIntervalSince1970: 1_000)
+
+    func testTheNextNewWindowOfTheAppIsTheOneAskedForAndOnlyThatOne() {
+        var asked = AskedWindows()
+        asked.expect(finder, existing: [10, 11], now: start)
+        // A window the app already had is looked at first: not the one.
+        XCTAssertFalse(asked.take(10, bundleID: finder, now: start.addingTimeInterval(1)))
+        XCTAssertFalse(asked.take(20, bundleID: "com.example.other", now: start.addingTimeInterval(1)))
+        XCTAssertTrue(asked.take(12, bundleID: finder, now: start.addingTimeInterval(1.5)))
+        // The window the owner opens next is an ordinary one.
+        XCTAssertFalse(asked.take(13, bundleID: finder, now: start.addingTimeInterval(2)))
+    }
+
+    func testARequestThatGotNoWindowInTimeIsForgotten() {
+        var asked = AskedWindows()
+        asked.expect(finder, existing: [], now: start)
+        XCTAssertFalse(asked.take(12, bundleID: finder, now: start.addingTimeInterval(AskedWindows.wait + 1)))
+        XCTAssertFalse(asked.take(13, bundleID: finder, now: start.addingTimeInterval(1)))
+    }
+
+    func testNothingAskedNothingTaken() {
+        var asked = AskedWindows()
+        XCTAssertFalse(asked.take(12, bundleID: finder, now: start))
+    }
+}

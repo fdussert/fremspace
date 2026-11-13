@@ -29,6 +29,10 @@ final class DesktopRouter {
     private(set) var pendingArrival: [UInt32: Arrival] = [:]
     /// Windows a command sent somewhere: their lock does not pull them back (until they close).
     private var sentByCommand: Set<UInt32> = []
+    /// The windows Fremspace itself asked an app for, and those that came: they stay where they
+    /// opened (see `AskedWindows`).
+    private var asked = AskedWindows()
+    private var askedFor: Set<UInt32> = []
     /// Windows being sent now: their desktop change is not a hand move.
     private var inFlight: Set<UInt32> = []
     /// The configured desktop each known window was last seen on, and what it is.
@@ -118,6 +122,7 @@ final class DesktopRouter {
     func forget(_ id: UInt32) {
         pendingArrival[id] = nil
         sentByCommand.remove(id)
+        askedFor.remove(id)
         inFlight.remove(id)
         lastDesktop[id] = nil
         lastSlot[id] = nil
@@ -128,6 +133,18 @@ final class DesktopRouter {
     }
 
     // MARK: - New windows
+
+    /// Fremspace is about to ask the app `bundleID` for a window (a folder in the Finder, a file in
+    /// its editor): the app's next new window stays on the desktop where it opens.
+    func expectWindow(of bundleID: String) {
+        let pids = Set(NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).map(\.processIdentifier))
+        let list = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] ?? []
+        let existing = list.compactMap { window -> UInt32? in
+            guard let pid = (window[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value, pids.contains(pid) else { return nil }
+            return (window[kCGWindowNumber as String] as? NSNumber)?.uint32Value
+        }
+        asked.expect(bundleID, existing: Set(existing), now: Date())
+    }
 
     /// A window appeared: once it settles (and the mouse button is up), it goes to its desktop when
     /// it has none here.
@@ -346,6 +363,14 @@ final class DesktopRouter {
         let here = space.flatMap { engine.configuredDesktop($0) }
         lastInfo[info.id] = info
         if let here { lastDesktop[info.id] = here }
+        if asked.take(info.id, bundleID: info.bundleID, now: Date()) {
+            askedFor.insert(info.id)
+            // Like a window a command sent: nothing pulls it away later either.
+            sentByCommand.insert(info.id)
+            Log.engine.info("window \(info.id) \(info.bundleID, privacy: .public) was asked for by Fremspace: it stays where it opened")
+        }
+        // Wherever its app has a slot: the owner asked for this window here, now.
+        if askedFor.contains(info.id), reason == .appeared { return false }
         let decision = route(window: info, on: here, reason: reason, configuration: configuration,
                              remembered: entry?.desktop, rememberedDeliberately: entry?.slotID == nil,
                              sentByCommand: sentByCommand.contains(info.id),

@@ -310,6 +310,11 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testANewSlotNeverTakesANameInUse", { ($0 as! LayoutPresetsTests).testANewSlotNeverTakesANameInUse() }),
         ("testALayoutForATallDisplayIsToldOnAWideOne", { ($0 as! LayoutPresetsTests).testALayoutForATallDisplayIsToldOnAWideOne() }),
     ]),
+    ("AskedWindowsTests", { AskedWindowsTests() }, [
+        ("testTheNextNewWindowOfTheAppIsTheOneAskedForAndOnlyThatOne", { ($0 as! AskedWindowsTests).testTheNextNewWindowOfTheAppIsTheOneAskedForAndOnlyThatOne() }),
+        ("testARequestThatGotNoWindowInTimeIsForgotten", { ($0 as! AskedWindowsTests).testARequestThatGotNoWindowInTimeIsForgotten() }),
+        ("testNothingAskedNothingTaken", { ($0 as! AskedWindowsTests).testNothingAskedNothingTaken() }),
+    ]),
     ("ShareTests", { ShareTests() }, [
         ("testAnExportSaysTheShapeOfEachDisplayAndNothingElseOfIt", { try ($0 as! ShareTests).testAnExportSaysTheShapeOfEachDisplayAndNothingElseOfIt() }),
         ("testAShapeThatCannotBeADisplaysIsDropped", { try ($0 as! ShareTests).testAShapeThatCannotBeADisplaysIsDropped() }),

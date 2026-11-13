@@ -145,6 +145,21 @@ final class Engine {
     let drawers: DrawerController
     /// Sends windows to the desktop they belong on.
     private(set) lazy var router = DesktopRouter(engine: self, windows: windows)
+
+    /// Opens a file or a folder the owner asked for from Fremspace's own window or menu. The
+    /// window that comes stays where it opens, whatever "no floating windows" says.
+    func openForOwner(_ url: URL) {
+        if let app = NSWorkspace.shared.urlForApplication(toOpen: url).flatMap({ Bundle(url: $0)?.bundleIdentifier }) {
+            router.expectWindow(of: app)
+        }
+        NSWorkspace.shared.open(url)
+    }
+
+    /// Shows files in the Finder for the owner, as `openForOwner` opens one.
+    func revealForOwner(_ urls: [URL]) {
+        router.expectWindow(of: "com.apple.finder")
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
+    }
     /// Commands on the active window (quick resize, send, lock).
     private(set) lazy var commands = WindowCommands(engine: self, windows: windows)
     /// Call windows that go to full screen when the call starts.

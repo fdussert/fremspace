@@ -531,7 +531,7 @@ final class EditSession: ObservableObject {
     /// Shows the library folder in the Finder: a layout file dropped there is listed.
     func openLibraryFolder() {
         try? FileManager.default.createDirectory(at: libraryFolder, withIntermediateDirectories: true)
-        NSWorkspace.shared.open(libraryFolder)
+        engine.openForOwner(libraryFolder)
     }
 
     func removeFromLibrary(_ item: LibraryItem) {

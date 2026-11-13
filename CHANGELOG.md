@@ -16,7 +16,8 @@ The first version to be packaged.
 - **Layouts per desktop.** Each desktop (Space) of each display has a layout of slots; an app's
   windows go to their slot and stay there. Free desktops take whatever has no slot.
   With "No floating windows on layout desktops", a window dropped where it has no slot goes to a
-  free desktop, and a fixed-size window (a mail reminder) joins the desktop of its app.
+  free desktop, and a fixed-size window (a mail reminder) joins the desktop of its app. A window
+  Fremspace opens itself (the Layouts folder, the config file) stays where you are.
 - **Configurations per set of displays.** The desk, the laptop alone, another office: the one that
   matches the displays connected is applied. A "travel version" turns the slots of the big
   displays into desktops of the laptop. A display can have a name of yours ("Left") instead of the

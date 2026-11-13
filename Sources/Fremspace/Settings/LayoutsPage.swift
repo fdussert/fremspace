@@ -194,7 +194,7 @@ struct LayoutsPage: View {
             }
             .focused($focusedCard, equals: cardID(choice))
             .contextMenu {
-                Button("Show in the Finder") { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
+                Button("Show in the Finder") { session.engine.revealForOwner([item.url]) }
                 SwiftUI.Divider()
                 Button("Remove from Layouts") { session.removeFromLibrary(item) }
             }
@@ -236,7 +236,7 @@ struct LayoutsPage: View {
                             session.readImport(item.url)
                         }
                         .contextMenu {
-                            Button("Show in the Finder") { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
+                            Button("Show in the Finder") { session.engine.revealForOwner([item.url]) }
                             SwiftUI.Divider()
                             Button("Remove from Layouts") { session.removeFromLibrary(item) }
                         }
