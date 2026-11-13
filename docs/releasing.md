@@ -5,7 +5,9 @@ this: `scripts/build.sh` builds an app that runs from a checkout.
 
 ## What is shipped
 
-`Fremspace-X.Y.Z.dmg`: `Fremspace.app` and a link to /Applications. The app is one executable for
+`Fremspace-X.Y.Z.dmg`: `Fremspace.app` and a link to /Applications, in a window that shows the
+drag from one to the other (`scripts/make-dmg.sh`; the picture behind the icons is
+`packaging/dmg/background.tiff`, drawn by `packaging/dmg/background.swift`). The app is one executable for
 Apple silicon and Intel, macOS 13 or later, signed with a Developer ID Application identity under the
 hardened runtime (no entitlement: Fremspace asks for Accessibility at run time), notarized and
 stapled, as is the DMG.
@@ -46,6 +48,10 @@ through private calls of the window server that the store refuses.
    may read it), checks that signature against the key the app carries, and writes and signs
    `appcast.xml`, whose release notes are the changelog's section.
    `FREMSPACE_SKIP_NOTARIZE=1` skips Apple, for a look at the result on this Mac.
+   The window of the DMG is arranged by the Finder: the image is mounted for a moment and its
+   window opens and closes on screen. The first time, macOS asks whether the terminal may control
+   the Finder; refused, the script stops and says so (`FREMSPACE_PLAIN_DMG=1` builds the image
+   without the window). No volume named Fremspace may be mounted meanwhile.
 3. It ends by printing the commands that publish (the tag, the GitHub release with the DMG under its
    versioned name and as `Fremspace.dmg`, the zip and `appcast.xml`). Nothing is pushed, tagged or
    uploaded before the owner runs them.

@@ -9,6 +9,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- The disk image opens on a window that shows where to drag Fremspace.
+
 ## 0.1.0
 
 The first version to be packaged.

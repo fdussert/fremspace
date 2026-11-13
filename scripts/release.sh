@@ -131,16 +131,11 @@ notarize() {
     fi
 }
 
-# Plain hdiutil: the app and a link to /Applications to drag it onto, nothing else.
+# The app and a link to /Applications to drag it onto, in a window that shows the gesture
+# (scripts/make-dmg.sh: the Finder arranges that window, see there for what it needs).
 make_dmg() {
     echo "==> DMG"
-    local stage="$WORK/dmg"
-    rm -rf "$stage"
-    mkdir -p "$stage"
-    ditto "$APP" "$stage/Fremspace.app"
-    ln -s /Applications "$stage/Applications"
-    rm -f "$DMG"
-    hdiutil create -volname "Fremspace" -srcfolder "$stage" -fs HFS+ -format UDZO -ov "$DMG" >/dev/null
+    bash scripts/make-dmg.sh "$APP" "$DMG"
     codesign --force --timestamp --sign "$IDENTITY" "$DMG"
 }
 
