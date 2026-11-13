@@ -723,6 +723,65 @@ struct ShortcutsEditor: View {
     }
 }
 
+/// One choice of a scene's line: a pop-up button, every one as wide as the others. A SwiftUI picker
+/// is as wide as its longest item whatever frame it is given, which left the right edges of a scene's
+/// lines ragged; this one is AppKit's, at the width it is told. A line the scene leaves as it is
+/// (the option tagged -1) steps back, so that what the scene does stands out.
+struct Choice: View {
+    let options: [(title: String, tag: Int)]
+    let selection: Int
+    /// What the choice is about, for VoiceOver: it has no visible label of its own.
+    let name: String
+    let choose: (Int) -> Void
+
+    var body: some View {
+        PopUp(options: options, selection: selection, name: name, choose: choose)
+            .frame(width: 220, height: 22)
+            .opacity(selection == -1 ? 0.55 : 1)
+    }
+
+    private struct PopUp: NSViewRepresentable {
+        let options: [(title: String, tag: Int)]
+        let selection: Int
+        let name: String
+        let choose: (Int) -> Void
+
+        func makeCoordinator() -> Coordinator { Coordinator(choose) }
+
+        func makeNSView(context: Context) -> NSPopUpButton {
+            let button = NSPopUpButton(frame: .zero, pullsDown: false)
+            button.target = context.coordinator
+            button.action = #selector(Coordinator.chosen(_:))
+            button.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            button.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            return button
+        }
+
+        func updateNSView(_ button: NSPopUpButton, context: Context) {
+            context.coordinator.choose = choose
+            if button.itemArray.map(\.title) != options.map(\.title) || button.itemArray.map(\.tag) != options.map(\.tag) {
+                button.removeAllItems()
+                for option in options {
+                    // Not addItem(withTitle:), which drops an item named like an earlier one.
+                    let item = NSMenuItem(title: option.title, action: nil, keyEquivalent: "")
+                    item.tag = option.tag
+                    button.menu?.addItem(item)
+                }
+            }
+            button.selectItem(withTag: selection)
+            button.setAccessibilityLabel(name)
+        }
+
+        final class Coordinator: NSObject {
+            var choose: (Int) -> Void
+
+            init(_ choose: @escaping (Int) -> Void) { self.choose = choose }
+
+            @objc func chosen(_ sender: NSPopUpButton) { choose(sender.selectedTag()) }
+        }
+    }
+}
+
 /// The scenes of the selected configuration: a name, for each display the desktop it shows, the
 /// slot it puts in Focus there and what it does with the display's drawers, and the apps it opens.
 struct ScenesEditor: View {
@@ -739,10 +798,6 @@ struct ScenesEditor: View {
         slot.rules.map { appName($0.bundleID) + ($0.profile.map { " \u{2013} \($0)" } ?? "") }.joined(separator: ", ")
     }
 
-    /// Every choice as wide as the others: at their natural widths their right edges were ragged.
-    private static let choice: CGFloat = 220
-    /// A line the scene leaves as it is steps back, so that what the scene does stands out.
-    private static let untouched = 0.55
 
     /// One line of a display: what it is about, then the choice.
     private func line<Content: View>(_ title: String, detail: Bool = false, @ViewBuilder _ content: () -> Content) -> some View {
@@ -785,46 +840,32 @@ struct ScenesEditor: View {
                             .accessibilityLabel("Name of scene \(index + 1)")
                         ForEach(displays, id: \.identity) { display in
                             line(display.displayName) {
-                                Picker("", selection: Binding(
-                                    get: { scene.desktop(on: display.identity) ?? -1 },
-                                    set: { choice in session.updateScene(scene.id) { $0.set(choice < 0 ? nil : choice, on: display.identity) } })) {
-                                    Text("No change").tag(-1)
-                                    ForEach(Array(display.spaces.enumerated()), id: \.offset) { position, space in
-                                        Text("\(position + 1). \(space.label)").tag(position)
-                                    }
+                                Choice(options: [("No change", -1)] + display.spaces.enumerated().map { ("\($0.offset + 1). \($0.element.label)", $0.offset) },
+                                       selection: scene.desktop(on: display.identity) ?? -1,
+                                       name: "Desktop of \(display.displayName) in the scene \(scene.name)") { choice in
+                                    session.updateScene(scene.id) { $0.set(choice < 0 ? nil : choice, on: display.identity) }
                                 }
-                                .labelsHidden().frame(width: Self.choice).opacity(scene.desktop(on: display.identity) == nil ? Self.untouched : 1)
-                                .accessibilityLabel("Desktop of \(display.displayName) in the scene \(scene.name)")
                             }
                             // Focus is of a slot: only on a desktop the scene names, among the slots Focus enlarges.
                             if let index = scene.desktop(on: display.identity), display.spaces.indices.contains(index),
                                case let slots = focusSlots(display.spaces[index]), !slots.isEmpty {
                                 line("Focus", detail: true) {
-                                    Picker("", selection: Binding(
-                                        get: { scene.focus(on: display.identity).flatMap { id in slots.contains { $0.id == id } ? id : nil } ?? "" },
-                                        set: { choice in session.updateScene(scene.id) { $0.setFocus(choice.isEmpty ? nil : choice, on: display.identity) } })) {
-                                        Text("No change").tag("")
-                                        ForEach(slots, id: \.id) { slot in
-                                            Text(slotName(slot)).tag(slot.id)
-                                        }
+                                    // Position 0 is "No change"; the slots follow in their order.
+                                    let chosen = scene.focus(on: display.identity).flatMap { id in slots.firstIndex { $0.id == id } }
+                                    Choice(options: [("No change", -1)] + slots.enumerated().map { (slotName($0.element), $0.offset) },
+                                           selection: chosen ?? -1,
+                                           name: "Slot in Focus on \(display.displayName) in the scene \(scene.name)") { choice in
+                                        session.updateScene(scene.id) { $0.setFocus(slots.indices.contains(choice) ? slots[choice].id : nil, on: display.identity) }
                                     }
-                                    .labelsHidden().frame(width: Self.choice).opacity(scene.focus(on: display.identity) == nil ? Self.untouched : 1)
-                                    .accessibilityLabel("Slot in Focus on \(display.displayName) in the scene \(scene.name)")
                                 }
                             }
                             ForEach(display.drawers, id: \.edge) { drawer in
                                 line(drawer.edge == .left ? "Left drawer" : "Right drawer", detail: true) {
-                                    Picker("", selection: Binding(
-                                        get: { scene.drawer(drawer.edge, on: display.identity).map { $0 ? 1 : 0 } ?? -1 },
-                                        set: { choice in
-                                            session.updateScene(scene.id) { $0.setDrawer(choice < 0 ? nil : choice == 1, edge: drawer.edge, on: display.identity) }
-                                        })) {
-                                        Text("No change").tag(-1)
-                                        Text("Open").tag(1)
-                                        Text("Closed").tag(0)
+                                    Choice(options: [("No change", -1), ("Open", 1), ("Closed", 0)],
+                                           selection: scene.drawer(drawer.edge, on: display.identity).map { $0 ? 1 : 0 } ?? -1,
+                                           name: "\(drawer.edge == .left ? "Left" : "Right") drawer of \(display.displayName) in the scene \(scene.name)") { choice in
+                                        session.updateScene(scene.id) { $0.setDrawer(choice < 0 ? nil : choice == 1, edge: drawer.edge, on: display.identity) }
                                     }
-                                    .labelsHidden().frame(width: Self.choice).opacity(scene.drawer(drawer.edge, on: display.identity) == nil ? Self.untouched : 1)
-                                    .accessibilityLabel("\(drawer.edge == .left ? "Left" : "Right") drawer of \(display.displayName) in the scene \(scene.name)")
                                 }
                             }
                         }
