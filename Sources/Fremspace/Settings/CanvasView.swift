@@ -342,7 +342,8 @@ struct CanvasView: View {
             Button(role: .destructive) { session.remove(slot: id) } label: {
                 action("Remove", "trash", named: named)
             }
-            .keyboardShortcut(.delete, modifiers: .command)
+            // ⌘⌫ is the Layout menu's: there it is off while a text field has the keyboard, where the
+            // same keys delete to the start of the line.
             .disabled((session.editedLayout?.slots.count ?? 0) <= 1)
             .help("Remove this slot; a neighbour takes its place (⌘⌫)")
         }

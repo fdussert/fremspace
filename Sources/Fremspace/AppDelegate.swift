@@ -191,31 +191,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// A menu bar app has no visible menu bar, but AppKit still routes ⌘C / ⌘V / ⌘Z / ⌘W through the
-    /// main menu: without one, the Settings text fields cannot copy, paste or undo.
+    /// A menu bar app has no visible menu bar until its editor opens, but AppKit routes ⌘C / ⌘V / ⌘W
+    /// through the main menu at all times: without one, the Settings text fields cannot copy or paste.
     private func installMainMenu() {
-        let main = NSMenu()
-        let appItem = NSMenuItem()
-        appItem.submenu = NSMenu()
-        appItem.submenu?.addItem(withTitle: "Quit Fremspace", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        main.addItem(appItem)
-        let editItem = NSMenuItem()
-        let edit = NSMenu(title: "Edit")
-        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
-        let redo = edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
-        redo.keyEquivalentModifierMask = [.command, .shift]
-        edit.addItem(.separator())
-        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
-        editItem.submenu = edit
-        main.addItem(editItem)
-        let windowItem = NSMenuItem()
-        windowItem.submenu = NSMenu(title: "Window")
-        windowItem.submenu?.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
-        main.addItem(windowItem)
-        NSApp.mainMenu = main
+        NSApp.mainMenu = MainMenu.make()
     }
 
     /// ⌘Q while the editor is in front, the menu's Quit, a logout, an update's relaunch: all come

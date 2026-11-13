@@ -21,8 +21,9 @@ struct SettingsActions {
 /// The settings and layout editor window (one, reused). Closing it with unsaved changes asks first.
 final class SettingsWindow: NSObject, NSWindowDelegate {
     var actions = SettingsActions()
-    private var window: NSWindow?
-    private var session: EditSession?
+    /// Read by the menu bar's commands (`MainMenu`), which act on what the window edits.
+    private(set) var window: NSWindow?
+    private(set) var session: EditSession?
     private var dirtyWatch: AnyCancellable?
     private let store: ConfigStore
     private let engine: Engine
@@ -47,24 +48,37 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             let size = NSSize(width: min(1320, screen.width - 80), height: min(860, screen.height - 80))
             let window = NSWindow(contentRect: NSRect(origin: .zero, size: size),
                                   styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
-            window.title = "Fremspace"
             window.contentView = NSHostingView(rootView: SettingsView(session: session, actions: actions))
             window.delegate = self
             window.isReleasedWhenClosed = false
             window.setFrameAutosaveName("FremspaceSettings")
             if !window.setFrameUsingName("FremspaceSettings") { window.center() }
-            // The dot in the close button says "unsaved", like a document window.
-            dirtyWatch = session.objectWillChange.receive(on: DispatchQueue.main).sink { [weak window, weak session] _ in
-                window?.isDocumentEdited = session?.isDirty ?? false
+            dirtyWatch = session.objectWillChange.receive(on: DispatchQueue.main).sink { [weak self] _ in
+                self?.reflectSession()
             }
             self.window = window
             self.session = session
+            reflectSession()
         }
         // A menu bar app is not in ⌘Tab nor in the Dock: while its window is open Fremspace is a
         // regular app, so the owner can come back to it like to any window (owner, 2026-11-10).
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+    }
+
+    /// What the title bar says about the session: what is shown, as the window's name (in the Window
+    /// menu and in Mission Control "Fremspace" told one window from no other), and whether it is
+    /// saved, with the dot in the close button, like a document.
+    private func reflectSession() {
+        guard let window, let session else { return }
+        let configuration = session.configuration.map { $0.name.isEmpty ? "Untitled" : $0.name }
+        window.title = session.settingsPage?.title ?? configuration ?? "Fremspace"
+        window.subtitle = session.isDirty ? "Edited" : ""
+        window.isDocumentEdited = session.isDirty
+        let editing = session.settingsPage == nil && session.displaySpec?.ignored == false
+        MainMenu.reflect(desktops: editing ? session.displaySpec?.spaces.map(\.label) ?? [] : [],
+                         selected: session.selection.desktop, updates: session.engine.updates.isAvailable)
     }
 
     func windowDidBecomeKey(_ notification: Notification) {
@@ -224,6 +238,8 @@ struct Sidebar: View {
                                onSubmit: { if hits.indices.contains(chosen) { session.open(hits[chosen]) } })
                 .padding(.horizontal, 10).padding(.top, 10).padding(.bottom, 4)
                 .onChange(of: session.search) { _ in chosen = 0 }
+                // Find, from the Edit menu.
+                .onChange(of: session.searchRequests) { _ in searchFocus.take() }
                 .background(
                     // ⌘F from anywhere in the window.
                     Button("Search") { searchFocus.take() }

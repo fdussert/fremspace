@@ -53,6 +53,8 @@ final class EditSession: ObservableObject {
     private var attentionTimer: Timer?
     /// What is typed in the sidebar's search field.
     @Published var search = ""
+    /// Bumped by the Edit menu's Find: the sidebar's search field takes the keyboard.
+    @Published var searchRequests = 0
     /// What narrows the Shortcuts page.
     @Published var shortcutFilter = ""
     /// The setting a search result pointed at: its row is marked for a moment.
