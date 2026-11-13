@@ -124,8 +124,19 @@ public struct Remembered: Codable, Equatable {
         }
     }
 
-    /// Keeps the `keep` most recently seen entries.
-    public mutating func prune(keep: Int = 300) {
+    /// How long a window that did not come back stays remembered.
+    public static let maxAge: TimeInterval = 90 * 24 * 3600
+
+    /// Keeps the `keep` most recently seen entries, and forgets the windows of an earlier session
+    /// (last seen before `idsSince`, the boot or the login) that were not seen for `maxAge`: an
+    /// entry holds a title, the titles of a browser's tabs and a document's address, which must
+    /// not stay in a file for ever after the window is closed. A window of this session is never
+    /// forgotten for its age: its entry is written again only when something about it changes,
+    /// so a window left alone for months still has the date of its last change.
+    public mutating func prune(keep: Int = 300, now: Date = Date(), idsSince: Date = .distantPast,
+                               maxAge: TimeInterval = Remembered.maxAge) {
+        let oldest = now.addingTimeInterval(-maxAge)
+        entries.removeAll { $0.lastSeen < idsSince && $0.lastSeen < oldest }
         guard entries.count > keep else { return }
         entries = Array(entries.sorted { $0.lastSeen > $1.lastSeen }.prefix(keep))
     }

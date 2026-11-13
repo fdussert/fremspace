@@ -1679,7 +1679,7 @@ final class Engine {
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.stateSaveDelay) { [weak self] in
             guard let self else { return }
             self.stateSaveScheduled = false
-            self.state.remembered.prune()
+            self.state.remembered.prune(idsSince: self.router.bootTime)
             self.saveState()
         }
     }
@@ -1690,7 +1690,7 @@ final class Engine {
         let membership = drawers.membership
         state.drawerMembers = membership.members
         state.takenOutOfDrawers = membership.takenOut
-        state.remembered.prune()
+        state.remembered.prune(idsSince: router.bootTime)
         saveState()
     }
 

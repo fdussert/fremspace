@@ -88,6 +88,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testIdsFromBeforeBootAreNotTrusted", { ($0 as! RememberedTests).testIdsFromBeforeBootAreNotTrusted() }),
         ("testOtherConfigurationIsIgnored", { ($0 as! RememberedTests).testOtherConfigurationIsIgnored() }),
         ("testPruneDropsOldest", { ($0 as! RememberedTests).testPruneDropsOldest() }),
+        ("testAWindowNotSeenForMonthsSinceAnEarlierSessionIsForgotten", { ($0 as! RememberedTests).testAWindowNotSeenForMonthsSinceAnEarlierSessionIsForgotten() }),
     ]),
     ("AppcastTests", { AppcastTests() }, [
         ("testChangelogSectionIsTheBodyUnderItsVersion", { ($0 as! AppcastTests).testChangelogSectionIsTheBodyUnderItsVersion() }),

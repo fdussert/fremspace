@@ -68,6 +68,29 @@ final class RememberedTests: XCTestCase {
         XCTAssertEqual(Set(remembered.entries.map(\.windowID)), [2, 3, 4])
     }
 
+    func testAWindowNotSeenForMonthsSinceAnEarlierSessionIsForgotten() {
+        let day: TimeInterval = 24 * 3600
+        let now = Date(timeIntervalSince1970: 400 * day)
+        let boot = Date(timeIntervalSince1970: 395 * day)
+        var remembered = Remembered()
+        remembered.record(entry(1, ["Closed long ago"], desktop: 0, seen: 200 * day))
+        remembered.record(entry(2, ["Before the restart"], desktop: 0, seen: 390 * day))
+        remembered.record(entry(3, ["Open now"], desktop: 0, seen: 399 * day))
+        remembered.prune(now: now, idsSince: boot)
+        XCTAssertEqual(remembered.entries.map(\.windowID), [2, 3])
+        // A window of this session keeps its entry however long it was left alone: the Mac has
+        // been up for a year, and the window has not changed since its first day.
+        var long = Remembered()
+        long.record(entry(4, ["Left alone"], desktop: 0, seen: 10 * day))
+        long.prune(now: now, idsSince: Date(timeIntervalSince1970: 5 * day))
+        XCTAssertEqual(long.entries.map(\.windowID), [4])
+        // Without a session to compare with, nothing is forgotten for its age.
+        var plain = Remembered()
+        plain.record(entry(5, ["Old"], desktop: 0, seen: day))
+        plain.prune(now: now)
+        XCTAssertEqual(plain.entries.count, 1)
+    }
+
     func testAdoptRekeysAnEntry() {
         var remembered = Remembered()
         let old = entry(10, ["Jira"], desktop: 1, slot: "code")

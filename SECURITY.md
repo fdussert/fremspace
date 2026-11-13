@@ -10,6 +10,15 @@ under the notch while it is open. That makes its integrity matter more than its 
   in memory and, for windows it must find again after a restart, in
   `~/Library/Application Support/Fremspace/state.json`. Nothing leaves the Mac: the one request the
   downloaded app makes is for the feed of its own versions (Sparkle), and it sends nothing with it.
+- What `state.json` holds for each remembered window: its title, the title of every tab of a
+  Chromium browser's window, and the address of the document of a window that has one (an editor's
+  file). A private or incognito window is not told apart from the others: its tab titles are kept
+  the same way. The file is plain text, readable by anything that runs as you. It holds 300 windows
+  at most, and a window that was not seen again since an earlier session (before the last restart
+  or login) leaves it after 90 days.
+- Two commands of the menu (Recovery) write titles elsewhere, and only when you choose them: "Dump
+  windows" writes those of the open windows to `~/Library/Logs/Fremspace/windows.txt`, and "Copy
+  diagnostics" puts them on the clipboard.
 - An update is accepted only when both the feed and the archive carry the project's EdDSA
   signature, checked before the archive is unpacked. The private key is in the maintainer's
   keychain and nowhere else.

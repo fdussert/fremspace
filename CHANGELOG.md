@@ -28,6 +28,8 @@ The first version to be packaged.
   in the window's slot or on its display; the same shortcut stacks them again.
 - **Drawers.** Windows parked off the side of a display, slid in and out by a shortcut.
 - **Restore after login.** The apps that have a slot are opened and every window is put back.
+  What is remembered for that (titles, a browser's tab titles, a document's address) is listed in
+  `SECURITY.md`; a window that did not come back is forgotten after 90 days.
 - **Palette.** One field finds an open window on any desktop, an app to launch, a desktop, a scene
   or a command; without a query it is a switcher, over a map of every desktop that the arrow keys
   go through.
