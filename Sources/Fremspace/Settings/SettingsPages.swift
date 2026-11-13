@@ -319,6 +319,9 @@ struct SettingsPageView: View {
                         verb: "Copy", done: "Copied", action: actions.copyDiagnostics)
                 command(.dumpWindows, "Every window Fremspace sees, in a file that opens",
                         verb: "Dump", done: "Written", action: actions.dumpWindows)
+                command(.reportProblem, "A bug or an idea, on the project's page on GitHub",
+                        detail: "Opens in your browser. The form has a place for the diagnostics: copy them first.",
+                        verb: "Report\u{2026}", done: "Opened") { Links.open(Links.reportProblem) }
             }
         }
     }

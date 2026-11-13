@@ -448,9 +448,15 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             entry.target = self
             submenu.addItem(entry)
         }
+        submenu.addItem(.separator())
+        let report = NSMenuItem(title: "Report a problem\u{2026}", action: #selector(reportProblem), keyEquivalent: "")
+        report.target = self
+        submenu.addItem(report)
         item.submenu = submenu
         return item
     }
+
+    @objc private func reportProblem() { Links.open(Links.reportProblem) }
 
     @objc private func bringBack() { engine.commands.bringEveryWindowBack() }
 

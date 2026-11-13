@@ -35,7 +35,7 @@ enum SettingSection: String {
 /// lists them, so a setting cannot be on a page without being found.
 enum SettingRow: String, CaseIterable {
     case openAtLogin, paused, autoUpdates, checkForUpdates, noFloating, floatingApps, resizeLayouts, desktopNames, notchMap, windowPreviews, fullScreenCalls, hyperKey
-    case reapply, restoreEverything, bringBack, openConfigFile, reloadConfig, copyDiagnostics, dumpWindows
+    case reapply, restoreEverything, bringBack, openConfigFile, reloadConfig, copyDiagnostics, dumpWindows, reportProblem
 
     var title: String {
         switch self {
@@ -58,6 +58,7 @@ enum SettingRow: String, CaseIterable {
         case .reloadConfig: return "Reload the config file"
         case .copyDiagnostics: return "Copy diagnostics"
         case .dumpWindows: return "Dump windows"
+        case .reportProblem: return "Report a problem"
         }
     }
 
@@ -81,7 +82,7 @@ enum SettingRow: String, CaseIterable {
         case .reapply, .restoreEverything: return .maintenanceLayouts
         case .bringBack: return .maintenanceWindows
         case .openConfigFile, .reloadConfig: return .maintenanceFile
-        case .copyDiagnostics, .dumpWindows: return .maintenanceDiagnostics
+        case .copyDiagnostics, .dumpWindows, .reportProblem: return .maintenanceDiagnostics
         }
     }
 
@@ -107,6 +108,7 @@ enum SettingRow: String, CaseIterable {
         case .reloadConfig: return ["json", "read"]
         case .copyDiagnostics: return ["debug", "report", "clipboard"]
         case .dumpWindows: return ["debug", "list"]
+        case .reportProblem: return ["bug", "issue", "feedback", "idea", "GitHub", "help", "support"]
         }
     }
 }

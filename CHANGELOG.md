@@ -10,6 +10,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 ## Unreleased
 
 - The disk image opens on a window that shows where to drag Fremspace.
+- "Report a problem": the project's forms for a bug or an idea open in the browser, from the
+  Maintenance page and from the menu's Recovery.
 
 ## 0.1.0
 
