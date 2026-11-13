@@ -737,11 +737,7 @@ final class Engine {
             rebuildFocus()
             return
         }
-        let byUUID = Dictionary(Displays.connected().map { ($0.uuid, $0.identity) }, uniquingKeysWith: { a, _ in a })
-        var live: [DisplayIdentity: [String]] = [:]
-        for display in managed.displays {
-            if let identity = byUUID[display.uuid] { live[identity] = display.desktopUUIDs }
-        }
+        let live = liveDesktops(managed)
         var links = state.desktopLinks
         let previous = desktopMap
         desktopMap = DesktopMap(configuration: configuration, live: live, links: &links)
@@ -756,6 +752,16 @@ final class Engine {
             state.desktopLinks = links
             saveState()
         }
+    }
+
+    /// Connected display → the uuids of its desktops, in Mission Control order.
+    private func liveDesktops(_ managed: ManagedSpaces) -> [DisplayIdentity: [String]] {
+        let byUUID = Dictionary(Displays.connected().map { ($0.uuid, $0.identity) }, uniquingKeysWith: { a, _ in a })
+        var live: [DisplayIdentity: [String]] = [:]
+        for display in managed.displays {
+            if let identity = byUUID[display.uuid] { live[identity] = display.desktopUUIDs }
+        }
+        return live
     }
 
     private func saveState() {
@@ -1126,6 +1132,56 @@ final class Engine {
         }
         scheduleApply()
         return ok
+    }
+
+    // MARK: - Desktops the configuration does not list
+
+    /// A macOS desktop that the configuration in use does not list: `position` among the desktops
+    /// of its display, in Mission Control order, and the uuid that tells it from the others.
+    struct UnlistedDesktop: Equatable {
+        var position: Int
+        var uuid: String
+    }
+
+    /// The macOS desktops that the configuration in use does not list, per display: what a desktop
+    /// removed in the editor leaves behind. Read from the Spaces as they are now, with a map of its
+    /// own: the engine's is rebuilt at its next pass, too late for the editor right after a save.
+    /// The first desktop of the main display has no uuid and is left out: nothing could check
+    /// afterwards that it is the one that went.
+    func unlistedDesktops() -> [DisplayIdentity: [UnlistedDesktop]] {
+        guard let configuration else { return [:] }
+        let live = liveDesktops(Spaces.managed())
+        // Links found on the way are not kept: this only reads.
+        var links = state.desktopLinks
+        let map = DesktopMap(configuration: configuration, live: live, links: &links)
+        var result: [DisplayIdentity: [UnlistedDesktop]] = [:]
+        for spec in configuration.displays where !spec.ignored {
+            guard let uuids = live[spec.identity] else { continue }
+            let unlisted = map.unconfigured(spec.identity, live: uuids.count)
+                .filter { !uuids[$0].isEmpty }
+                .map { UnlistedDesktop(position: $0, uuid: uuids[$0]) }
+            if !unlisted.isEmpty { result[spec.identity] = unlisted }
+        }
+        return result
+    }
+
+    /// Removes from the Mac the unlisted desktop `uuid` of `display` (Mission Control opens); false
+    /// when it could not, or when the desktop is no longer unlisted. The owner was asked: macOS
+    /// moves its windows to another desktop and nothing undoes it. Then re-applies.
+    func removeUnlistedDesktop(on display: DisplayIdentity, uuid: String) -> Bool {
+        // Read again: the desktops may have changed since the editor drew its button.
+        guard let target = unlistedDesktops()[display]?.first(where: { $0.uuid == uuid }),
+              let connected = Displays.connected().first(where: { $0.identity == display }) else { return false }
+        // As for adding: no window may move under Mission Control.
+        suspended = true
+        defer { suspended = false }
+        let removed = Desktops.remove(on: connected, position: target.position)
+        if removed, liveDesktops(Spaces.managed())[display]?.contains(uuid) == true {
+            Log.engine.error("remove desktop: a desktop went and it is not the one asked for")
+        }
+        Log.engine.info("remove desktop: desktop \(target.position + 1) of a display \(removed ? "removed from the Mac" : "could not be removed", privacy: .public)")
+        scheduleApply()
+        return removed
     }
 
     private let stackHUD = StackHUD()

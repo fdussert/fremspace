@@ -51,3 +51,12 @@ by hand)?
   before.
 
 Plan 3 keeps the Spaces spike's recommendation (restore by switching desktop then launching the app).
+
+## Removing a desktop the owner asked to remove (2026-11-13)
+
+The spec changed: a desktop taken out of the configuration stays on the Mac, and the editor now
+offers to remove it (`Desktops.remove(on:position:)`, the `AXRemoveDesktop` action measured above).
+Never on a save, always after a question. The button is the `position`-th of `mc.spaces.list` that
+carries the action; nothing is removed unless the bar shows as many such buttons as macOS lists
+desktops and the button's title ends with the expected number. The first desktop of the main
+display (no uuid) is not offered: removing it was not measured.

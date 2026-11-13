@@ -132,6 +132,7 @@ struct DesktopTabs: View {
                 // desktops step back (a click on one still leaves the drawer for it).
                 .opacity(session.selection.drawer == nil ? 1 : 0.5)
                 missingDesktops(display)
+                unlistedDesktops(display)
             }
         }
     }
@@ -270,6 +271,38 @@ struct DesktopTabs: View {
             }
             .padding(.horizontal, 10).padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
+        }
+    }
+}
+
+extension DesktopTabs {
+    /// macOS has desktops on this display that the configuration does not list: a desktop removed
+    /// here stays on the Mac. Said without alarm, since nothing is wrong with a desktop kept on the
+    /// side, and each can be removed from the Mac, after a question (`EditSession.removeFromMac`).
+    @ViewBuilder
+    func unlistedDesktops(_ display: DisplaySpec) -> some View {
+        let unlisted = session.unlisted(on: display)
+        if !unlisted.isEmpty {
+            let numbers = unlisted.map { "\($0.position + 1)" }
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle").foregroundColor(.secondary)
+                if unlisted.count == 1 {
+                    Text("Desktop \(numbers[0]) of this display is on the Mac and not in the configuration.")
+                    Button("Remove it from the Mac\u{2026}") { session.removeFromMac(unlisted[0], on: display) }
+                        .help("Opens Mission Control and removes this desktop; macOS moves its windows to another one")
+                } else {
+                    Text("Desktops \(ListFormatter.localizedString(byJoining: numbers)) of this display are on the Mac and not in the configuration.")
+                    Menu("Remove from the Mac") {
+                        ForEach(unlisted, id: \.uuid) { desktop in
+                            Button("Desktop \(desktop.position + 1)\u{2026}") { session.removeFromMac(desktop, on: display) }
+                        }
+                    }
+                    .fixedSize()
+                    .help("Opens Mission Control and removes the desktop you choose; macOS moves its windows to another one")
+                }
+            }
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.secondary.opacity(0.1)))
         }
     }
 }

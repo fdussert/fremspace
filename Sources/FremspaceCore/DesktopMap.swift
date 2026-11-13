@@ -92,9 +92,33 @@ public struct DesktopMap: Equatable {
         real[display]?.firstIndex(where: { $0 == position })
     }
 
+    /// The real positions of `display`, among its `count` desktops, that hold no configured desktop:
+    /// what macOS has and the configuration does not list. Empty for a display the map does not
+    /// know, and while a configured desktop has no real one: then a desktop is being looked for,
+    /// and one that looks spare may be the one.
+    public func unconfigured(_ display: DisplayIdentity, live count: Int) -> [Int] {
+        guard let list = real[display], !list.contains(where: { $0 == nil }) else { return [] }
+        let taken = Set(list.compactMap { $0 })
+        return (0..<max(0, count)).filter { !taken.contains($0) }
+    }
+
     /// The real position of configured desktop `configured`, nil when it is not there.
     public func real(_ display: DisplayIdentity, configured: Int) -> Int? {
         guard let list = real[display], configured < list.count else { return nil }
         return list[configured]
     }
+}
+
+/// The number in what Mission Control calls a desktop ("Desktop 4", "Bureau 4"): its last run of
+/// digits. nil when it has none.
+public func desktopNumber(inTitle title: String) -> Int? {
+    var digits = ""
+    for character in title.reversed() {
+        if character.isASCII, character.isNumber {
+            digits.insert(character, at: digits.startIndex)
+        } else if !digits.isEmpty {
+            break
+        }
+    }
+    return Int(digits)
 }

@@ -536,7 +536,7 @@ struct DesktopInspector: View {
                 }
                 .disabled((session.displaySpec?.spaces.count ?? 0) <= 1)
                 .help((session.displaySpec?.spaces.count ?? 0) > 1
-                      ? "Takes the desktop out of the configuration; the macOS desktop itself stays"
+                      ? "Takes the desktop out of the configuration. The macOS desktop stays: once saved, the editor offers to remove it from the Mac too"
                       : "A display keeps at least one desktop: make it free, or ignore the display")
             }
         }

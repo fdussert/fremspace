@@ -57,6 +57,9 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testRemovedDesktopIsNotReplacedByItsNeighbour", { ($0 as! DesktopMapTests).testRemovedDesktopIsNotReplacedByItsNeighbour() }),
         ("testAddedDesktopInTheMiddleIsUnconfigured", { ($0 as! DesktopMapTests).testAddedDesktopInTheMiddleIsUnconfigured() }),
         ("testLinkMovesAUuid", { ($0 as! DesktopMapTests).testLinkMovesAUuid() }),
+        ("testADesktopTakenOutOfTheConfigurationIsUnlisted", { ($0 as! DesktopMapTests).testADesktopTakenOutOfTheConfigurationIsUnlisted() }),
+        ("testNoDesktopIsUnlistedWhileAConfiguredOneIsLookedFor", { ($0 as! DesktopMapTests).testNoDesktopIsUnlistedWhileAConfiguredOneIsLookedFor() }),
+        ("testTheNumberOfADesktopInMissionControl", { ($0 as! DesktopMapTests).testTheNumberOfADesktopInMissionControl() }),
     ]),
     ("StateStoreTests", { StateStoreTests() }, [
         ("testOldStateWithoutRememberedLoads", { try ($0 as! StateStoreTests).testOldStateWithoutRememberedLoads() }),

@@ -9,6 +9,11 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- A desktop taken out of the configuration can be removed from the Mac too. The editor says, under
+  the desktop tabs, which macOS desktops the configuration in use does not list, and offers to
+  remove each one through Mission Control. It asks first: macOS moves that desktop's windows to
+  another one and nothing undoes it. Nothing is removed on a save.
+
 ## 0.1.1
 
 - The disk image opens on a window that shows where to drag Fremspace.

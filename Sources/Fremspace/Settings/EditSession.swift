@@ -73,6 +73,8 @@ final class EditSession: ObservableObject {
     /// the key window and when the screens change (not on every redraw).
     @Published private(set) var connected: [Displays.Connected] = []
     @Published private(set) var desktopCounts: [DisplayIdentity: Int] = [:]
+    /// The macOS desktops that the configuration in use does not list, per display.
+    @Published private(set) var unlistedDesktops: [DisplayIdentity: [Engine.UnlistedDesktop]] = [:]
     /// Set when the file exists but cannot be read: the editor then refuses to save, so the file is
     /// never overwritten by an empty or new configuration.
     let loadError: String?
@@ -166,6 +168,7 @@ final class EditSession: ObservableObject {
     func refreshEnvironment() {
         connected = Displays.connected()
         desktopCounts = Desktops.counts()
+        unlistedDesktops = engine.unlistedDesktops()
         refreshAttention()
     }
 
@@ -283,6 +286,7 @@ final class EditSession: ObservableObject {
                 saved = config
             }
             status = Status(kind: .success, text: "Saved and applied.")
+            let removedSome = removedDesktops.contains { $0.to == nil }
             if !removedDesktops.isEmpty {
                 // The removals are now final (links and remembered windows dropped): the undo steps
                 // recorded around them count desktops the old way, so they go.
@@ -294,7 +298,11 @@ final class EditSession: ObservableObject {
             engine.configurationSaved()
             // The permission is asked for when the owner switches the previews on, never before.
             if previewsSwitchedOn, !WindowPreviews.allowed { WindowPreviews.request() }
-            refreshAttention()
+            // Also what the Mac has now: a desktop just removed here is still one there.
+            refreshEnvironment()
+            if removedSome, !unlistedDesktops.isEmpty {
+                status = Status(kind: .success, text: "Saved and applied. The desktop is still on the Mac: it can be removed there too, under the desktop tabs.")
+            }
             refreshSlotWindows()
         } catch ConfigError.changedOnDisk {
             if case .unreadable(let why) = store.state(since: saved) {
@@ -801,6 +809,32 @@ final class EditSession: ObservableObject {
     func savedDesktopCount(on display: DisplayIdentity) -> Int? {
         guard let id = configuration?.id else { return nil }
         return saved.configurations.first { $0.id == id }?.displays.first { $0.identity == display }?.spaces.count
+    }
+
+    /// The macOS desktops of `display` that the configuration does not list, when the editor shows
+    /// what runs there: the configuration in use, with no desktop added, removed or moved since the
+    /// last save. Otherwise the positions on screen are not the ones macOS has.
+    func unlisted(on display: DisplaySpec) -> [Engine.UnlistedDesktop] {
+        guard let configuration, isActive(configuration), !hasUnsavedDesktopOrder(on: display.identity),
+              savedDesktopCount(on: display.identity) == display.spaces.count else { return [] }
+        return unlistedDesktops[display.identity] ?? []
+    }
+
+    /// Removes from the Mac a desktop the configuration does not list, once the owner said yes:
+    /// macOS moves its windows elsewhere and nothing undoes it, so it is never done on a save.
+    func removeFromMac(_ desktop: Engine.UnlistedDesktop, on display: DisplaySpec) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Remove Desktop \(desktop.position + 1) of \(display.displayName) from this Mac?"
+        alert.informativeText = "Mission Control opens for a moment. macOS moves the windows that are on this desktop to another one, and this cannot be undone."
+        alert.addButton(withTitle: "Remove").hasDestructiveAction = true
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let removed = engine.removeUnlistedDesktop(on: display.identity, uuid: desktop.uuid)
+        refreshEnvironment()
+        status = removed
+            ? Status(kind: .success, text: "Desktop removed from the Mac.")
+            : Status(kind: .error, text: "Could not remove it: in Mission Control, hover the desktop at the top of the display, then click its \u{2715}.")
     }
 
     /// Whether desktops of `display` were moved or removed and not saved yet: until then a position
