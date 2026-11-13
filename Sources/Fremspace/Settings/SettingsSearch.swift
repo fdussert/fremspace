@@ -34,7 +34,7 @@ enum SettingSection: String {
 /// The switches and commands of the settings pages. The pages take their names here and the search
 /// lists them, so a setting cannot be on a page without being found.
 enum SettingRow: String, CaseIterable {
-    case openAtLogin, paused, autoUpdates, checkForUpdates, noFloating, resizeLayouts, desktopNames, notchMap, windowPreviews, fullScreenCalls, hyperKey
+    case openAtLogin, paused, autoUpdates, checkForUpdates, noFloating, floatingApps, resizeLayouts, desktopNames, notchMap, windowPreviews, fullScreenCalls, hyperKey
     case reapply, restoreEverything, bringBack, openConfigFile, reloadConfig, copyDiagnostics, dumpWindows
 
     var title: String {
@@ -44,6 +44,7 @@ enum SettingRow: String, CaseIterable {
         case .autoUpdates: return "Look for a newer version every day"
         case .checkForUpdates: return "Check for updates"
         case .noFloating: return "No floating windows on layout desktops"
+        case .floatingApps: return "Apps that may float"
         case .resizeLayouts: return "Resize neighbouring slots together"
         case .desktopNames: return "Show the desktop's name when switching"
         case .notchMap: return "Map of desktops at the notch"
@@ -62,8 +63,8 @@ enum SettingRow: String, CaseIterable {
 
     var page: SettingsPage {
         switch self {
-        case .openAtLogin, .paused, .autoUpdates, .checkForUpdates, .noFloating, .resizeLayouts, .desktopNames, .notchMap, .windowPreviews,
-             .fullScreenCalls: return .general
+        case .openAtLogin, .paused, .autoUpdates, .checkForUpdates, .noFloating, .floatingApps, .resizeLayouts, .desktopNames, .notchMap,
+             .windowPreviews, .fullScreenCalls: return .general
         case .hyperKey: return .shortcuts
         default: return .maintenance
         }
@@ -72,7 +73,7 @@ enum SettingRow: String, CaseIterable {
     var section: SettingSection {
         switch self {
         case .openAtLogin, .paused, .autoUpdates, .checkForUpdates: return .generalFremspace
-        case .noFloating: return .generalFloating
+        case .noFloating, .floatingApps: return .generalFloating
         case .resizeLayouts: return .generalSlots
         case .desktopNames, .notchMap, .windowPreviews: return .generalDesktops
         case .fullScreenCalls: return .generalCalls
@@ -92,6 +93,7 @@ enum SettingRow: String, CaseIterable {
         case .autoUpdates: return ["update", "upgrade", "version", "automatic", "mise à jour"]
         case .checkForUpdates: return ["update", "upgrade", "version", "new", "mise à jour"]
         case .noFloating: return ["free desktop", "unmatched", "float"]
+        case .floatingApps: return ["exception", "allow", "stay", "Finder", "Calculator", "over the layout"]
         case .resizeLayouts: return ["dragging", "edge", "divider", "border", "swap"]
         case .desktopNames: return ["banner", "label", "notch", "space", "display changes"]
         case .notchMap: return ["hover", "pointer", "resting", "encoche", "switcher", "overview"]

@@ -213,6 +213,9 @@ struct SettingsPageView: View {
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
                     }
                 }
+                SwiftUI.Divider()
+                floatingApps
+                    .modifier(marked(.floatingApps))
             }
             PageSection(.generalSlots) {
                 SwitchRow(title: SettingRow.resizeLayouts.title,
@@ -330,6 +333,43 @@ struct SettingsPageView: View {
     private func hint(_ id: String) -> String {
         guard let shortcut = ShortcutCatalog.effective(session.config.shortcuts)[id], shortcut.keyCode != nil else { return "" }
         return " " + ShortcutCatalog.label(shortcut)
+    }
+
+    /// The apps left alone on the desktops with a layout: one line each, and a menu to add one.
+    private var floatingApps: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(SettingRow.floatingApps.title)
+                HelpText("Their windows stay on the desktop where they open, over its layout. They are not sent to a free desktop, nor to a slot their app has on another desktop.")
+            }
+            ForEach(session.config.floatingApps, id: \.self) { bundleID in
+                HStack(spacing: 6) {
+                    if let icon = AppIcons.small(bundleID) { Image(nsImage: icon) }
+                    Text(appName(bundleID)).lineLimit(1).truncationMode(.middle)
+                    Spacer(minLength: 4)
+                    Button {
+                        session.checkpoint()
+                        session.config.floatingApps.removeAll { $0 == bundleID }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundColor(.secondary).hitTarget(18)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("No longer let \(appName(bundleID)) float")
+                    .accessibilityLabel("No longer let \(appName(bundleID)) float")
+                }
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.05)))
+            }
+            // The small tools one opens over whatever is there, offered even when they are not running.
+            AppMenu(title: "Add an app\u{2026}", bundleID: nil,
+                    known: ["com.apple.finder", "com.apple.calculator", "com.apple.systempreferences"],
+                    panelMessage: "Choose the app that may float", hidden: session.config.floatingApps) { id in
+                guard !session.config.floatingApps.contains(id) else { return }
+                session.checkpoint()
+                session.config.floatingApps.append(id)
+            }
+            .fixedSize()
+        }
     }
 
     private func hasFreeDesktop(_ configuration: Configuration) -> Bool {

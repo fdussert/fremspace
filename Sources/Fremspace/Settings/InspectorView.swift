@@ -188,13 +188,17 @@ struct AppMenu: View {
     let title: String
     let bundleID: String?
     let known: [String]
+    /// What the panel for an app on disk says the choice is for.
+    var panelMessage = "Choose the app this slot takes"
+    /// The apps that are chosen already, where one is chosen once.
+    var hidden: [String] = []
     let choose: (String) -> Void
 
     private var apps: [(name: String, id: String)] {
         let running = NSWorkspace.shared.runningApplications
             .filter { $0.activationPolicy == .regular && $0.processIdentifier != getpid() }
             .compactMap(\.bundleIdentifier)
-        return Set(running + known).filter { !$0.isEmpty }.map { (appName($0), $0) }
+        return Set(running + known).filter { !$0.isEmpty && !hidden.contains($0) }.map { (appName($0), $0) }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
@@ -228,7 +232,7 @@ struct AppMenu: View {
         panel.allowedContentTypes = [.application]
         panel.allowsMultipleSelection = false
         panel.prompt = "Choose"
-        panel.message = "Choose the app this slot takes"
+        panel.message = panelMessage
         guard panel.runModal() == .OK, let url = panel.url, let id = Bundle(url: url)?.bundleIdentifier else { return }
         choose(id)
     }

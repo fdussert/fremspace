@@ -10,6 +10,10 @@ public struct Config: Codable, Equatable {
     /// General setting, whatever the configuration in use: no floating windows on desktops with a
     /// layout. A window of an app without a slot goes to a free desktop (see `route`).
     public var noFloating: Bool = false
+    /// General setting: the apps (bundle ids) whose windows stay on the desktop where they are, over
+    /// its layout: neither `noFloating` nor a slot of theirs on another desktop takes them away
+    /// (see `route`). In the order the owner added them.
+    public var floatingApps: [String] = []
     /// General setting: the shortcuts the owner changed, by command id. A command not listed keeps
     /// its default.
     public var shortcuts: [String: Shortcut] = [:]
@@ -31,12 +35,14 @@ public struct Config: Codable, Equatable {
     public var windowPreviews: Bool = false
 
     public init(version: Int = Config.currentVersion, configurations: [Configuration], noFloating: Bool = false,
+                floatingApps: [String] = [],
                 shortcuts: [String: Shortcut] = [:], fullScreenCalls: [String] = [], hyperKey: Bool = false,
                 resizeLayouts: Bool = false, desktopNames: Bool = true, notchMap: Bool = true,
                 windowPreviews: Bool = false) {
         self.version = version
         self.configurations = configurations
         self.noFloating = noFloating
+        self.floatingApps = floatingApps
         self.shortcuts = shortcuts
         self.fullScreenCalls = fullScreenCalls
         self.hyperKey = hyperKey
@@ -48,7 +54,7 @@ public struct Config: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case version, configurations, noFloating, shortcuts, fullScreenCalls, hyperKey, resizeLayouts, desktopNames, notchMap
-        case windowPreviews
+        case windowPreviews, floatingApps
     }
 
     /// For one day (2026-11-10) the switch was written in each configuration.
@@ -65,6 +71,10 @@ public struct Config: Codable, Equatable {
         } else {
             noFloating = try c.decode([ConfigurationSwitch].self, forKey: .configurations).contains { $0.noFloating == true }
         }
+        // A file edited by hand may name an app twice.
+        var listed = Set<String>()
+        floatingApps = (try c.decodeIfPresent([String].self, forKey: .floatingApps) ?? [])
+            .filter { !$0.isEmpty && listed.insert($0).inserted }
         shortcuts = try c.decodeIfPresent([String: Shortcut].self, forKey: .shortcuts) ?? [:]
         hyperKey = try c.decodeIfPresent(Bool.self, forKey: .hyperKey) ?? false
         resizeLayouts = try c.decodeIfPresent(Bool.self, forKey: .resizeLayouts) ?? false
@@ -94,6 +104,7 @@ public struct Config: Codable, Equatable {
         try c.encode(version, forKey: .version)
         try c.encode(configurations, forKey: .configurations)
         if noFloating { try c.encode(noFloating, forKey: .noFloating) }
+        if !floatingApps.isEmpty { try c.encode(floatingApps, forKey: .floatingApps) }
         if !shortcuts.isEmpty { try c.encode(shortcuts, forKey: .shortcuts) }
         if !fullScreenCalls.isEmpty { try c.encode(fullScreenCalls, forKey: .fullScreenCalls) }
         if hyperKey { try c.encode(hyperKey, forKey: .hyperKey) }

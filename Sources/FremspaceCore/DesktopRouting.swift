@@ -40,12 +40,20 @@ public enum Route: Equatable {
 ///   way to put one there). Fixed-size windows (Calculator) go too, though they never take a slot:
 ///   to the first desktop where their app has a slot (a mail reminder joins the mail window), else to
 ///   a free one. Windows of an app that has a slot on the desktop stay, whatever its profile or title
-///   rule: they are that app's own side windows.
+///   rule: they are that app's own side windows;
+/// - an app the owner lets float (`floatingApps`, a general setting; owner, 2026-11-13: a Finder
+///   window opened from "Code" left for the free desktop) is outside both pulls: `noFloating` does
+///   not send its windows away, and on a desktop with a layout where it has no slot a window of
+///   it stays instead of going to a slot of its app elsewhere. What holds a window still holds
+///   it: a locked slot it is dragged out of, its remembered desktop at login.
 public func route(window: WindowInfo, on here: ConfiguredDesktop?, reason: RouteReason, configuration: Configuration,
                   remembered: ConfiguredDesktop?, rememberedDeliberately: Bool = true, heldSlot: String? = nil,
                   sentByCommand: Bool,
-                  onIgnoredDisplay: Bool = false, noFloating: Bool = false,
+                  onIgnoredDisplay: Bool = false, noFloating: Bool = false, floatingApps: Set<String> = [],
                   available: Set<ConfiguredDesktop>) -> Route {
+    let floats = floatingApps.contains(window.bundleID)
+    // For an app that may float, the setting is as good as off.
+    let noFloating = noFloating && !floats
     // A fixed-size window takes no slot: only `noFloating` moves it, to a free desktop.
     let slotless = !window.isManageable
     guard !slotless || (noFloating && window.canChangeDesktop) else { return .stay }
@@ -111,6 +119,7 @@ public func route(window: WindowInfo, on here: ConfiguredDesktop?, reason: Route
         guard let here, layout(here) != nil else { return .stay }
         if hasSlot(here) { return .stay }
         if remembered == here, rememberedDeliberately || sentByCommand, !mayNotFloat(here) { return .stay }
+        if floats { return .stay }
     }
     if let remembered, available.contains(remembered), hasSlot(remembered) || sentByCommand {
         return send(remembered)

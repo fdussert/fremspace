@@ -454,6 +454,7 @@ final class Engine {
     }
     /// The general setting "no floating windows on layout desktops".
     var noFloating: Bool { config?.noFloating ?? false }
+    var floatingApps: Set<String> { Set(config?.floatingApps ?? []) }
     /// The shortcuts the owner changed (general setting).
     var shortcuts: [String: Shortcut] { config?.shortcuts ?? [:] }
     /// The setting "Use Caps Lock as ⌃⌥⌘" (the Hyper key).

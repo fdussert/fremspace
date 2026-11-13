@@ -313,7 +313,8 @@ final class DesktopRouter {
             let held = lastSlot[id].flatMap { $0.desktop == from ? $0.slotID : nil }
             switch route(window: info, on: here, reason: .handMoved(from: from), configuration: configuration,
                          remembered: remembered, heldSlot: held, sentByCommand: sentByCommand.contains(id),
-                         noFloating: engine.noFloating, available: engine.availableDesktops) {
+                         noFloating: engine.noFloating, floatingApps: engine.floatingApps,
+                         available: engine.availableDesktops) {
             case .send(let target):
                 Log.engine.info("window \(id) \(info.bundleID, privacy: .public) moved by hand to a desktop that does not keep it (a locked slot elsewhere, or no floating); sending it to desktop \(target.index + 1) of \(target.display.name, privacy: .public)")
                 send(info, to: target, entry: matched[id], byCommand: false)
@@ -384,7 +385,7 @@ final class DesktopRouter {
                              onIgnoredDisplay: space.map { key in
                                  configuration.displays.contains { $0.identity == key.display && $0.ignored }
                              } ?? false,
-                             noFloating: engine.noFloating,
+                             noFloating: engine.noFloating, floatingApps: engine.floatingApps,
                              available: engine.availableDesktops)
         guard case .send(let target) = decision else { return false }
         send(info, to: target, entry: entry, byCommand: false, follow: follow)

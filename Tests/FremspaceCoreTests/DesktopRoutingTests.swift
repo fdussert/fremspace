@@ -45,10 +45,11 @@ final class DesktopRoutingTests: XCTestCase {
 
     private func route(_ app: String, on here: ConfiguredDesktop?, _ reason: RouteReason, remembered: ConfiguredDesktop? = nil,
                        deliberate: Bool = true, byCommand: Bool = false, available: Set<ConfiguredDesktop>? = nil,
-                       configuration custom: Configuration? = nil, strict: Bool = false) -> Route {
+                       configuration custom: Configuration? = nil, strict: Bool = false,
+                       floating: Set<String> = []) -> Route {
         FremspaceCore.route(window: window(app), on: here, reason: reason, configuration: custom ?? configuration,
                             remembered: remembered, rememberedDeliberately: deliberate, sentByCommand: byCommand,
-                            noFloating: strict, available: available ?? all)
+                            noFloating: strict, floatingApps: floating, available: available ?? all)
     }
 
     func testWithoutASlotAWindowLeavesALayoutDesktopForAFreeOne() {
@@ -97,6 +98,58 @@ final class DesktopRoutingTests: XCTestCase {
         var settings = window(brave)
         settings.isFixedSize = true
         XCTAssertEqual(route(settings, strict: true), .stay)
+    }
+
+    func testAnAppThatMayFloatStaysOnALayoutDesktop() {
+        // Finder has no slot anywhere and the owner lets it float: on "Code" it stays, however it got there.
+        XCTAssertEqual(route(finder, on: d(left, 0), .appeared, strict: true, floating: [finder]), .stay)
+        XCTAssertEqual(route(finder, on: d(left, 0), .startup, strict: true, floating: [finder]), .stay)
+        XCTAssertEqual(route(finder, on: d(left, 0), .reapply, remembered: d(left, 0), strict: true, floating: [finder]), .stay)
+        XCTAssertEqual(route(finder, on: d(left, 0), .handMoved(from: d(left, 2)), strict: true, floating: [finder]), .stay)
+        // At login it goes back to the layout desktop it floated on.
+        XCTAssertEqual(route(finder, on: d(left, 2), .login, remembered: d(left, 0), strict: true, floating: [finder]),
+                       .send(d(left, 0)))
+        // The list names apps: another app without a slot still goes to the free desktop.
+        XCTAssertEqual(route(teams, on: d(left, 0), .appeared, strict: true, floating: [finder]), .send(d(builtIn, 3)))
+        XCTAssertEqual(route("com.apple.Notes", on: d(left, 0), .appeared, strict: true, floating: [finder]), .send(d(left, 2)))
+        // A fixed-size window of such an app (Calculator) stays too.
+        var calculator = window("com.apple.calculator")
+        calculator.isFixedSize = true
+        XCTAssertEqual(FremspaceCore.route(window: calculator, on: d(left, 0), reason: .appeared, configuration: configuration,
+                                           remembered: nil, sentByCommand: false, noFloating: true,
+                                           floatingApps: ["com.apple.calculator"], available: all), .stay)
+    }
+
+    func testAnAppThatMayFloatIsNotPulledToItsSlotOnAnotherDesktop() {
+        // Slack has a slot on its own desktop. Opened on "Code" it goes there, unless it may float.
+        XCTAssertEqual(route(slack, on: d(left, 0), .appeared), .send(d(builtIn, 1)))
+        XCTAssertEqual(route(slack, on: d(left, 0), .appeared, floating: [slack]), .stay)
+        XCTAssertEqual(route(slack, on: d(left, 0), .startup, remembered: d(builtIn, 1), deliberate: false, strict: true,
+                             floating: [slack]), .stay)
+        // On the desktop of its slot nothing changes, and login still takes it back to its place.
+        XCTAssertEqual(route(slack, on: d(builtIn, 1), .appeared, floating: [slack]), .stay)
+        XCTAssertEqual(route(slack, on: d(left, 0), .login, remembered: d(builtIn, 1), floating: [slack]), .send(d(builtIn, 1)))
+        // A locked slot keeps its window: dragged away by hand, it goes back.
+        XCTAssertEqual(route(slack, on: d(left, 0), .handMoved(from: d(builtIn, 1)), floating: [slack]), .send(d(builtIn, 1)))
+        // Reopened by macOS on a display the configuration ignores, it goes to its slot like any other.
+        XCTAssertEqual(FremspaceCore.route(window: window(slack), on: nil, reason: .startup, configuration: configuration,
+                                           remembered: nil, sentByCommand: false, onIgnoredDisplay: true,
+                                           floatingApps: [slack], available: all), .send(d(builtIn, 1)))
+    }
+
+    func testTheAppsThatMayFloatAreAGeneralSettingWrittenOnlyWhenUsed() throws {
+        var config = Config(configurations: [configuration])
+        let plain = try JSONEncoder().encode(config)
+        XCTAssertFalse(String(decoding: plain, as: UTF8.self).contains("floatingApps"))
+        let older = try JSONDecoder().decode(Config.self, from: plain)
+        XCTAssertEqual(older.floatingApps, [])
+        config.floatingApps = [finder, "com.apple.calculator"]
+        let decoded = try JSONDecoder().decode(Config.self, from: try JSONEncoder().encode(config))
+        XCTAssertEqual(decoded.floatingApps, [finder, "com.apple.calculator"])
+        // A file edited by hand: an app named twice is listed once, an empty name is dropped.
+        let byHand = Data(#"{"version":1,"configurations":[],"floatingApps":["com.apple.finder","","com.apple.finder","com.apple.Notes"]}"#.utf8)
+        let cleaned = try JSONDecoder().decode(Config.self, from: byHand)
+        XCTAssertEqual(cleaned.floatingApps, [finder, "com.apple.Notes"])
     }
 
     func testFixedSizeWindowOfAnAppWithASlotGoesToThatAppsDesktop() {

@@ -30,7 +30,8 @@ public func unsavedChanges(edited: Config, saved: Config) -> UnsavedChanges {
     }
     let kept = Set(edited.configurations.map(\.id))
     changes.deleted = saved.configurations.filter { !kept.contains($0.id) }.count
-    changes.general = edited.noFloating != saved.noFloating || edited.resizeLayouts != saved.resizeLayouts
+    changes.general = edited.noFloating != saved.noFloating || edited.floatingApps != saved.floatingApps
+        || edited.resizeLayouts != saved.resizeLayouts
         || edited.desktopNames != saved.desktopNames || edited.notchMap != saved.notchMap
         || edited.windowPreviews != saved.windowPreviews || edited.fullScreenCalls != saved.fullScreenCalls
     changes.shortcuts = edited.shortcuts != saved.shortcuts || edited.hyperKey != saved.hyperKey

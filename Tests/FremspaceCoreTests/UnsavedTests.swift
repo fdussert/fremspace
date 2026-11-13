@@ -53,6 +53,10 @@ final class UnsavedTests: XCTestCase {
         XCTAssertTrue(changes.shortcuts)
         XCTAssertTrue(changes.configurations.isEmpty)
         XCTAssertEqual(unsavedPlaces(changes, in: edited), ["General", "Shortcuts"])
+        // The list of the apps that may float is a setting of the General page too.
+        var listed = saved
+        listed.floatingApps = ["com.apple.finder"]
+        XCTAssertTrue(unsavedChanges(edited: listed, saved: saved).general)
     }
 
     func testAListReadsAsASentenceDoes() {
