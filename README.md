@@ -114,7 +114,7 @@ as they are now. Every shortcut is on the Shortcuts page and can be changed; the
 | The commands for the window in front | ⌃⌥⌘W |
 
 The window in front can also take a half, a third or two thirds of its display, the whole of it or
-its centre: these are in that menu of commands, and have no shortcut until you give them one on the
+its center: these are in that menu of commands, and have no shortcut until you give them one on the
 Shortcuts page (⌃⌥ and a key is what other window tools already use).
 
 ## Share your desk

@@ -51,7 +51,7 @@ The first version to be packaged.
   needs the Screen Recording permission, which macOS asks for when you save with the option on;
   the pictures stay in memory.
 - **Hyper key.** Caps Lock can stand for ⌃⌥⌘, with no other tool.
-- **Quick sizes.** A half, a third or two thirds of the display, the whole of it or its centre for
+- **Quick sizes.** A half, a third or two thirds of the display, the whole of it or its center for
   the window in front, from the menu of window commands (⌃⌥⌘W). They have no shortcut until you
   give them one on the Shortcuts page.
 - **Calls in full screen.** The meeting window of Microsoft Teams or Zoom goes to full screen when
