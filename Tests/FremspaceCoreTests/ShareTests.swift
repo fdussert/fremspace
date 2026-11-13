@@ -293,4 +293,40 @@ final class ShareTests: XCTestCase {
         XCTAssertEqual(twice.report.displaysLeftOut, 1)
         XCTAssertEqual(twice.configuration.displays[0].spaces.count, 2)
     }
+
+    func testAnExportSaysTheShapeOfEachDisplayAndNothingElseOfIt() throws {
+        let layout = sharedLayout(of: desk, withFilters: false, aspects: [big: 3360.0 / 1890, laptop: 0.5625]).layout
+        XCTAssertEqual(layout.displays.map(\.aspect), [0.56, 1.78])
+        let text = String(decoding: try layout.data(), as: UTF8.self)
+        XCTAssertFalse(text.contains("5151"))
+        XCTAssertFalse(text.contains("ACME"))
+        let read = try SharedLayout.read(layout.data())
+        XCTAssertEqual(read.displays.map(\.aspect), [0.56, 1.78])
+        // A file written before the shape existed still reads.
+        let older = try SharedLayout.read(sharedLayout(of: desk, withFilters: false).layout.data())
+        XCTAssertEqual(older.displays.map(\.aspect), [nil, nil])
+    }
+
+    func testAShapeThatCannotBeADisplaysIsDropped() throws {
+        var layout = sharedLayout(of: desk, withFilters: false).layout
+        layout.displays[0].aspect = 400
+        layout.displays[1].aspect = -1
+        let read = try SharedLayout.read(layout.data())
+        XCTAssertEqual(read.displays.map(\.aspect), [nil, nil])
+        XCTAssertNil(SharedDisplay.shape(width: 0, height: 10))
+        XCTAssertEqual(SharedDisplay.shape(width: 3440, height: 1440), 2.39)
+    }
+
+    func testOneDesktopKeptForLaterIsAFileOfOneDesktop() throws {
+        let code = desk.displays[1].spaces[1]
+        let kept = sharedDesktop(code, named: "Code", displayName: "Main", aspect: 1.78, withFilters: false)
+        XCTAssertEqual(kept.layout.name, "Code")
+        XCTAssertEqual(kept.layout.displays.map(\.name), ["Main"])
+        XCTAssertEqual(kept.layout.displays[0].aspect, 1.78)
+        XCTAssertEqual(kept.report.profilesLeftOut, 2)
+        let read = try SharedLayout.read(kept.layout.data())
+        XCTAssertEqual(read.singleDesktop?.layout?.slots.map(\.id), ["ide", "web"])
+        // A whole desk is not one desktop.
+        XCTAssertNil(sharedLayout(of: desk, withFilters: false).layout.singleDesktop)
+    }
 }

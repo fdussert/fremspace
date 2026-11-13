@@ -38,11 +38,24 @@ public struct SharedDisplay: Codable, Equatable {
     public var name: String
     public var desktops: [SpaceSpec]
     public var drawers: [DrawerSpec]
+    /// The shape of the display the layouts were made on: its width over its height, to two
+    /// decimals (1.78 for 16:9, 0.56 for the same display turned). The one thing the file says
+    /// of the display itself, so that a layout made for a tall display is not a surprise on a
+    /// wide one. Absent from the files written before it existed.
+    public var aspect: Double?
 
-    public init(name: String, desktops: [SpaceSpec], drawers: [DrawerSpec] = []) {
+    public init(name: String, desktops: [SpaceSpec], drawers: [DrawerSpec] = [], aspect: Double? = nil) {
         self.name = name
         self.desktops = desktops
         self.drawers = drawers
+        self.aspect = aspect
+    }
+
+    /// A shape as the file writes it; nil for one that cannot be a display's.
+    public static func shape(width: Double, height: Double) -> Double? {
+        guard width.isFinite, height.isFinite, width > 0, height > 0 else { return nil }
+        let aspect = (width / height * 100).rounded() / 100
+        return (0.2...6).contains(aspect) ? aspect : nil
     }
 }
 
@@ -115,8 +128,10 @@ public struct ShareReport: Equatable {
 /// The file for a configuration. Never in it: the displays' models and serial numbers (a display
 /// is its position and the owner's name for it), and whatever is not the configuration (shortcuts,
 /// general settings, what Fremspace remembers). A browser profile and a window title filter are
-/// free text that can name an employer or a customer: they go in only `withFilters`.
-public func sharedLayout(of configuration: Configuration, withFilters: Bool) -> (layout: SharedLayout, report: ShareReport) {
+/// free text that can name an employer or a customer: they go in only `withFilters`. `aspects`
+/// are the shapes of the displays known now (see `SharedDisplay.aspect`).
+public func sharedLayout(of configuration: Configuration, withFilters: Bool,
+                         aspects: [DisplayIdentity: Double] = [:]) -> (layout: SharedLayout, report: ShareReport) {
     var report = ShareReport()
     var apps: Set<String> = []
 
@@ -158,7 +173,8 @@ public func sharedLayout(of configuration: Configuration, withFilters: Bool) -> 
         report.desktops += desktops.count
         report.drawers += drawers.count
         displays.append(SharedDisplay(name: display.label.isEmpty ? "Display \(position + 1)" : display.label,
-                                      desktops: desktops, drawers: drawers))
+                                      desktops: desktops, drawers: drawers,
+                                      aspect: aspects[display.identity].flatMap { SharedDisplay.shape(width: $0, height: 1) }))
     }
     report.displays = displays.count
 
@@ -181,6 +197,19 @@ public func sharedLayout(of configuration: Configuration, withFilters: Bool) -> 
     report.scenes = scenes.count
     report.apps = apps.filter { !$0.isEmpty }.sorted()
     return (SharedLayout(name: configuration.name, displays: displays, scenes: scenes), report)
+}
+
+/// The file for one desktop kept for later, under `name`: the same file as a configuration's, with
+/// one display and that desktop alone. The drawers and the scenes belong to a whole desk and are
+/// not in it.
+public func sharedDesktop(_ desktop: SpaceSpec, named name: String, displayName: String, aspect: Double?,
+                          withFilters: Bool) -> (layout: SharedLayout, report: ShareReport) {
+    // The identity never reaches the file: it only keys the shape.
+    let display = DisplayIdentity(vendor: 0, model: 0, serial: 0, name: "")
+    let configuration = Configuration(id: UUID(), name: name, displays: [
+        DisplaySpec(identity: display, spaces: [desktop], label: displayName),
+    ])
+    return sharedLayout(of: configuration, withFilters: withFilters, aspects: aspect.map { [display: $0] } ?? [:])
 }
 
 /// The name of the file for a configuration: its name without what a file name cannot hold.
@@ -280,6 +309,8 @@ extension SharedLayout {
     private static func checked(_ display: SharedDisplay, position: Int) throws -> SharedDisplay {
         var display = display
         display.name = clean(display.name, fallback: "Display \(position + 1)")
+        // A shape that cannot be a display's is dropped: the drawings then follow the owner's display.
+        display.aspect = display.aspect.flatMap { SharedDisplay.shape(width: $0, height: 1) }
         guard display.desktops.count <= Limit.desktops else { throw ShareError.invalid("the number of desktops") }
         for d in display.desktops.indices {
             display.desktops[d].label = clean(display.desktops[d].label, fallback: "Desktop \(d + 1)")
@@ -391,6 +422,14 @@ extension SharedLayout {
 }
 
 extension SharedLayout {
+    /// The desktop of a file that holds one desktop and nothing else: a layout kept for one
+    /// desktop, which can replace the layout of a desktop instead of being added beside.
+    public var singleDesktop: SpaceSpec? {
+        guard displays.count == 1, displays[0].desktops.count == 1, displays[0].drawers.isEmpty, scenes.isEmpty,
+              displays[0].desktops[0].layout != nil else { return nil }
+        return displays[0].desktops[0]
+    }
+
     /// The apps Fremspace would open at login once the layout is added and saved: those of the
     /// slots that say so, and a slot does unless it was switched off. For the owner to read before
     /// adding somebody else's file: they are opened whether or not they are missing from the Mac.
