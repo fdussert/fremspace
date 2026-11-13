@@ -55,28 +55,56 @@ struct DesktopTabs: View {
     /// The tabs where they rest, in the row's coordinates.
     @State private var frames: [Int: CGRect] = [:]
     @State private var hovered: Int?
+    /// Whether tabs are out of sight on each side of the row, which then fades on that side.
+    @State private var more = TabsOutOfSight.Sides()
+    @State private var rowWidth: CGFloat = 0
 
     private static let spacing: CGFloat = 4
+    private static let fade: CGFloat = 28
 
     var body: some View {
         if let display = session.displaySpec, !display.ignored {
             let preview = self.preview(count: display.spaces.count)
             VStack(alignment: .leading, spacing: 8) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: Self.spacing) {
-                        ForEach(display.spaces.indices, id: \.self) { i in
-                            tab(i, display.spaces[i], count: display.spaces.count, preview: preview)
+                HStack(spacing: Self.spacing) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: Self.spacing) {
+                            ForEach(display.spaces.indices, id: \.self) { i in
+                                tab(i, display.spaces[i], count: display.spaces.count, preview: preview)
+                            }
                         }
-                        Button { session.addDesktop() } label: {
-                            Image(systemName: "plus").frame(width: 22, height: 22).contentShape(Rectangle())
-                        }
-                        .buttonStyle(.borderless)
-                        .help("Add a desktop to this display's configuration")
+                        .coordinateSpace(name: "desktopTabs")
+                        .onPreferenceChange(TabFrames.self) { frames = $0 }
+                        // Room for the lifted tab's shadow.
+                        .padding(.vertical, 3)
+                        .background(GeometryReader { proxy in
+                            // Where the row is in its window, as it scrolls.
+                            let frame = proxy.frame(in: .named("desktopTabsWindow"))
+                            Color.clear.preference(key: TabsOutOfSight.self,
+                                                   value: TabsOutOfSight.Sides(leading: frame.minX < -1, trailing: frame.maxX > rowWidth + 1))
+                        })
                     }
-                    .coordinateSpace(name: "desktopTabs")
-                    .onPreferenceChange(TabFrames.self) { frames = $0 }
-                    // Room for the lifted tab's shadow.
-                    .padding(.vertical, 3)
+                    .coordinateSpace(name: "desktopTabsWindow")
+                    .background(GeometryReader { proxy in
+                        Color.clear.onAppear { rowWidth = proxy.size.width }
+                            .onChange(of: proxy.size.width) { rowWidth = $0 }
+                    })
+                    .onPreferenceChange(TabsOutOfSight.self) { more = $0 }
+                    // A row cut in the middle of a name said nothing: it fades where there is more.
+                    .mask(HStack(spacing: 0) {
+                        LinearGradient(colors: [.black.opacity(more.leading ? 0 : 1), .black], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: Self.fade)
+                        Color.black
+                        LinearGradient(colors: [.black, .black.opacity(more.trailing ? 0 : 1)], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: Self.fade)
+                    })
+                    // Beside the row, not at its end: with many desktops it scrolled out of reach.
+                    Button { session.addDesktop() } label: {
+                        Image(systemName: "plus").frame(width: 24, height: 24).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Add a desktop to this display's configuration")
+                    .accessibilityLabel("Add a desktop")
                 }
                 missingDesktops(display)
             }
@@ -97,17 +125,23 @@ struct DesktopTabs: View {
         let movable = count > 1
         let shape = RoundedRectangle(cornerRadius: 6)
         // A plain view with a tap and a drag, not a Button: a Button swallows the drag.
+        let gripped = movable && (lifted || hovered == i)
         return HStack(spacing: 6) {
-            if movable {
-                Grip().opacity(lifted || hovered == i ? 0.85 : 0.35)
+            // The grip takes the number's place under the pointer: six dots on every tab at all
+            // times were a fourth thing to read on each.
+            ZStack {
+                Text("\(i + 1)").font(.caption.monospacedDigit()).foregroundColor(.secondary).opacity(gripped ? 0 : 1)
+                Grip().opacity(gripped ? 0.85 : 0)
             }
-            Text("\(i + 1)").font(.caption.monospacedDigit()).foregroundColor(.secondary)
             Text(space.label.isEmpty ? "Untitled" : space.label).fontWeight(selected ? .semibold : .regular)
             if space.layout == nil {
-                Text("free").font(.caption).foregroundColor(.secondary)
+                // A mark, not a word after the name: "Everything else free" read as one name.
+                Text("Free").font(.caption2.weight(.medium)).foregroundColor(.secondary)
+                    .padding(.horizontal, 5).padding(.vertical, 1)
+                    .background(Capsule().fill(Color.primary.opacity(0.1)))
             }
         }
-        .padding(.leading, movable ? 7 : 10).padding(.trailing, 10).padding(.vertical, 5)
+        .padding(.horizontal, 10).padding(.vertical, 5)
         .background(shape.fill(selected || lifted ? Color.primary.opacity(0.13) : hovered == i ? Color.primary.opacity(0.06) : Color.clear))
         // Opaque under the lifted tab, so the tabs it passes over do not show through.
         .background(shape.fill(lifted ? Color(NSColor.windowBackgroundColor) : Color.clear))
@@ -217,6 +251,20 @@ private struct TabFrames: PreferenceKey {
 
     static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
         value.merge(nextValue()) { _, new in new }
+    }
+}
+
+/// Whether the row of tabs goes on, out of sight, on each side.
+private struct TabsOutOfSight: PreferenceKey {
+    struct Sides: Equatable {
+        var leading = false
+        var trailing = false
+    }
+
+    static var defaultValue = Sides()
+
+    static func reduce(value: inout Sides, nextValue: () -> Sides) {
+        value = nextValue()
     }
 }
 
