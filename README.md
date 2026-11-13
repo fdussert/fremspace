@@ -126,7 +126,7 @@ shortcuts, what Fremspace remembers about your windows. Browser profiles and win
 go in only if you tick them. Post the file with a screenshot in the repository's
 **Discussions → Show and tell**.
 
-To use somebody else's, **Share → Add a layout**: choose which of your displays takes each display
+To use somebody else's, **Share → Import**: choose which of your displays takes each display
 of the file, and its desktops come after yours, with its scenes. Nothing of yours is replaced, and
 nothing changes until you save. Layouts kept in the library
 (`~/Library/Application Support/Fremspace/Layouts/`) are listed there, ready to add. The details

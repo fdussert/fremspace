@@ -40,7 +40,7 @@ profile only become one.
 
 ## Adding a layout
 
-**Share → Add a layout** lists the library and reads a file from anywhere (**Add from a file…**).
+**Share → Import** lists the library and reads a file from anywhere (**Add from a file…**).
 The file is somebody else's, so nothing in it is taken at its word:
 
 - its kind and version are read first: another kind of file is refused, and a file from a newer
