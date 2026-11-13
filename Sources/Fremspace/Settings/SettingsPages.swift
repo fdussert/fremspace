@@ -335,6 +335,8 @@ struct SettingsPageView: View {
         return " " + ShortcutCatalog.label(shortcut)
     }
 
+    private var ownBundleID: String { Bundle.main.bundleIdentifier ?? "dev.fremspace.app" }
+
     /// The apps left alone on the desktops with a layout: one line each, and a menu to add one.
     private var floatingApps: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -342,7 +344,20 @@ struct SettingsPageView: View {
                 Text(SettingRow.floatingApps.title)
                 HelpText("Their windows stay on the desktop where they open, over its layout. They are not sent to a free desktop, nor to a slot their app has on another desktop.")
             }
-            ForEach(session.config.floatingApps, id: \.self) { bundleID in
+            // Not in the file: Fremspace never looks at its own windows. Listed so that nobody
+            // wonders why this window sits over a layout, or tries to add it.
+            HStack(spacing: 6) {
+                if let icon = AppIcons.small(ownBundleID) { Image(nsImage: icon) }
+                Text("Fremspace")
+                Spacer(minLength: 4)
+                Text("Always").font(.callout).foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .frame(minHeight: 26)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.05)))
+            .accessibilityElement(children: .combine)
+            .help("This window and the palette are never moved")
+            ForEach(session.config.floatingApps.filter { $0 != ownBundleID }, id: \.self) { bundleID in
                 HStack(spacing: 6) {
                     if let icon = AppIcons.small(bundleID) { Image(nsImage: icon) }
                     Text(appName(bundleID)).lineLimit(1).truncationMode(.middle)
@@ -364,7 +379,7 @@ struct SettingsPageView: View {
             AppMenu(title: "Add an app\u{2026}", bundleID: nil,
                     known: ["com.apple.finder", "com.apple.calculator", "com.apple.systempreferences"],
                     panelMessage: "Choose the app that may float", hidden: session.config.floatingApps) { id in
-                guard !session.config.floatingApps.contains(id) else { return }
+                guard id != ownBundleID, !session.config.floatingApps.contains(id) else { return }
                 session.checkpoint()
                 session.config.floatingApps.append(id)
             }
