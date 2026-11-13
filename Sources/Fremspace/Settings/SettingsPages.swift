@@ -86,9 +86,24 @@ struct SettingsPageView: View {
                 }
                 Spacer(minLength: 8)
                 if page == .shortcuts {
-                    TextField("Filter", text: $session.shortcutFilter)
-                        .textFieldStyle(.roundedBorder).frame(width: 180)
-                        .accessibilityLabel("Filter the shortcuts")
+                    // Dressed as what it is: with "Search" above the sidebar in the same window, a
+                    // bare field named "Filter" was a second search field to tell from the first.
+                    HStack(spacing: 5) {
+                        Image(systemName: "line.3.horizontal.decrease").foregroundColor(.secondary)
+                        TextField("Filter shortcuts", text: $session.shortcutFilter)
+                            .textFieldStyle(.plain)
+                            .accessibilityLabel("Filter the shortcuts")
+                        if !session.shortcutFilter.isEmpty {
+                            Button { session.shortcutFilter = "" } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Clear the filter")
+                        }
+                    }
+                    .padding(.horizontal, 7).frame(width: 200, height: 24)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.06)))
+                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.primary.opacity(0.14), lineWidth: 1))
                 }
                 if page == .scenes, session.configuration != nil {
                     HowScenesWork(first: session.shortcutLabel("scene.1"))
@@ -594,20 +609,48 @@ struct ShortcutsEditor: View {
                 Button {
                     isRecording ? stopRecording() : startRecording(entry.id)
                 } label: {
-                    Text(isRecording ? "Type shortcut…" : ShortcutCatalog.label(shortcut))
-                        // The system font: the modifier symbols run together in the monospaced one.
-                        .font(.callout)
-                        .foregroundColor(isRecording ? .accentColor : (shortcut.keyCode == nil ? .secondary : .primary))
-                        .frame(minWidth: 96)
+                    recorder(shortcut, recording: isRecording)
                 }
-                .controlSize(.small)
+                .buttonStyle(.plain)
+                .help(isRecording ? "Type the new shortcut; ⌫ for none, ⎋ to keep this one" : "Click, then type the new shortcut")
                 .accessibilityLabel("Shortcut of \(entry.title): \(ShortcutCatalog.label(shortcut))")
+                .accessibilityAddTraits(isRecording ? .isSelected : [])
             }
             if let problem, problem.id == entry.id {
                 Label(problem.text, systemImage: Status.Kind.warning.symbol)
                     .labelStyle(StatusLabelStyle(color: .orange)).font(.callout)
             }
         }
+    }
+
+    /// A shortcut as the keys it is made of, in a well: something to type into, not one more button
+    /// in a column of buttons. It says so while it listens.
+    private func recorder(_ shortcut: Shortcut, recording: Bool) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 6)
+        return HStack(spacing: 3) {
+            if recording {
+                Text("Type shortcut\u{2026}").font(.callout).foregroundColor(.accentColor)
+            } else if shortcut.keyCode == nil {
+                Text("None").font(.callout).foregroundColor(.secondary)
+            } else {
+                ForEach(Array(keys(ShortcutCatalog.label(shortcut)).enumerated()), id: \.offset) { _, key in
+                    // The system font: the modifier symbols run together in the monospaced one.
+                    Text(key).font(.system(size: 12, weight: .medium))
+                        .frame(minWidth: 12).padding(.horizontal, 4).frame(height: 19)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.1)))
+                }
+            }
+        }
+        .frame(width: 150, height: 26)
+        .background(shape.fill(recording ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.04)))
+        .overlay(shape.strokeBorder(recording ? Color.accentColor : Color.primary.opacity(0.16), lineWidth: recording ? 1.5 : 1))
+        .contentShape(Rectangle())
+    }
+
+    /// The keys of a shortcut written as a label ("⌃⌥⌘Space"): each modifier, then the key.
+    private func keys(_ label: String) -> [String] {
+        let modifiers = label.prefix { "⇪⌃⌥⇧⌘".contains($0) }
+        return modifiers.map(String.init) + [String(label.dropFirst(modifiers.count))]
     }
 
     /// Back to the default, unless another command took it meanwhile: two commands on one shortcut
