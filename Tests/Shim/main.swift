@@ -458,6 +458,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testCaptureSkipsUnmanageableAndNeverOverlaps", { ($0 as! CaptureTests).testCaptureSkipsUnmanageableAndNeverOverlaps() }),
     ]),
     ("LayoutEditingTests", { LayoutEditingTests() }, [
+        ("testADividerStepsFromStopToStopAndStopsAtItsLimit", { ($0 as! LayoutEditingTests).testADividerStepsFromStopToStopAndStopsAtItsLimit() }),
+        ("testASlotGrowsByTheDividerItHas", { ($0 as! LayoutEditingTests).testASlotGrowsByTheDividerItHas() }),
         ("testDraggingAnInnerEdgeMovesItsDividerAndTheSlotsBehindIt", { ($0 as! LayoutEditingTests).testDraggingAnInnerEdgeMovesItsDividerAndTheSlotsBehindIt() }),
         ("testTheEdgeBetweenTwoStackedSlotsMovesOnlyThem", { ($0 as! LayoutEditingTests).testTheEdgeBetweenTwoStackedSlotsMovesOnlyThem() }),
         ("testAMoveAnOuterEdgeOrATinyResizeChangeNothing", { ($0 as! LayoutEditingTests).testAMoveAnOuterEdgeOrATinyResizeChangeNothing() }),

@@ -121,6 +121,31 @@ public func move(_ layout: Layout, divider: Divider, to position: Double, length
     return out
 }
 
+/// `divider` one stop further (`forward`: to the right, or down) or one stop back: what a drag does,
+/// for the keyboard and for VoiceOver, which cannot drag. The same stops and the same limits as
+/// `move`; unchanged when the divider is at its last stop that way.
+public func stepped(_ layout: Layout, divider: Divider, forward: Bool, length: CGFloat) -> Layout {
+    let stops = Fractions.stops(forWidth: length)
+    let next = forward ? stops.first { $0 > divider.position + epsilon } : stops.last { $0 < divider.position - epsilon }
+    guard let next else { return layout }
+    return move(layout, divider: divider, to: next, length: length)
+}
+
+/// Slot `id` one stop larger or smaller: wider or narrower by a `.vertical` divider, taller or
+/// shorter by a `.horizontal` one. The divider on its right (or under it) moves; a slot that
+/// reaches the far edge of the display moves the one on its other side instead. Unchanged when it
+/// has no divider on that axis, or is at its limit.
+public func stepped(_ layout: Layout, slot id: String, by axis: Axis, grow: Bool, length: CGFloat) -> Layout {
+    let own = dividers(layout).filter { $0.axis == axis }
+    if let far = own.first(where: { $0.before.contains(id) }) {
+        return stepped(layout, divider: far, forward: grow, length: length)
+    }
+    if let near = own.first(where: { $0.after.contains(id) }) {
+        return stepped(layout, divider: near, forward: !grow, length: length)
+    }
+    return layout
+}
+
 /// The layout after the owner resized the window of slot `id` by hand, from the slot's frame `old`
 /// to `new` (AX coordinates, on a display whose visible frame is `visible`): each inner edge that
 /// moved takes its divider along, to the nearest clean fraction, so the slots on its other side

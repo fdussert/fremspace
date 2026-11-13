@@ -15,6 +15,26 @@ final class LayoutEditingTests: XCTestCase {
         XCTAssertEqual(remove(split, slot: "notes"), code)
     }
 
+    func testADividerStepsFromStopToStopAndStopsAtItsLimit() {
+        // On a laptop the stops are 1/3, 2/5, 1/2, 3/5, 2/3.
+        let divider = dividers(code)[0]
+        let further = stepped(code, divider: divider, forward: true, length: 1512)
+        XCTAssertEqual(further.slots.first { $0.id == "ide" }?.rect.w, 2.0 / 3)
+        XCTAssertEqual(stepped(code, divider: divider, forward: false, length: 1512).slots.first { $0.id == "ide" }?.rect.w, 0.5)
+        // The slot on the other side keeps the smallest stop: nothing beyond 2/3.
+        XCTAssertEqual(stepped(further, divider: dividers(further)[0], forward: true, length: 1512), further)
+    }
+
+    func testASlotGrowsByTheDividerItHas() {
+        // "ide" has the divider on its right; "web" reaches the right edge and moves the one on its left.
+        XCTAssertEqual(stepped(code, slot: "ide", by: .vertical, grow: true, length: 1512).slots.first { $0.id == "ide" }?.rect.w, 2.0 / 3)
+        let wider = stepped(code, slot: "web", by: .vertical, grow: true, length: 1512)
+        XCTAssertEqual(wider.slots.first { $0.id == "web" }?.rect, UnitRect(x: 0.5, y: 0, w: 0.5, h: 1))
+        XCTAssertEqual(stepped(code, slot: "web", by: .vertical, grow: false, length: 1512).slots.first { $0.id == "web" }?.rect.x, 2.0 / 3)
+        // As high as the display: no divider to move that way.
+        XCTAssertEqual(stepped(code, slot: "ide", by: .horizontal, grow: true, length: 982), code)
+    }
+
     func testDividersOfTheCodeLayout() {
         XCTAssertEqual(dividers(code), [Divider(axis: .vertical, position: 0.6, before: ["ide"], after: ["web"])])
     }
