@@ -443,7 +443,7 @@ struct CanvasView: View {
             if editingDrawer, let base = space?.layout {
                 ForEach(base.slots, id: \.id) { slot in
                     let r = rect(slot.rect, in: Self.whole, size: size)
-                    RoundedRectangle(cornerRadius: 6).fill(AppIcons.tint(slot.rule.bundleID).opacity(0.22))
+                    RoundedRectangle(cornerRadius: 6).fill(SlotTile.ground.opacity(0.45))
                         .frame(width: max(r.width - 6, 1), height: max(r.height - 6, 1)).offset(x: r.minX + 3, y: r.minY + 3)
                         .allowsHitTesting(false)
                 }
@@ -599,7 +599,9 @@ struct DrawerRail: View {
                 column(drawer, apps: false)
             }
             .frame(width: Self.width).frame(maxHeight: .infinity)
-            .foregroundColor(editing ? .white : drawer != nil ? .accentColor : .secondary)
+            // The name in the text's own colour: in the accent on a tint of the accent it was the
+            // hardest thing to read in the window.
+            .foregroundColor(editing ? .white : drawer != nil ? .primary : .secondary)
             .background(shape.fill(editing ? Color.accentColor : drawer != nil ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.04)))
             .overlay(shape.strokeBorder(drawer == nil ? Color.primary.opacity(0.28) : Color.accentColor.opacity(0.6),
                                         style: StrokeStyle(lineWidth: 1, dash: drawer == nil ? [4, 3] : [])))
@@ -611,6 +613,9 @@ struct DrawerRail: View {
         }
         .help(drawer == nil ? "Add a \(edge.rawValue) drawer to this display: a panel of windows that slides over the \(edge.rawValue) edge"
               : editing ? "Back to the desktop's layout" : "Edit the \(edge.rawValue) drawer of this display")
+        .accessibilityLabel(drawer.map { "\(edge == .left ? "Left" : "Right") drawer, \(fractionLabel($0.size)) of the display" }
+                            ?? "Add a \(edge.rawValue) drawer")
+        .accessibilityAddTraits(editing ? .isSelected : [])
     }
 
     private func column(_ drawer: DrawerSpec?, apps: Bool) -> some View {
@@ -619,11 +624,15 @@ struct DrawerRail: View {
         return VStack(spacing: 8) {
             Image(systemName: drawer == nil ? "plus" : edge == .left ? "sidebar.left" : "sidebar.right")
                 .font(.system(size: 12, weight: .medium))
-            // Read from the screen outwards, like the spine of a book lying next to it.
-            Text(drawer.map { "\(name)  \(fractionLabel($0.size))" } ?? name)
-                .font(.caption.weight(.medium)).lineLimit(1).fixedSize()
-                .rotationEffect(.degrees(edge == .left ? -90 : 90))
-                .frame(width: 16, height: 110)
+                .foregroundColor(drawer != nil && session.selection.drawer != edge ? .accentColor : nil)
+            // Read from the screen outwards, like the spine of a book lying next to it. An edge
+            // without a drawer has the + alone: its name there read as a drawer that exists.
+            if let drawer {
+                Text("\(name)  \(fractionLabel(drawer.size))")
+                    .font(.caption.weight(.medium)).lineLimit(1).fixedSize()
+                    .rotationEffect(.degrees(edge == .left ? -90 : 90))
+                    .frame(width: 16, height: 110)
+            }
             if apps, !rules.isEmpty {
                 VStack(spacing: 4) {
                     // A handful: the rail says a drawer has apps, the drawer's own screen says which.
@@ -726,16 +735,27 @@ struct SlotTile: View {
 
     private var empty: Bool { !isDrawer && slot.rule.bundleID.isEmpty }
 
+    /// Every tile has the same ground. A tile used to take the dominant hue of its app's icon: two
+    /// blue icons gave two tiles of one colour, a grey one a colour drawn from a hash, and the
+    /// strongest signal on the screen said nothing. Colour is kept for what a slot is in: orange
+    /// for one that needs an app, white for the selection, the accent for a drawer.
+    static let ground = Color(white: 0.2)
+
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 7)
         shape
-            .fill(isDrawer ? Color(white: 0.42) : empty ? Color.white.opacity(0.06) : AppIcons.tint(slot.rule.bundleID))
+            .fill(empty ? Color.white.opacity(0.06) : Self.ground)
+            .overlay {
+                // The app's hue as a line along the top: a trace of it, which tells neighbours apart.
+                if let hue = apps.first.flatMap({ AppIcons.hue($0.bundleID) }) {
+                    shape.fill(hue).mask(alignment: .top) { Rectangle().frame(height: 3) }
+                }
+            }
             .overlay {
                 if empty {
                     shape.strokeBorder(Color.orange.opacity(0.9), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
                 } else {
-                    // A lighter top edge, so neighbouring tiles of the same app stay apart.
-                    shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.28), .white.opacity(0.04)], startPoint: .top, endPoint: .bottom), lineWidth: 1)
+                    shape.strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
                 }
             }
             .overlay {
@@ -779,12 +799,16 @@ struct SlotTile: View {
             .padding(.vertical, TileMetrics.iconGap)
             if fit.states { stateRow(words: fit.stateWords) }
         }
-        .foregroundColor(empty ? .orange : .white)
+        .foregroundColor(empty ? .orange : unassigned ? .white.opacity(0.6) : .white)
         .padding(TileMetrics.padding)
     }
 
     /// The apps to draw: every rule of a layout slot, the real ones of a drawer slot.
     private var apps: [Rule] { isDrawer ? drawerApps(slot) : slot.rules }
+
+    /// A drawer slot no app is sent to by itself: a good slot (it takes what the owner sends to the
+    /// drawer), so it is quiet, not orange like a layout slot that still needs its app.
+    private var unassigned: Bool { isDrawer && apps.isEmpty }
 
     /// What is particular to the slot. An ordinary one (one app, locked) says nothing, so that a
     /// mark on a tile always means something; a lock on every tile meant nothing.
@@ -823,7 +847,8 @@ struct SlotTile: View {
     private var title: String {
         if isDrawer {
             let apps = drawerApps(slot)
-            return apps.isEmpty ? slot.id : apps.map { appName($0.bundleID) + ($0.profile.map { " – \($0)" } ?? "") }.joined(separator: " + ")
+            // Not the slot's id ("top"), which is the file's business.
+            return apps.isEmpty ? "Any window" : apps.map { appName($0.bundleID) + ($0.profile.map { " – \($0)" } ?? "") }.joined(separator: " + ")
         }
         if empty { return "Choose an app" }
         return slot.rules.map { rule in appName(rule.bundleID) + (rule.profile.map { " – \($0)" } ?? "") }.joined(separator: " + ")
@@ -864,17 +889,12 @@ enum AppIcons {
         return copy
     }
 
-    /// The colour of the app's tile: the dominant hue of its icon, calmed down so that white text
-    /// reads on it. An app without an icon, or with a grey one, gets a stable hue from its bundle id.
-    static func tint(_ bundleID: String) -> Color {
+    /// The colour that stands for the app on its tile: the dominant hue of its icon; for an icon
+    /// without one (grey, black), a stable hue from its bundle id. Nil without an app.
+    static func hue(_ bundleID: String) -> Color? {
+        guard !bundleID.isEmpty else { return nil }
         if let cached = tints[bundleID] { return cached }
-        let color: Color
-        if bundleID.isEmpty {
-            color = Color(white: 0.4)
-        } else {
-            let hue = icon(bundleID).flatMap(dominantHue) ?? fallbackHue(bundleID)
-            color = Color(hue: hue, saturation: 0.58, brightness: 0.56)
-        }
+        let color = Color(hue: icon(bundleID).flatMap(dominantHue) ?? fallbackHue(bundleID), saturation: 0.62, brightness: 0.88)
         tints[bundleID] = color
         return color
     }

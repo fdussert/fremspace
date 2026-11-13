@@ -809,7 +809,7 @@ final class EditSession: ObservableObject {
     /// place, and a desktop left without a slot becomes free.
     func moveToDrawer(slot id: String, edge: DrawerEdge) {
         guard selection.drawer == nil, let layout = spaceSpec?.layout, let slot = layout.slots.first(where: { $0.id == id }),
-              let target = displaySpec?.drawers.first(where: { $0.edge == edge })?.layout.slots.first else { return }
+              displaySpec?.drawers.first(where: { $0.edge == edge })?.layout.slots.isEmpty == false else { return }
         let apps = slot.rules.filter { !$0.bundleID.isEmpty }
         guard !apps.isEmpty else { return }
         checkpoint()
@@ -824,7 +824,7 @@ final class EditSession: ObservableObject {
         }
         selection.slot = nil
         let names = apps.map { appName($0.bundleID) }.joined(separator: ", ")
-        status = Status(kind: .info, text: "\(names) moved to the \(edge.rawValue) drawer, slot \"\(target.id)\". Save to apply.")
+        status = Status(kind: .info, text: "\(names) moved to the \(edge.rawValue) drawer. Save to apply.")
     }
 
     /// The layout being edited: the desktop's, or the selected drawer's (as a layout of rule-less slots).
