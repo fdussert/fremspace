@@ -43,9 +43,6 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Nothing on the page waits for Save.
-    var actsAtOnce: Bool { self == .maintenance || self == .status }
-
     /// The page is about one configuration, the one selected: its header says which and can change it.
     var isOfAConfiguration: Bool { self == .scenes || self == .share }
 
@@ -57,8 +54,9 @@ enum SettingsPage: String, CaseIterable, Identifiable {
             let count = session.attention.filter { $0.level != .note }.count
             return count == 0 ? nil : "\(count)"
         case .shortcuts:
-            let changed = session.config.shortcuts.count
-            return changed == 0 ? nil : "\(changed) changed"
+            // "Custom", not "changed": in a window that has Save, "changed" reads as "unsaved".
+            let custom = session.config.shortcuts.count
+            return custom == 0 ? nil : "\(custom) custom"
         case .general:
             return session.engine.paused ? "Paused" : nil
         case .scenes:
@@ -513,7 +511,7 @@ struct ShortcutsEditor: View {
             }
             ForEach(ShortcutCatalog.groups.filter { group in shown.contains { $0.group == group } }, id: \.self) { group in
                 let changed = ShortcutCatalog.entries.filter { $0.group == group && session.config.shortcuts[$0.id] != nil }.count
-                FoldSection(group, key: "shortcuts.\(group)", badge: changed == 0 ? nil : "\(changed) changed") {
+                FoldSection(group, key: "shortcuts.\(group)", badge: changed == 0 ? nil : "\(changed) custom") {
                     ForEach(shown.filter { $0.group == group }, id: \.id) { entry in
                         row(entry, effective[entry.id] ?? Shortcut(keyCode: nil))
                     }
@@ -556,7 +554,8 @@ struct ShortcutsEditor: View {
                     Button {
                         reset(entry)
                     } label: {
-                        Image(systemName: "arrow.uturn.backward")
+                        // Not the arrow of Undo, which is in the bar at the foot of the same window.
+                        Image(systemName: "arrow.counterclockwise")
                     }
                     .buttonStyle(.borderless)
                     .help(entry.fallback == nil ? "Back to no shortcut" : "Back to \(ShortcutCatalog.label(entry.defaultShortcut))")

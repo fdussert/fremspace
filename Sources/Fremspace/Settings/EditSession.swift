@@ -129,6 +129,9 @@ final class EditSession: ObservableObject {
 
     var isDirty: Bool { config != saved }
 
+    /// Where the unsaved changes are: the sidebar marks those rows, the bar beside Save names them.
+    var unsaved: UnsavedChanges { unsavedChanges(edited: config, saved: saved) }
+
     // MARK: - Window previews
 
     /// The slots of the desktop shown in the editor that show their window's picture: those of the

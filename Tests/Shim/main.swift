@@ -319,6 +319,14 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testBackwardsIsTheOtherWay", { ($0 as! StackTests).testBackwardsIsTheOtherWay() }),
         ("testNothingToGoToAloneOrOutsideTheStack", { ($0 as! StackTests).testNothingToGoToAloneOrOutsideTheStack() }),
     ]),
+    ("UnsavedTests", { UnsavedTests() }, [
+        ("testAFileAsSavedHasNothingUnsaved", { ($0 as! UnsavedTests).testAFileAsSavedHasNothingUnsaved() }),
+        ("testAChangedConfigurationIsNamedAndTheOthersAreNot", { ($0 as! UnsavedTests).testAChangedConfigurationIsNamedAndTheOthersAreNot() }),
+        ("testANewConfigurationAndADeletedOneAreBothUnsaved", { ($0 as! UnsavedTests).testANewConfigurationAndADeletedOneAreBothUnsaved() }),
+        ("testAChangedSceneMarksItsConfigurationAndTheScenes", { ($0 as! UnsavedTests).testAChangedSceneMarksItsConfigurationAndTheScenes() }),
+        ("testSettingsAndShortcutsAreTheirPages", { ($0 as! UnsavedTests).testSettingsAndShortcutsAreTheirPages() }),
+        ("testAListReadsAsASentenceDoes", { ($0 as! UnsavedTests).testAListReadsAsASentenceDoes() }),
+    ]),
     ("ShortcutsTests", { ShortcutsTests() }, [
         ("testModifiersCompareWhateverTheirOrder", { ($0 as! ShortcutsTests).testModifiersCompareWhateverTheirOrder() }),
         ("testAShortcutNeedsMoreThanShift", { ($0 as! ShortcutsTests).testAShortcutNeedsMoreThanShift() }),

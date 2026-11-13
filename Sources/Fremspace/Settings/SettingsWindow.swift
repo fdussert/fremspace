@@ -314,9 +314,18 @@ struct Sidebar: View {
             .accessibilityAddTraits(.isHeader)
     }
 
+    /// On a row that holds unsaved changes: the bar at the bottom says there are some, this says where.
+    private func unsavedDot(selected: Bool) -> some View {
+        Circle().fill(selected ? Color.white : Color.accentColor).frame(width: 6, height: 6)
+            .help("Unsaved changes")
+            .accessibilityLabel("Unsaved changes")
+    }
+
     private func pageRow(_ page: SettingsPage) -> some View {
         let selected = session.settingsPage == page
         let badge = page.badge(session)
+        let unsaved = session.unsaved
+        let changed = page == .general ? unsaved.general : page == .shortcuts ? unsaved.shortcuts : page == .scenes ? unsaved.scenes : false
         return Button {
             session.settingsPage = page
         } label: {
@@ -334,6 +343,7 @@ struct Sidebar: View {
                 } else if let badge {
                     Text(badge).font(.caption).foregroundColor(selected ? .white.opacity(0.8) : .secondary)
                 }
+                if changed { unsavedDot(selected: selected) }
             }
             .padding(.horizontal, 8).padding(.vertical, 6)
             .foregroundColor(selected ? .white : .primary)
@@ -372,6 +382,7 @@ struct Sidebar: View {
                     .foregroundColor(selected ? .white : .green)
                     .help("Fremspace applies this configuration now")
             }
+            if session.unsaved.configurations.contains(configuration.id) { unsavedDot(selected: selected) }
         }
         .padding(.horizontal, 8).padding(.vertical, 6)
         .foregroundColor(selected ? .white : .primary)
@@ -462,8 +473,9 @@ extension Status.Kind {
     }
 }
 
-/// What is going on (the problem that blocks saving, the last result, or "unsaved"), undo and redo,
-/// Revert and Save.
+/// What is going on (the problem that blocks saving, the last result, or what is unsaved and where),
+/// undo and redo, Revert and Save. Tinted while something is unsaved: the window's one rule, that
+/// nothing changes on screen before Save, was carried by a seven-point dot.
 struct StatusBar: View {
     @ObservedObject var session: EditSession
 
@@ -474,23 +486,28 @@ struct StatusBar: View {
                 .keyboardShortcut("z", modifiers: .command)
                 .disabled(!session.canUndo)
                 .help("Undo (⌘Z)")
+                .accessibilityLabel("Undo")
             Button { session.redo() } label: { Image(systemName: "arrow.uturn.forward") }
                 .keyboardShortcut("z", modifiers: [.command, .shift])
                 .disabled(!session.canRedo)
                 .help("Redo (⇧⌘Z)")
+                .accessibilityLabel("Redo")
             if let problem {
+                // What stops Save is not a note: in the text's own colour.
                 Label(problem.text, systemImage: Status.Kind.warning.symbol)
-                    .labelStyle(StatusLabelStyle(color: Status.Kind.warning.color))
+                    .labelStyle(StatusLabelStyle(color: Status.Kind.warning.color, ink: .primary))
                 Button("Show") { session.selection = problem.selection }
                     .buttonStyle(.link)
             } else if let status = session.status {
                 Label(status.text, systemImage: status.kind.symbol)
                     .labelStyle(StatusLabelStyle(color: status.kind.color))
             } else if session.isDirty {
-                Label(session.settingsPage?.actsAtOnce == true
-                      ? "Unsaved changes to your layouts or settings. This page acts at once."
-                      : "Unsaved changes. Nothing changes on screen until you save.", systemImage: "circle.fill")
-                    .labelStyle(StatusLabelStyle(color: .accentColor, small: true))
+                let places = unsavedPlaces(session.unsaved, in: session.config)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(places.isEmpty ? "Unsaved changes." : "Unsaved changes in \(listed(places)).")
+                    Text("Nothing changes on screen until you save.").foregroundColor(.secondary)
+                }
+                .lineLimit(1)
             }
             Spacer(minLength: 8)
             Button("Revert") { session.revert() }
@@ -503,18 +520,18 @@ struct StatusBar: View {
                 .help(problem?.text ?? "Save and apply the layouts (⌘S)")
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
-        .background(Color.primary.opacity(0.035))
+        .background(session.isDirty ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.035))
     }
 }
 
 struct StatusLabelStyle: LabelStyle {
     let color: Color
-    var small = false
+    var ink = Color.secondary
 
     func makeBody(configuration: LabelStyleConfiguration) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            configuration.icon.foregroundColor(color).font(.system(size: small ? 7 : 12))
-            configuration.title.foregroundColor(.secondary).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            configuration.icon.foregroundColor(color).font(.system(size: 12))
+            configuration.title.foregroundColor(ink).lineLimit(2).fixedSize(horizontal: false, vertical: true)
         }
     }
 }
