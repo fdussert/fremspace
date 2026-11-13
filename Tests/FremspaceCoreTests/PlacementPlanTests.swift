@@ -76,6 +76,17 @@ final class PlacementPlanTests: XCTestCase {
         XCTAssertNotEqual(enlarged, frames(visible)["a"])
     }
 
+    func testASlotRememberedOnOneDesktopDoesNotChooseOnAnother() {
+        // A window titled "Tab" was dropped into `b` on the next desktop: here, where `b` exists
+        // too, a new window of that title still goes to the first slot that takes it.
+        let other = SpaceKey(display: builtIn, spaceIndex: 1)
+        var plan = input([SeenWindow(info: window(1), space: space, frame: elsewhere)])
+        plan.memory = [other: [WindowKey(window(1)): "b"]]
+        XCTAssertEqual(planPlacements(plan).first?.slotID, "a")
+        plan.memory = [space: [WindowKey(window(1)): "b"]]
+        XCTAssertEqual(planPlacements(plan).first?.slotID, "b")
+    }
+
     func testHeldLockedWindowOffFrameIsMoved() {
         let b = frames(visible)["b"]!
         let far = planPlacements(input([SeenWindow(info: window(1), space: space, frame: b.offsetBy(dx: 40, dy: 0))],

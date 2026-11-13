@@ -21,7 +21,9 @@ public enum Route: Equatable {
 /// when unconfigured) and `available` the configured desktops present now. In order:
 /// - windows Fremspace does not manage stay;
 /// - at login a window goes back to its remembered desktop;
-/// - a window moved by hand goes back only when its slot there is locked and no command sent it;
+/// - a window moved by hand goes back only when its slot there is locked and no command sent it
+///   (`heldSlot`: the slot it held on the desktop it left; unknown, the first slot there that
+///   takes it, which with a locked and an unlocked slot for one app depended on their order);
 /// - a window on a free or unconfigured desktop stays; so does one on its remembered desktop, or on a
 ///   desktop where it matches a slot; so does one on its remembered desktop when that place was the
 ///   owner's choice (`rememberedDeliberately`: a command, a hand move, a free desktop), not a slot a
@@ -40,7 +42,8 @@ public enum Route: Equatable {
 ///   a free one. Windows of an app that has a slot on the desktop stay, whatever its profile or title
 ///   rule: they are that app's own side windows.
 public func route(window: WindowInfo, on here: ConfiguredDesktop?, reason: RouteReason, configuration: Configuration,
-                  remembered: ConfiguredDesktop?, rememberedDeliberately: Bool = true, sentByCommand: Bool,
+                  remembered: ConfiguredDesktop?, rememberedDeliberately: Bool = true, heldSlot: String? = nil,
+                  sentByCommand: Bool,
                   onIgnoredDisplay: Bool = false, noFloating: Bool = false,
                   available: Set<ConfiguredDesktop>) -> Route {
     // A fixed-size window takes no slot: only `noFloating` moves it, to a free desktop.
@@ -97,7 +100,8 @@ public func route(window: WindowInfo, on here: ConfiguredDesktop?, reason: Route
         return send(remembered)
     }
     if case .handMoved(let from) = reason {
-        let slot = layout(from)?.slots.first { matches($0, window) }
+        let slots = layout(from)?.slots ?? []
+        let slot = slots.first { $0.id == heldSlot } ?? slots.first { matches($0, window) }
         if slot?.locked == true && !sentByCommand { return send(from) }
         // Elsewhere a hand move is the owner's will. With no floating, a desktop with a layout does
         // not keep the window: it goes where the rules below say.

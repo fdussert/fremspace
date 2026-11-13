@@ -38,7 +38,9 @@ public struct PlanInput {
     public var held: [UInt32: HeldSlot]
     /// The slot the user dropped each live window into.
     public var chosen: [UInt32: String]
-    public var memory: [WindowKey: String]
+    /// Where the owner last dropped a window of that app, profile and title, per desktop: the
+    /// slot it remembers is one of that desktop, and slot ids repeat from one desktop to the next.
+    public var memory: [SpaceKey: [WindowKey: String]]
     /// Released windows and drawer members: never planned.
     public var skip: Set<UInt32>
     /// Windows whose app refuses their slot size.
@@ -58,7 +60,7 @@ public struct PlanInput {
     public var refocused: Set<SpaceKey>
 
     public init(desktops: [SpaceKey: SpaceSpec], visible: [DisplayIdentity: CGRect], windows: [SeenWindow],
-                held: [UInt32: HeldSlot], chosen: [UInt32: String], memory: [WindowKey: String], skip: Set<UInt32>,
+                held: [UInt32: HeldSlot], chosen: [UInt32: String], memory: [SpaceKey: [WindowKey: String]], skip: Set<UInt32>,
                 cannotFit: Set<UInt32>, focus: [SpaceKey: String], force: Bool, only: SpaceKey?, gap: CGFloat,
                 tolerance: CGFloat, split: [UInt32: SplitSide] = [:], refocused: Set<SpaceKey> = []) {
         self.desktops = desktops
@@ -111,7 +113,8 @@ public func planPlacements(_ input: PlanInput) -> [PlannedPlacement] {
               let visible = input.visible[space.display] else { continue }
         if let only = input.only, only != space { continue }
         let here = input.windows.filter { $0.space == space && !input.skip.contains($0.info.id) }
-        let assignment = assign(windows: here.map(\.info), layout: layout, memory: input.memory, chosen: input.chosen)
+        let assignment = assign(windows: here.map(\.info), layout: layout, memory: input.memory[space] ?? [:],
+                                chosen: input.chosen)
         let frames = slotFrames(layout: layout, focus: input.focus[space], visible: visible, gap: input.gap)
         for seen in here {
             let id = seen.info.id

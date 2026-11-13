@@ -176,6 +176,29 @@ final class DesktopRoutingTests: XCTestCase {
         XCTAssertEqual(route(teams, on: d(builtIn, 2), .handMoved(from: d(builtIn, 3))), .send(d(builtIn, 3)))
     }
 
+    func testAHandMoveIsJudgedOnTheSlotTheWindowHeld() {
+        // One app with a locked slot and an unlocked one on the same desktop, in both orders.
+        func desk(lockedFirst: Bool) -> Configuration {
+            let locked = Slot(id: "pinned", rect: UnitRect(x: 0, y: 0, w: 0.5, h: 1), rule: Rule(bundleID: brave), locked: true)
+            let loose = Slot(id: "loose", rect: UnitRect(x: 0.5, y: 0, w: 0.5, h: 1), rule: Rule(bundleID: brave), locked: false)
+            return Configuration(id: UUID(), name: "Desk", displays: [DisplaySpec(identity: left, spaces: [
+                SpaceSpec(label: "Web", layout: Layout(slots: lockedFirst ? [locked, loose] : [loose, locked])),
+                SpaceSpec(label: "Rest"),
+            ])])
+        }
+        for lockedFirst in [true, false] {
+            func moved(held: String?) -> Route {
+                FremspaceCore.route(window: window(brave), on: d(left, 1), reason: .handMoved(from: d(left, 0)),
+                                    configuration: desk(lockedFirst: lockedFirst), remembered: nil, heldSlot: held,
+                                    sentByCommand: false, available: [d(left, 0), d(left, 1)])
+            }
+            XCTAssertEqual(moved(held: "pinned"), .send(d(left, 0)), "locked first: \(lockedFirst)")
+            XCTAssertEqual(moved(held: "loose"), .stay, "locked first: \(lockedFirst)")
+            // Not known (the window was never placed): the first slot that takes it, as before.
+            XCTAssertEqual(moved(held: nil), lockedFirst ? .send(d(left, 0)) : .stay)
+        }
+    }
+
     func testHandMoveOfUnlockedWindowStays() {
         XCTAssertEqual(route(brave, on: d(left, 2), .handMoved(from: d(left, 1))), .stay)
     }

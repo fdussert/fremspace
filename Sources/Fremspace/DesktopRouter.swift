@@ -34,6 +34,9 @@ final class DesktopRouter {
     /// The configured desktop each known window was last seen on, and what it is.
     private var lastDesktop: [UInt32: ConfiguredDesktop] = [:]
     private var lastInfo: [UInt32: WindowInfo] = [:]
+    /// The slot the engine last gave each window, and on which desktop: a hand move is judged on
+    /// the slot the window left (the engine may have dropped its placement by then).
+    private var lastSlot: [UInt32: (desktop: ConfiguredDesktop, slotID: String)] = [:]
     /// The remembered placement recognised for each live window.
     private var matched: [UInt32: RememberedPlacement] = [:]
     /// Windows on a layout desktop that are not the router's to move (dialogs, popups).
@@ -60,7 +63,13 @@ final class DesktopRouter {
     /// holds. Re-learned from the next pass, so nothing looks moved by hand.
     func reset() {
         lastDesktop.removeAll()
+        lastSlot.removeAll()
         matched.removeAll()
+    }
+
+    /// The engine put this window in this slot of this configured desktop (a placement pass).
+    func placed(_ id: UInt32, in slotID: String, on desktop: ConfiguredDesktop) {
+        lastSlot[id] = (desktop, slotID)
     }
 
     /// When the ids of the windows alive now began: the later of the boot and of the owner's
@@ -111,6 +120,7 @@ final class DesktopRouter {
         sentByCommand.remove(id)
         inFlight.remove(id)
         lastDesktop[id] = nil
+        lastSlot[id] = nil
         lastInfo[id] = nil
         matched[id] = nil
         recognised.remove(id)
@@ -276,8 +286,9 @@ final class DesktopRouter {
             lastDesktop[id] = here
             let remembered = matched[id]?.desktop
                 ?? engine.state.remembered.entry(forWindow: id, configurationID: configuration.id, idsSince: bootTime)?.desktop
+            let held = lastSlot[id].flatMap { $0.desktop == from ? $0.slotID : nil }
             switch route(window: info, on: here, reason: .handMoved(from: from), configuration: configuration,
-                         remembered: remembered, sentByCommand: sentByCommand.contains(id),
+                         remembered: remembered, heldSlot: held, sentByCommand: sentByCommand.contains(id),
                          noFloating: engine.noFloating, available: engine.availableDesktops) {
             case .send(let target):
                 Log.engine.info("window \(id) \(info.bundleID, privacy: .public) moved by hand to a desktop that does not keep it (a locked slot elsewhere, or no floating); sending it to desktop \(target.index + 1) of \(target.display.name, privacy: .public)")

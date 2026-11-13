@@ -116,8 +116,10 @@ final class Engine {
     private var focus = FocusState()
     /// Desktops whose Focus changed while they were not shown: their next pass is forced.
     private var refocused: Set<SpaceKey> = []
-    /// Where the user last put each window, when several slots match it (persisted in plan 3).
-    private var memory: [WindowKey: String] = [:]
+    /// Where the user last put each window, when several slots match it, per desktop (a slot id
+    /// is one of a desktop). Forgotten when the configuration is read again or the desktops
+    /// change place: the keys are real positions, and it grew for as long as Fremspace ran.
+    private var memory: [SpaceKey: [WindowKey: String]] = [:]
     /// Windows that fought the lock: left alone until they are destroyed.
     /// The slot the user dropped each live window into, by window id: survives title changes
     /// (browser tabs) and placement resets; dropped when the window goes or leaves its slot.
@@ -697,6 +699,7 @@ final class Engine {
         if desktopMap != previous {
             router.reset()
             rebuildFocus()
+            memory.removeAll()
         }
         if links != state.desktopLinks {
             state.desktopLinks = links
@@ -897,6 +900,7 @@ final class Engine {
             loadError = "Config file unreadable: \(error.localizedDescription)"
         }
         resetPlacements()
+        memory.removeAll()
         chooseConfiguration()
         drawers.reconcile()
         scheduleApply()
@@ -1448,7 +1452,10 @@ final class Engine {
             checkFit(info, element, move.to, slotID: planned.slotID)
         }
         let plannedIDs = Set(plan.map(\.id))
-        for planned in plan { router.arrived(planned.id) }
+        for planned in plan {
+            router.arrived(planned.id)
+            if let desktop = configuredDesktop(planned.space) { router.placed(planned.id, in: planned.slotID, on: desktop) }
+        }
         // Sent windows on a layout desktop where they have no slot (a command): their own frame.
         for window in seen where !plannedIDs.contains(window.info.id) {
             if let element = elements[window.info.id]?.element, let space = window.space, let frame = window.frame {
@@ -1731,7 +1738,7 @@ final class Engine {
         // Dropped nearer another slot that also takes this window: the user moved it there.
         if !isClose(actual, placement.frame), hand.mayDropIntoSlot,
            let moved = slotDroppedInto(placement, actual: actual) {
-            memory[WindowKey(placement.info)] = moved.slotID
+            memory[placement.space, default: [:]][WindowKey(placement.info)] = moved.slotID
             chosenSlot[id] = moved.slotID
             placement.slotID = moved.slotID
             placement.frame = moved.frame
