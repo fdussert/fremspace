@@ -218,6 +218,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = main
     }
 
+    /// ⌘Q while the editor is in front, the menu's Quit, a logout, an update's relaunch: all come
+    /// here. Unsaved changes in the editor are asked about first, as when its window closes.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        menu?.mayQuit() == false ? .terminateCancel : .terminateNow
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         hyper.stop()
         engine.drawers.restoreAll()

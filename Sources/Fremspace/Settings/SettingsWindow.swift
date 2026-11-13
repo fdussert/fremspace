@@ -73,12 +73,29 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
+        settleUnsavedChanges()
+    }
+
+    /// Before the app quits (⌘Q while the editor is in front, the menu's Quit, a logout, an update's
+    /// relaunch): the same question as when the window closes. False: do not quit.
+    func mayQuit() -> Bool {
+        guard let session, session.isDirty else { return true }
+        // The question is about this window: it comes to the front with it.
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
+        return settleUnsavedChanges()
+    }
+
+    /// Asks what becomes of the unsaved changes, wherever they are about to be lost. True: go on
+    /// (saved, or given up); false: stay (cancelled, or the save was refused and says why).
+    private func settleUnsavedChanges() -> Bool {
         guard let session, session.isDirty else { return true }
         let alert = NSAlert()
-        alert.messageText = "Save the changes to your layouts?"
-        alert.informativeText = "Nothing changes on screen until the layouts are saved."
+        // Not "to your layouts": a shortcut or a setting may be all that changed.
+        alert.messageText = "Save your changes?"
+        alert.informativeText = "Nothing changes on screen until they are saved."
         alert.addButton(withTitle: "Save")
-        alert.addButton(withTitle: "Discard")
+        alert.addButton(withTitle: "Discard").hasDestructiveAction = true
         alert.addButton(withTitle: "Cancel")
         switch alert.runModal() {
         case .alertFirstButtonReturn:

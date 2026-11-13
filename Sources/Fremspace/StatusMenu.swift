@@ -432,6 +432,9 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         settings.show()
     }
 
+    /// False when the editor has unsaved changes and the owner chose to stay.
+    func mayQuit() -> Bool { settings.mayQuit() }
+
     /// "Recovery": when something went wrong.
     private func recoveryItem() -> NSMenuItem {
         let item = NSMenuItem(title: "Recovery", action: nil, keyEquivalent: "")
