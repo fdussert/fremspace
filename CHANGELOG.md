@@ -9,6 +9,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+## 0.1.2
+
 - A desktop taken out of the configuration can be removed from the Mac too. The editor says, under
   the desktop tabs, which macOS desktops the configuration in use does not list, and offers to
   remove each one through Mission Control. It asks first: macOS moves that desktop's windows to
