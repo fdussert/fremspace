@@ -333,11 +333,19 @@ struct SlotInspector: View {
     /// it), the others stack with it (also added by "Lock on this desktop" over the slot).
     private var apps: some View {
         Field("Apps") {
-            AppMenu(title: "Choose an app\u{2026}", bundleID: slot.rule.bundleID, known: configuredApps) { id in
-                session.checkpoint()
-                update { slot in
-                    slot.rule.bundleID = id
-                    if !isTabbedBrowser(id) { slot.rule.profile = nil }
+            HStack(spacing: 6) {
+                AppMenu(title: "Choose an app\u{2026}", bundleID: slot.rule.bundleID, known: configuredApps) { id in
+                    session.checkpoint()
+                    update { slot in
+                        slot.rule.bundleID = id
+                        if !isTabbedBrowser(id) { slot.rule.profile = nil }
+                    }
+                }
+                // The first app could only be replaced by another (owner, 2026-11-13): it leaves
+                // like the others, and like the apps of a drawer slot.
+                if !slot.rule.bundleID.isEmpty {
+                    Spacer()
+                    takeOut(0, slot.rule)
                 }
             }
             ForEach(Array(slot.rules.dropFirst().enumerated()), id: \.offset) { offset, rule in
@@ -345,15 +353,7 @@ struct SlotInspector: View {
                     if let icon = AppIcons.small(rule.bundleID) { Image(nsImage: icon) }
                     Text(appName(rule.bundleID) + (rule.profile.map { " \u{2013} \($0)" } ?? "")).lineLimit(1)
                     Spacer()
-                    Button {
-                        session.checkpoint()
-                        update { if $0.rules.indices.contains(offset + 1) { $0.rules.remove(at: offset + 1) } }
-                    } label: {
-                        Image(systemName: "minus.circle").hitTarget()
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Take \(appName(rule.bundleID)) out of this slot")
-                    .accessibilityLabel("Take \(appName(rule.bundleID)) out of this slot")
+                    takeOut(offset + 1, rule)
                 }
             }
             AppMenu(title: "Add an app\u{2026}", bundleID: nil, known: configuredApps) { id in
@@ -365,6 +365,16 @@ struct SlotInspector: View {
             .help(slot.rule.bundleID.isEmpty ? "Choose the slot's app first" : "Another app whose windows stack in this slot")
             HelpText("Several windows here stack: \(session.shortcutLabel("stackNext")) goes through them, \(session.shortcutLabel("stackPrevious")) the other way.")
         }
+    }
+
+    /// The button that takes the app at `index` out of the slot.
+    private func takeOut(_ index: Int, _ rule: Rule) -> some View {
+        Button { session.takeApp(at: index, outOfSlot: slot.id) } label: {
+            Image(systemName: "minus.circle").hitTarget()
+        }
+        .buttonStyle(.borderless)
+        .help("Take \(appName(rule.bundleID)) out of this slot")
+        .accessibilityLabel("Take \(appName(rule.bundleID)) out of this slot")
     }
 
     @ViewBuilder

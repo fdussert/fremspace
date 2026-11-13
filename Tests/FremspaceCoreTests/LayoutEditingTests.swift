@@ -143,4 +143,19 @@ final class LayoutEditingTests: XCTestCase {
         XCTAssertEqual(out.slots.map(\.rule.bundleID), ["a", "b", "c"])
         XCTAssertEqual(swapped(desk, "ide", "nowhere"), desk)
     }
+
+    func testTakingAnAppOutOfASlot() {
+        var slot = Slot(id: "main", rect: UnitRect(x: 0, y: 0, w: 1, h: 1), rule: Rule(bundleID: "com.example.chat"), locked: false)
+        slot.rules.append(Rule(bundleID: "com.example.mail"))
+        // The first of two: the other becomes the one the slot is named after.
+        let one = removingApp(slot, at: 0)
+        XCTAssertEqual(one.rules.map(\.bundleID), ["com.example.mail"])
+        // The last one: the slot stays, empty, with its place and its switches.
+        let none = removingApp(one, at: 0)
+        XCTAssertEqual(none.rules.map(\.bundleID), [""])
+        XCTAssertEqual(none.rect, slot.rect)
+        XCTAssertFalse(none.locked)
+        // A position it does not have changes nothing.
+        XCTAssertEqual(removingApp(slot, at: 5), slot)
+    }
 }

@@ -30,6 +30,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 - An app that is given a slot also leaves the free desktop: its window went there while it had no
   slot ("No floating windows on layout desktops") and stayed there once it had one. What you sent
   to the free desktop with a command stays.
+- An app can be taken out of a slot: a button beside each app of the slot, the first included, and
+  "Take … out of this slot" in the menu of a tile. The first app could only be replaced by another.
 - The editor shows the windows you sent to a drawer by hand: a drawer slot lists them under "Sent
   here by hand", with a button that takes one out at once, and its tile draws their icons inside
   a dashed line and counts them. They are in no configuration, and nothing showed that they were

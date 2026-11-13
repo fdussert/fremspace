@@ -209,3 +209,17 @@ public func canSplit(_ layout: Layout, slot id: String, along axis: Axis, length
     let half = (axis == .vertical ? slot.rect.w : slot.rect.h) / 2
     return half >= smallest - epsilon
 }
+
+/// `slot` without its app at `index`. The next app, when there is one, becomes the one the slot is
+/// named after. The last app leaves the slot empty, still there with its place and its switches:
+/// a layout slot always has a first rule, and one without an app is how the editor says "choose".
+public func removingApp(_ slot: Slot, at index: Int) -> Slot {
+    guard slot.rules.indices.contains(index) else { return slot }
+    var slot = slot
+    if slot.rules.count > 1 {
+        slot.rules.remove(at: index)
+    } else {
+        slot.rules[0] = Rule(bundleID: "")
+    }
+    return slot
+}

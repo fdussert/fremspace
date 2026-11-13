@@ -1121,6 +1121,26 @@ final class EditSession: ObservableObject {
         selection.slot = newID
     }
 
+    /// Takes the app at `index` out of slot `id` of what is edited, a layout or a drawer. A layout
+    /// slot left without an app has to get one, or go, before the next save (`problem`); a drawer
+    /// slot may hold none.
+    func takeApp(at index: Int, outOfSlot id: String) {
+        checkpoint()
+        if let edge = selection.drawer {
+            updateDrawerSlot(edge, id) { if $0.rules.indices.contains(index) { $0.rules.remove(at: index) } }
+        } else {
+            var emptied = false
+            updateSpace { space in
+                guard let i = space.layout?.slots.firstIndex(where: { $0.id == id }) else { return }
+                space.layout!.slots[i] = removingApp(space.layout!.slots[i], at: index)
+                emptied = space.layout!.slots[i].rule.bundleID.isEmpty
+            }
+            if emptied {
+                status = Status(kind: .info, text: "The slot has no app now: choose one, or remove the slot, before you save.")
+            }
+        }
+    }
+
     func remove(slot id: String) {
         guard let layout = editedLayout else { return }
         checkpoint()

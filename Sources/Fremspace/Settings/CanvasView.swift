@@ -562,8 +562,18 @@ struct CanvasView: View {
                             .disabled(!canSplit(layout, slot: slot.id, along: .vertical, length: CGFloat(c.w) * visible.width))
                         Button("Split top / bottom") { session.selection.slot = slot.id; session.split(slot: slot.id, along: .horizontal) }
                             .disabled(!canSplit(layout, slot: slot.id, along: .horizontal, length: CGFloat(c.h) * visible.height))
+                        let named = Array(slot.rules.enumerated()).filter { !$0.element.bundleID.isEmpty }
+                        if !named.isEmpty {
+                            SwiftUI.Divider()
+                            ForEach(named, id: \.offset) { index, rule in
+                                Button("Take \(appName(rule.bundleID)) out of this slot") {
+                                    session.selection.slot = slot.id
+                                    session.takeApp(at: index, outOfSlot: slot.id)
+                                }
+                            }
+                        }
                         SwiftUI.Divider()
-                        Button("Remove") { session.remove(slot: slot.id) }
+                        Button("Remove this slot") { session.remove(slot: slot.id) }
                             .disabled(layout.slots.count <= 1)
                     }
                     // To VoiceOver a tile was a shape with loose words in it: it is a slot, named,
