@@ -283,18 +283,27 @@ struct Sidebar: View {
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 24)
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 24, height: 24)
                     .help("Add a configuration")
                     .accessibilityLabel("Add a configuration")
-                    Button {
-                        session.deleteConfiguration(at: session.selection.configuration)
+                    // What can be done with the selected configuration, behind a menu: a bare minus
+                    // beside the plus deleted every layout of a set of displays on one click, and
+                    // renaming was a double-click nobody is told about.
+                    Menu {
+                        let index = session.selection.configuration
+                        if let configuration = session.configuration {
+                            Button("Rename") { beginRenaming(index, configuration) }
+                            Button("Duplicate") { session.duplicateConfiguration() }
+                            Divider()
+                            Button("Delete \u{201C}\(configuration.name)\u{201D}") { session.deleteConfiguration(at: index) }
+                        }
                     } label: {
-                        Image(systemName: "minus").frame(width: 18, height: 18).contentShape(Rectangle())
+                        Image(systemName: "ellipsis.circle")
                     }
-                    .buttonStyle(.borderless)
-                    .disabled(session.configuration == nil || session.settingsPage != nil)
-                    .help("Delete the selected configuration (Undo brings it back)")
-                    .accessibilityLabel("Delete the selected configuration")
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 24, height: 24)
+                    .disabled(session.configuration == nil)
+                    .help(session.configuration == nil ? "No configuration yet" : "Rename, duplicate or delete the selected configuration")
+                    .accessibilityLabel("Actions on the selected configuration")
                 }
                 .padding(.trailing, 4)
                 ForEach(Array(session.config.configurations.enumerated()), id: \.element.id) { i, configuration in
@@ -379,10 +388,12 @@ struct Sidebar: View {
             }
             Spacer(minLength: 0)
             if session.isActive(configuration) {
+                // The text in its own colour on the green: green on a tint of green could not be
+                // read in the light appearance.
                 Text("In use").font(.caption2.weight(.semibold))
                     .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(Capsule().fill(selected ? Color.white.opacity(0.22) : Color.green.opacity(0.18)))
-                    .foregroundColor(selected ? .white : .green)
+                    .background(Capsule().fill(selected ? Color.white.opacity(0.22) : Color.green.opacity(0.26)))
+                    .foregroundColor(selected ? .white : .primary)
                     .help("Fremspace applies this configuration now")
             }
             if session.unsaved.configurations.contains(configuration.id) { unsavedDot(selected: selected) }
@@ -397,7 +408,10 @@ struct Sidebar: View {
         }
         // Simultaneous, so that selecting does not wait to see whether a second click comes.
         .simultaneousGesture(TapGesture(count: 2).onEnded { beginRenaming(i, configuration) })
-        .accessibilityElement(children: .combine)
+        // The whole name when it is cut, and how to change it.
+        .help("\(configuration.name.isEmpty ? "Untitled" : configuration.name): double-click to rename")
+        // One element, except while its name is being typed: the field must stay reachable.
+        .accessibilityElement(children: renaming == configuration.id ? .contain : .combine)
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
         .accessibilityAction {
             session.settingsPage = nil
