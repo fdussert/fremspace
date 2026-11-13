@@ -82,6 +82,9 @@ open dist/Fremspace.app
   Escape are the map's; every other key goes to the app in front.
 - **The Hyper key** is off unless you switch it on. While on, Caps Lock is remapped in the system and
   Fremspace filters key presses to read it; the mapping is removed when Fremspace quits.
+- **If Fremspace crashes.** Two things wait for it to start again, which puts both right: with the
+  Hyper key on, Caps Lock does nothing (it comes back by itself when you log out); and the windows
+  of a closed drawer stay parked off the side of their display.
 
 ## Using it
 
