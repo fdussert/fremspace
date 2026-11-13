@@ -117,3 +117,24 @@ public func recoveryPlan(saved: [ParkedWindow], alive: [UInt32: Int32],
     }
     return (restore, drop)
 }
+
+/// The apps that have a slot in a layout of configuration `id` in `after` and had none in `before`:
+/// what the owner just gave a slot to. Their windows put in a drawer by hand leave it, or saving
+/// the slot would change nothing on screen. Empty when the configuration is new: nothing was
+/// given there, it all arrived at once.
+public func appsGivenASlot(before: Config, after: Config, configuration id: UUID) -> Set<String> {
+    func apps(_ config: Config) -> Set<String>? {
+        guard let configuration = config.configurations.first(where: { $0.id == id }) else { return nil }
+        var found: Set<String> = []
+        for display in configuration.displays where !display.ignored {
+            for space in display.spaces {
+                for slot in space.layout?.slots ?? [] {
+                    found.formUnion(slot.rules.map(\.bundleID).filter { !$0.isEmpty })
+                }
+            }
+        }
+        return found
+    }
+    guard let had = apps(before), let has = apps(after) else { return [] }
+    return has.subtracting(had)
+}

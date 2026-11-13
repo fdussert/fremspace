@@ -528,7 +528,11 @@ final class Engine {
     /// desktop at its new position and the windows are carried there (owner, 2026-11-10: "my
     /// desktops stay as before"); remembered windows follow their layout. The caller reads the
     /// configuration again right after (`configurationSaved`).
-    func desktopsRemoved(_ removed: [(configuration: UUID, display: DisplayIdentity, index: Int, to: Int?)]) {
+    ///
+    /// Added (`linked`): a new desktop, counted last (`index`), put at `to` on the macOS desktop
+    /// `linked`, which the configuration did not list. The desktops after it are renumbered and
+    /// none changes macOS desktop.
+    func desktopsRemoved(_ removed: [(configuration: UUID, display: DisplayIdentity, index: Int, to: Int?, linked: String?)]) {
         guard !removed.isEmpty else { return }
         // Focus is kept by configured position, and positions changed meaning: each Focus follows
         // its desktop to the position it has now, and only the Focus of a removed desktop goes.
@@ -548,7 +552,15 @@ final class Engine {
                let count = configuration.flatMap({ displaySpec(for: r.display, in: $0) })?.spaces.count {
                 orders[key] = (r.display, Array(0..<count))
             }
-            if let to = r.to {
+            if let to = r.to, let uuid = r.linked {
+                state.desktopLinks.insertDesktop(configuration: r.configuration, display: r.display, index: to, uuid: uuid)
+                state.remembered.moveDesktop(configuration: r.configuration, display: r.display, from: r.index, to: to)
+                if var entry = orders[key], (0...entry.order.count).contains(to) {
+                    // No position before: it was not there.
+                    entry.order.insert(-1, at: to)
+                    orders[key] = entry
+                }
+            } else if let to = r.to {
                 state.remembered.moveDesktop(configuration: r.configuration, display: r.display, from: r.index, to: to)
                 if var entry = orders[key], entry.order.indices.contains(r.index), entry.order.indices.contains(to) {
                     entry.order.insert(entry.order.remove(at: r.index), at: to)
@@ -573,7 +585,7 @@ final class Engine {
             let after = resolveDesktops(configured: entry.order.count, links: state.desktopLinks.links[key] ?? [], live: live).real
             // Real position before → real position after, for each desktop that changes place.
             var carry: [Int: Int] = [:]
-            for (position, original) in entry.order.enumerated() {
+            for (position, original) in entry.order.enumerated() where original >= 0 {
                 guard let from = desktopMap.real(entry.display, configured: original), let to = after[position], from != to else { continue }
                 carry[from] = to
             }
@@ -961,6 +973,7 @@ final class Engine {
     /// Reads the configuration file again. On error the engine is free and says why; the file is
     /// never written.
     func reloadConfig() {
+        let before = config
         do {
             config = try store.load()
             loadError = nil
@@ -982,6 +995,11 @@ final class Engine {
         memory.removeAll()
         chooseConfiguration()
         drawers.reconcile()
+        // An app that just got a slot: its windows kept in a drawer by hand go to the slot (owner,
+        // 2026-11-13: the slot was saved and nothing moved, the window sat in a drawer).
+        if let before, let config, let id = configuration?.id {
+            drawers.release(apps: appsGivenASlot(before: before, after: config, configuration: id))
+        }
         scheduleApply()
         onConfigChanged?()
     }
@@ -1145,6 +1163,17 @@ final class Engine {
     struct UnlistedDesktop: Equatable {
         var position: Int
         var uuid: String
+        /// Where a configured desktop that takes it sits among the others, for the tabs to go as
+        /// Mission Control does.
+        var index: Int
+    }
+
+    /// What the editor is told about the desktops of the Mac: those the configuration in use does
+    /// not list, and the displays whose desktops Mission Control shows in another order.
+    struct DesktopsOnTheMac: Equatable {
+        var unlisted: [DisplayIdentity: [UnlistedDesktop]] = [:]
+        /// Display → its configured desktops in Mission Control's order.
+        var order: [DisplayIdentity: [Int]] = [:]
     }
 
     /// The macOS desktops that the configuration in use does not list, per display: what a desktop
@@ -1152,19 +1181,22 @@ final class Engine {
     /// own: the engine's is rebuilt at its next pass, too late for the editor right after a save.
     /// The first desktop of the main display has no uuid and is left out: nothing could check
     /// afterwards that it is the one that went.
-    func unlistedDesktops() -> [DisplayIdentity: [UnlistedDesktop]] {
-        guard let configuration else { return [:] }
+    func unlistedDesktops() -> [DisplayIdentity: [UnlistedDesktop]] { desktopsOnTheMac().unlisted }
+
+    func desktopsOnTheMac() -> DesktopsOnTheMac {
+        guard let configuration else { return DesktopsOnTheMac() }
         let live = liveDesktops(Spaces.managed())
         // Links found on the way are not kept: this only reads.
         var links = state.desktopLinks
         let map = DesktopMap(configuration: configuration, live: live, links: &links)
-        var result: [DisplayIdentity: [UnlistedDesktop]] = [:]
+        var result = DesktopsOnTheMac()
         for spec in configuration.displays where !spec.ignored {
             guard let uuids = live[spec.identity] else { continue }
             let unlisted = map.unconfigured(spec.identity, live: uuids.count)
                 .filter { !uuids[$0].isEmpty }
-                .map { UnlistedDesktop(position: $0, uuid: uuids[$0]) }
-            if !unlisted.isEmpty { result[spec.identity] = unlisted }
+                .map { UnlistedDesktop(position: $0, uuid: uuids[$0], index: map.rank(spec.identity, real: $0)) }
+            if !unlisted.isEmpty { result.unlisted[spec.identity] = unlisted }
+            if let order = map.missionControlOrder(spec.identity) { result.order[spec.identity] = order }
         }
         return result
     }

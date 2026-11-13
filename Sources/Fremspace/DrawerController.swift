@@ -793,6 +793,20 @@ final class DrawerController {
 
     // MARK: - Membership
 
+    /// The owner gave these apps a slot in a layout (saved): their windows that sit in a drawer
+    /// leave it, for the layout to take them. Not from a drawer that names the app in one of its
+    /// own slots: the configuration then says both, and the drawer had the window first.
+    func release(apps: Set<String>) {
+        guard !apps.isEmpty else { return }
+        for (id, member) in Array(members) where apps.contains(member.bundleID) {
+            guard let display = state.display(of: id) else { continue }
+            let named = drawerSpecs(display).contains { spec in
+                spec.layout.slots.contains { $0.rules.contains { $0.bundleID == member.bundleID } }
+            }
+            if !named { takeOut(id) }
+        }
+    }
+
     private func join(_ id: UInt32, element: AXUIElement, pid: pid_t, bundleID: String, display: DisplayIdentity, slot: String) {
         members[id] = (element, pid, bundleID)
         state.send(id, to: display, slot: slot)

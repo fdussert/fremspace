@@ -63,6 +63,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testANewDesktopTakesTheSpareOneLeftInTheMiddle", { ($0 as! DesktopMapTests).testANewDesktopTakesTheSpareOneLeftInTheMiddle() }),
         ("testTheDesktopWithoutUuidIsPreferredToASpareOne", { ($0 as! DesktopMapTests).testTheDesktopWithoutUuidIsPreferredToASpareOne() }),
         ("testADesktopWhoseOwnIsGoneDoesNotTakeASpareOne", { ($0 as! DesktopMapTests).testADesktopWhoseOwnIsGoneDoesNotTakeASpareOne() }),
+        ("testADesktopAddedOnASpareOneGoesWhereMissionControlShowsIt", { ($0 as! DesktopMapTests).testADesktopAddedOnASpareOneGoesWhereMissionControlShowsIt() }),
+        ("testTheOrderOfMissionControlIsSaidWhenItIsNotTheTabs", { ($0 as! DesktopMapTests).testTheOrderOfMissionControlIsSaidWhenItIsNotTheTabs() }),
     ]),
     ("StateStoreTests", { StateStoreTests() }, [
         ("testOldStateWithoutRememberedLoads", { try ($0 as! StateStoreTests).testOldStateWithoutRememberedLoads() }),
@@ -482,6 +484,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testVisibleRegionsSkipLayoutSlotsUnderAnOpenDrawer", { ($0 as! DrawerStateTests).testVisibleRegionsSkipLayoutSlotsUnderAnOpenDrawer() }),
     ]),
     ("DrawerMaintenanceTests", { DrawerMaintenanceTests() }, [
+        ("testTheAppsThatWereJustGivenASlot", { ($0 as! DrawerMaintenanceTests).testTheAppsThatWereJustGivenASlot() }),
         ("testParkedFileRoundTrip", { try ($0 as! DrawerMaintenanceTests).testParkedFileRoundTrip() }),
         ("testRecoveryRestoresOnlyLiveWindowsOfTheSameProcess", { ($0 as! DrawerMaintenanceTests).testRecoveryRestoresOnlyLiveWindowsOfTheSameProcess() }),
         ("testRecoveryLeavesAWindowThatIsNowAnotherApps", { ($0 as! DrawerMaintenanceTests).testRecoveryLeavesAWindowThatIsNowAnotherApps() }),

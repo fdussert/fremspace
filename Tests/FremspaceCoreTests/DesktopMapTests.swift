@@ -141,4 +141,50 @@ final class DesktopMapTests: XCTestCase {
         XCTAssertEqual(r.real, [nil, 1])
         XCTAssertEqual(r.links, ["U1", "U2"])
     }
+
+    func testADesktopAddedOnASpareOneGoesWhereMissionControlShowsIt() {
+        // "Web" was removed from the middle (U2 stayed on the Mac). The desktop added then takes U2
+        // and its tab goes second, where Mission Control shows U2.
+        let before = Configuration(id: configurationID, name: "Home", displays: [
+            DisplaySpec(identity: left, spaces: [SpaceSpec(label: "Code"), SpaceSpec(label: "Le reste")]),
+        ])
+        var links = DesktopLinks()
+        let key = DesktopLinks.key(configuration: configurationID, display: left)
+        links.links[key] = [nil, "U3"]
+        let live = [left: ["", "U2", "U3"]]
+        let map = DesktopMap(configuration: before, live: live, links: &links)
+        XCTAssertEqual(map.unconfigured(left, live: 3), [1])
+        XCTAssertEqual(map.rank(left, real: 1), 1)
+        XCTAssertNil(map.missionControlOrder(left))
+
+        links.insertDesktop(configuration: configurationID, display: left, index: 1, uuid: "U2")
+        XCTAssertEqual(links.links[key], [nil, "U2", "U3"])
+        let after = Configuration(id: configurationID, name: "Home", displays: [
+            DisplaySpec(identity: left, spaces: [SpaceSpec(label: "Code"), SpaceSpec(label: "Notes"), SpaceSpec(label: "Le reste")]),
+        ])
+        let added = DesktopMap(configuration: after, live: live, links: &links)
+        XCTAssertEqual(added.real(left, configured: 1), 1)
+        XCTAssertEqual(added.real(left, configured: 2), 2)
+        XCTAssertNil(added.missionControlOrder(left))
+        // A display that had no link yet gets a list long enough.
+        var none = DesktopLinks()
+        none.insertDesktop(configuration: configurationID, display: left, index: 2, uuid: "U3")
+        XCTAssertEqual(none.links[key], [nil, nil, "U3"])
+    }
+
+    func testTheOrderOfMissionControlIsSaidWhenItIsNotTheTabs() {
+        // The fourth configured desktop sits on the second desktop of the Mac.
+        let configuration = Configuration(id: configurationID, name: "Home", displays: [
+            DisplaySpec(identity: left, spaces: [SpaceSpec(label: "Music"), SpaceSpec(label: "Mail"), SpaceSpec(label: "Teams"), SpaceSpec(label: "Chat")]),
+        ])
+        var links = DesktopLinks()
+        links.links[DesktopLinks.key(configuration: configurationID, display: left)] = [nil, "U3", "U4", "U2"]
+        let map = DesktopMap(configuration: configuration, live: [left: ["", "U2", "U3", "U4"]], links: &links)
+        XCTAssertEqual(map.missionControlOrder(left), [0, 3, 1, 2])
+        // Not while a desktop is looked for: the order of the others says nothing yet.
+        var gone = DesktopLinks()
+        gone.links[DesktopLinks.key(configuration: configurationID, display: left)] = [nil, "U3", "U9", "U2"]
+        let short = DesktopMap(configuration: configuration, live: [left: ["", "U2", "U3", "U4"]], links: &gone)
+        XCTAssertNil(short.missionControlOrder(left))
+    }
 }

@@ -17,7 +17,13 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   Focus: a Focus follows its desktop, and only the Focus of a removed desktop goes.
 - A desktop added to a configuration takes the macOS desktop that nothing uses on its display, when
   one was left before the end by a desktop removed from the middle. Its layout used to apply
-  nowhere, and nothing said so.
+  nowhere, and nothing said so. In the editor its tab goes where Mission Control shows that
+  desktop, and the editor says which desktop it took.
+- The editor says when Mission Control shows the desktops of a display in another order than the
+  tabs, and in which order.
+- An app that is given a slot leaves the drawer: its windows put in a drawer by hand go to the
+  slot when the configuration is saved. Saving the slot used to change nothing on screen. A drawer
+  that names the app in one of its own slots keeps its windows.
 
 ## 0.1.1
 

@@ -133,6 +133,7 @@ struct DesktopTabs: View {
                 .opacity(session.selection.drawer == nil ? 1 : 0.5)
                 missingDesktops(display)
                 unlistedDesktops(display)
+                otherOrder(display)
             }
         }
     }
@@ -276,6 +277,21 @@ struct DesktopTabs: View {
 }
 
 extension DesktopTabs {
+    /// Mission Control shows the desktops of this display in another order than the tabs: said, so
+    /// that "the second tab" is not looked for on the second desktop. Nothing is wrong, and the
+    /// way to one order is the owner's, in Mission Control.
+    @ViewBuilder
+    func otherOrder(_ display: DisplaySpec) -> some View {
+        if let names = session.missionControlOrder(of: display) {
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle").foregroundColor(.secondary)
+                Text("Mission Control shows these desktops in another order: \(names.joined(separator: ", ")). Drag them there to match the tabs.")
+            }
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.secondary.opacity(0.1)))
+        }
+    }
+
     /// macOS has desktops on this display that the configuration does not list: a desktop removed
     /// here stays on the Mac. Said without alarm, since nothing is wrong with a desktop kept on the
     /// side, and each can be removed from the Mac, after a question (`EditSession.removeFromMac`).
@@ -287,11 +303,11 @@ extension DesktopTabs {
             HStack(spacing: 8) {
                 Image(systemName: "info.circle").foregroundColor(.secondary)
                 if unlisted.count == 1 {
-                    Text("Desktop \(numbers[0]) of this display is on the Mac and not in the configuration.")
+                    Text("Desktop \(numbers[0]) of this display is on the Mac and not in the configuration. A desktop you add takes it.")
                     Button("Remove it from the Mac\u{2026}") { session.removeFromMac(unlisted[0], on: display) }
                         .help("Opens Mission Control and removes this desktop; macOS moves its windows to another one")
                 } else {
-                    Text("Desktops \(ListFormatter.localizedString(byJoining: numbers)) of this display are on the Mac and not in the configuration.")
+                    Text("Desktops \(ListFormatter.localizedString(byJoining: numbers)) of this display are on the Mac and not in the configuration. A desktop you add takes the first.")
                     Menu("Remove from the Mac") {
                         ForEach(unlisted, id: \.uuid) { desktop in
                             Button("Desktop \(desktop.position + 1)\u{2026}") { session.removeFromMac(desktop, on: display) }

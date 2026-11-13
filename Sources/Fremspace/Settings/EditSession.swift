@@ -75,6 +75,8 @@ final class EditSession: ObservableObject {
     @Published private(set) var desktopCounts: [DisplayIdentity: Int] = [:]
     /// The macOS desktops that the configuration in use does not list, per display.
     @Published private(set) var unlistedDesktops: [DisplayIdentity: [Engine.UnlistedDesktop]] = [:]
+    /// Display → its configured desktops in Mission Control's order, where it is not the tabs'.
+    @Published private(set) var desktopOrder: [DisplayIdentity: [Int]] = [:]
     /// Set when the file exists but cannot be read: the editor then refuses to save, so the file is
     /// never overwritten by an empty or new configuration.
     let loadError: String?
@@ -168,7 +170,9 @@ final class EditSession: ObservableObject {
     func refreshEnvironment() {
         connected = Displays.connected()
         desktopCounts = Desktops.counts()
-        unlistedDesktops = engine.unlistedDesktops()
+        let onTheMac = engine.desktopsOnTheMac()
+        unlistedDesktops = onTheMac.unlisted
+        desktopOrder = onTheMac.order
         refreshAttention()
     }
 
@@ -287,6 +291,7 @@ final class EditSession: ObservableObject {
             }
             status = Status(kind: .success, text: "Saved and applied.")
             let removedSome = removedDesktops.contains { $0.to == nil }
+            let tookASpare = removedDesktops.contains { $0.linked != nil }
             if !removedDesktops.isEmpty {
                 // The removals are now final (links and remembered windows dropped): the undo steps
                 // recorded around them count desktops the old way, so they go.
@@ -300,7 +305,9 @@ final class EditSession: ObservableObject {
             if previewsSwitchedOn, !WindowPreviews.allowed { WindowPreviews.request() }
             // Also what the Mac has now: a desktop just removed here is still one there.
             refreshEnvironment()
-            if removedSome, !unlistedDesktops.isEmpty {
+            if tookASpare {
+                status = Status(kind: .success, text: "Saved and applied. The new desktop is on the one the Mac already had.")
+            } else if removedSome, !unlistedDesktops.isEmpty {
                 status = Status(kind: .success, text: "Saved and applied. The desktop is still on the Mac: it can be removed there too, under the desktop tabs.")
             }
             refreshSlotWindows()
@@ -797,8 +804,9 @@ final class EditSession: ObservableObject {
         change(&config.configurations[selection.configuration])
     }
 
-    /// A desktop removed (`to` nil) or moved to position `to`.
-    typealias RemovedDesktop = (configuration: UUID, display: DisplayIdentity, index: Int, to: Int?)
+    /// A desktop removed (`to` nil), moved to position `to`, or added at `to` on the macOS desktop
+    /// `linked` (it is then counted last, at `index`, before it takes its place).
+    typealias RemovedDesktop = (configuration: UUID, display: DisplayIdentity, index: Int, to: Int?, linked: String?)
 
     /// Desktops removed or moved since the last save, in order: on save, their uuid links and
     /// remembered windows go or follow, so that no desktop inherits another's.
@@ -844,12 +852,39 @@ final class EditSession: ObservableObject {
         return removedDesktops.contains { $0.configuration == id && $0.display == display }
     }
 
+    /// Adds a desktop to the selected display. When the Mac has a desktop there that the
+    /// configuration does not list, the new one takes it, and its tab goes where Mission Control
+    /// shows that desktop (owner, 2026-11-13: added last, it was the second desktop on the Mac,
+    /// "pas au bon endroit", and nothing said which one it was). Otherwise it is added last.
     func addDesktop() {
         checkpoint()
-        updateDisplay { $0.spaces.append(SpaceSpec(label: "Desktop \($0.spaces.count + 1)")) }
-        selection.desktop = (displaySpec?.spaces.count ?? 1) - 1
+        if let display = displaySpec, let spare = unlisted(on: display).first {
+            let count = display.spaces.count
+            let index = min(max(0, spare.index), count)
+            // As for a removal: undoing the step also forgets it.
+            removedBeforeChange = removedDesktops
+            removedDesktops.append((config.configurations[selection.configuration].id, display.identity, count, index, spare.uuid))
+            updateDisplay { $0.spaces.insert(SpaceSpec(label: "Desktop \(count + 1)"), at: index) }
+            updateConfiguration { $0.scenes = scenes($0.scenes, afterMovingDesktop: count, to: index, of: display.identity) }
+            removedBeforeChange = nil
+            selection.desktop = index
+            status = Status(kind: .info, text: "The new desktop takes Desktop \(spare.position + 1) of this display, which the Mac has and the configuration did not list. Nothing moves until you save.")
+        } else {
+            updateDisplay { $0.spaces.append(SpaceSpec(label: "Desktop \($0.spaces.count + 1)")) }
+            selection.desktop = (displaySpec?.spaces.count ?? 1) - 1
+        }
         selection.slot = nil
         selection.drawer = nil
+    }
+
+    /// The names of the desktops of `display` in Mission Control's order, when the tabs go another
+    /// way and the editor shows what runs there (see `unlisted(on:)`).
+    func missionControlOrder(of display: DisplaySpec) -> [String]? {
+        guard let configuration, isActive(configuration), !hasUnsavedDesktopOrder(on: display.identity),
+              savedDesktopCount(on: display.identity) == display.spaces.count,
+              let order = desktopOrder[display.identity], order.count == display.spaces.count,
+              order.allSatisfy(display.spaces.indices.contains) else { return nil }
+        return order.map { display.spaces[$0].label.isEmpty ? "Untitled" : display.spaces[$0].label }
     }
 
     func removeDesktop(at index: Int) {
@@ -857,7 +892,7 @@ final class EditSession: ObservableObject {
         checkpoint()
         // The undo step keeps the list as it was, so that undoing the removal also forgets it.
         removedBeforeChange = removedDesktops
-        removedDesktops.append((config.configurations[selection.configuration].id, display.identity, index, nil))
+        removedDesktops.append((config.configurations[selection.configuration].id, display.identity, index, nil, nil))
         updateDisplay { $0.spaces.remove(at: index) }
         updateConfiguration { $0.scenes = scenes($0.scenes, afterRemovingDesktop: index, of: display.identity) }
         removedBeforeChange = nil
@@ -893,7 +928,7 @@ final class EditSession: ObservableObject {
               display.spaces.indices.contains(from), display.spaces.indices.contains(to) else { return }
         checkpoint()
         removedBeforeChange = removedDesktops
-        removedDesktops.append((config.configurations[selection.configuration].id, display.identity, from, to))
+        removedDesktops.append((config.configurations[selection.configuration].id, display.identity, from, to, nil))
         updateDisplay { $0.spaces.insert($0.spaces.remove(at: from), at: to) }
         updateConfiguration { $0.scenes = scenes($0.scenes, afterMovingDesktop: from, to: to, of: display.identity) }
         removedBeforeChange = nil

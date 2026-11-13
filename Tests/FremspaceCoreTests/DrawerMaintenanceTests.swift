@@ -124,4 +124,23 @@ final class DrawerMaintenanceTests: XCTestCase {
         XCTAssertEqual(plan.restore.map(\.id), [2])
         XCTAssertEqual(plan.drop, [1])
     }
+
+    func testTheAppsThatWereJustGivenASlot() {
+        let display = DisplayIdentity(vendor: 1, model: 1, serial: 1, name: "Main")
+        let home = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        func config(_ apps: [String], id: UUID = home) -> Config {
+            let slots = apps.enumerated().map { Slot(id: "s\($0.offset)", rect: UnitRect(x: 0, y: 0, w: 1, h: 1), rule: Rule(bundleID: $0.element)) }
+            return Config(configurations: [Configuration(id: id, name: "Home", displays: [
+                DisplaySpec(identity: display, spaces: [SpaceSpec(label: "Code", layout: Layout(slots: slots)), SpaceSpec(label: "Free")]),
+            ])])
+        }
+        // One more app has a slot: it is the only one named, and a slot still without an app is none.
+        XCTAssertEqual(appsGivenASlot(before: config(["com.example.editor"]), after: config(["com.example.editor", "com.example.store", ""]),
+                                      configuration: home), ["com.example.store"])
+        // Nothing new, an app that lost its slot, and a configuration that was not there before.
+        XCTAssertEqual(appsGivenASlot(before: config(["com.example.editor"]), after: config(["com.example.editor"]), configuration: home), [])
+        XCTAssertEqual(appsGivenASlot(before: config(["com.example.editor", "com.example.store"]), after: config(["com.example.editor"]), configuration: home), [])
+        let other = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+        XCTAssertEqual(appsGivenASlot(before: config(["com.example.editor"]), after: config(["com.example.store"], id: other), configuration: other), [])
+    }
 }

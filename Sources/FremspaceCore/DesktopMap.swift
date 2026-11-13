@@ -23,6 +23,16 @@ public struct DesktopLinks: Codable, Equatable {
         links[key] = list
     }
 
+    /// A desktop was added at configured position `index` (editor) on the macOS desktop `uuid`: the
+    /// links of the desktops from there on move down, each with its own.
+    public mutating func insertDesktop(configuration: UUID, display: DisplayIdentity, index: Int, uuid: String) {
+        let key = Self.key(configuration: configuration, display: display)
+        var list = links[key] ?? []
+        if list.count < index { list += Array(repeating: nil, count: index - list.count) }
+        list.insert(uuid, at: max(0, index))
+        links[key] = list
+    }
+
     /// Ties configured desktop `configured` to `uuid`; the uuid leaves any other configured desktop
     /// of the same display.
     public mutating func link(configuration: UUID, display: DisplayIdentity, configured: Int, to uuid: String) {
@@ -115,6 +125,21 @@ public struct DesktopMap: Equatable {
         guard let list = real[display], !list.contains(where: { $0 == nil }) else { return [] }
         let taken = Set(list.compactMap { $0 })
         return (0..<max(0, count)).filter { !taken.contains($0) }
+    }
+
+    /// How many configured desktops of `display` come before real position `position`: where a
+    /// desktop that takes it sits among them, for the tabs to go as Mission Control does.
+    public func rank(_ display: DisplayIdentity, real position: Int) -> Int {
+        (real[display] ?? []).compactMap { $0 }.filter { $0 < position }.count
+    }
+
+    /// The configured desktops of `display` in the order Mission Control shows them, when that is
+    /// not the order of the configuration; nil when it is, or while one of them has no real desktop.
+    public func missionControlOrder(_ display: DisplayIdentity) -> [Int]? {
+        guard let list = real[display], !list.contains(where: { $0 == nil }) else { return nil }
+        let positions = list.compactMap { $0 }
+        let order = positions.indices.sorted { positions[$0] < positions[$1] }
+        return order == Array(positions.indices) ? nil : order
     }
 
     /// The real position of configured desktop `configured`, nil when it is not there.
