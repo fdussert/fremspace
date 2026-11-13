@@ -47,6 +47,34 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(backup, a)
     }
 
+    func testAFileThatChangedIsToldFromOneThatIsGoneOrUnreadable() throws {
+        let store = ConfigStore(url: url)
+        let a = config(named: "A"), b = config(named: "B")
+        // No file yet: an editor that read "no configuration" is where the file is.
+        XCTAssertEqual(store.state(since: Config(configurations: [])), .same)
+        try store.save(a)
+        XCTAssertEqual(store.state(since: a), .same)
+        try store.save(b)
+        XCTAssertEqual(store.state(since: a), .changed)
+        try FileManager.default.removeItem(at: url)
+        XCTAssertEqual(store.state(since: a), .missing)
+        try Data("{ nope".utf8).write(to: url)
+        guard case .unreadable = store.state(since: a) else { return XCTFail("a corrupt file is unreadable") }
+    }
+
+    func testSaveOverAFileThatCannotBeReadIsRefusedAndLeavesIt() throws {
+        let store = ConfigStore(url: url)
+        let a = config(named: "A")
+        try store.save(a)
+        let broken = Data("{ nope".utf8)
+        try broken.write(to: url)
+        XCTAssertThrowsError(try store.save(config(named: "B"), expecting: a)) { error in
+            XCTAssertEqual(error as? ConfigError, .changedOnDisk)
+        }
+        let after = try Data(contentsOf: url)
+        XCTAssertEqual(after, broken)
+    }
+
     func testNewerVersionIsRejectedWithoutOverwrite() throws {
         let bytes = Data(#"{"version":2,"configurations":[]}"#.utf8)
         try bytes.write(to: url)

@@ -55,6 +55,9 @@ The first version to be packaged.
   give them one on the Shortcuts page.
 - **Calls in full screen.** The meeting window of Microsoft Teams or Zoom goes to full screen when
   the call starts.
+- **Commands that change the layouts** ("Lock on this desktop", "Make focusable", swapping two
+  slots, an edge resized with "resize layouts" on) write the config file at once. While the editor
+  holds changes that are not saved they do nothing and say why, so that the editor can always save.
 - **An editor** for the layouts. It opens on the displays it found and one button to set them up,
   with a desktop per desktop macOS has; a free desktop offers "Capture this desktop" where its
   layout will be. Each slot's tile says what is particular to it (Focus, unlocked, several apps)

@@ -9,6 +9,20 @@ public enum ConfigError: Error, Equatable {
     case changedOnDisk
 }
 
+/// How the file stands against what a caller read from it earlier: what to say, and to offer,
+/// when a save was refused because the two differ.
+public enum ConfigFileState: Equatable {
+    /// It holds what was read.
+    case same
+    /// It holds another configuration: someone else saved it meanwhile.
+    case changed
+    /// It is gone (moved, deleted). `load` would answer with an empty configuration, which must
+    /// not be taken for the owner's.
+    case missing
+    /// It is there and cannot be read: why.
+    case unreadable(String)
+}
+
 /// Reads and writes the configuration file. Never loses a configuration: writes are atomic and
 /// the previous file is kept as `config.json.bak`; a file that cannot be read is never overwritten
 /// by `load`.
@@ -53,6 +67,23 @@ public struct ConfigStore {
             return try JSONDecoder().decode(Config.self, from: data)
         } catch {
             throw ConfigError.corrupt(Self.describe(error))
+        }
+    }
+
+    /// Where the file stands against `previous`, what the caller read from it.
+    public func state(since previous: Config) -> ConfigFileState {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            // No file reads as no configuration: a caller that read that is where the file is.
+            return previous.configurations.isEmpty ? .same : .missing
+        }
+        do {
+            return try load() == previous ? .same : .changed
+        } catch ConfigError.newerVersion(let version) {
+            return .unreadable("It is version \(version), newer than this Fremspace.")
+        } catch ConfigError.corrupt(let why) {
+            return .unreadable(why)
+        } catch {
+            return .unreadable(error.localizedDescription)
         }
     }
 

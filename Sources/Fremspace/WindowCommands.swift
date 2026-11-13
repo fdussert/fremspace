@@ -171,6 +171,13 @@ final class WindowCommands {
     /// (previous file kept as .bak) and reloads. An unreadable file is refused, like the editor does.
     private func editConfiguration(_ desktop: ConfiguredDesktop, _ change: (inout SpaceSpec) -> Bool) -> Bool {
         let store = engine.configStore
+        // Written now, the file would no longer be the one the editor read: its Save would be
+        // refused as "changed outside the editor", and Revert, the only way out, drops the edits.
+        guard !editorHasUnsavedChanges else {
+            notify("The editor has changes that are not saved: save or revert them, then ask again.")
+            NSSound.beep()
+            return false
+        }
         do {
             let original = try store.load()
             var config = original
@@ -192,6 +199,13 @@ final class WindowCommands {
             notify("The configuration file could not be changed: \(error)")
             return false
         }
+    }
+
+    /// The editor's window carries the dot of an edited document while its configuration differs
+    /// from the file (`SettingsWindow`): that is read here, as anyone looking at the window would.
+    /// A window in the Dock still holds its changes; one that was closed no longer counts.
+    private var editorHasUnsavedChanges: Bool {
+        NSApp.windows.contains { ($0.isVisible || $0.isMiniaturized) && $0.isDocumentEdited }
     }
 
     private var notificationsAllowed: Bool?
