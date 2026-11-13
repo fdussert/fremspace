@@ -79,6 +79,14 @@ enum MainMenu {
         ])
         main.addItem(window)
         NSApp.windowsMenu = window.submenu
+
+        // Where a Mac user looks when something is wrong. Both open in the browser.
+        let help = submenu("Help", [
+            item("Fremspace Website", #selector(SettingsWindow.openWebsite(_:))),
+            item("Report a Problem\u{2026}", #selector(SettingsWindow.reportProblem(_:))),
+        ])
+        main.addItem(help)
+        NSApp.helpMenu = help.submenu
         return main
     }
 
@@ -135,6 +143,8 @@ extension SettingsWindow: NSMenuItemValidation {
     @objc func redoEdit(_ sender: Any?) { session?.redo() }
     @objc func findInSettings(_ sender: Any?) { session?.searchRequests += 1 }
     @objc func checkForUpdates(_ sender: Any?) { session?.engine.updates.check?() }
+    @objc func openWebsite(_ sender: Any?) { Links.open(Links.website) }
+    @objc func reportProblem(_ sender: Any?) { Links.open(Links.reportProblem) }
 
     @objc func splitSlot(_ sender: NSMenuItem) {
         guard let session, let slot = session.selection.slot else { return }
