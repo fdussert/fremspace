@@ -69,7 +69,7 @@ struct StatusPage: View {
                     ForEach(session.attention, id: \.id) { item in row(item) }
                 }
             }
-            FoldSection("What runs", key: "status.runs") {
+            PageSection("What runs") {
                 fact("Configuration", applied)
                 ForEach(session.connected, id: \.identity) { display in
                     fact(session.engine.displayName(display.identity), session.desktopCounts[display.identity].map { counted($0, "desktop") } ?? "desktops not read")

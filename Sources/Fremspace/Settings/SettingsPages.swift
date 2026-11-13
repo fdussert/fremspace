@@ -174,7 +174,7 @@ struct SettingsPageView: View {
         case .status:
             StatusPage(session: session, actions: actions)
         case .general:
-            FoldSection(.generalFremspace) {
+            PageSection(.generalFremspace) {
                 SwitchRow(title: SettingRow.openAtLogin.title,
                           detail: "Fremspace starts with your session and puts every window back.",
                           atOnce: true,
@@ -213,7 +213,7 @@ struct SettingsPageView: View {
                 }
             }
             .id(refresh)
-            FoldSection(.generalFloating) {
+            PageSection(.generalFloating) {
                 SwitchRow(title: SettingRow.noFloating.title,
                           detail: "A window of an app without a slot goes to a free desktop, also when you drop it there by hand.",
                           more: "A fixed-size window (a reminder) joins the desktop of its app. Dialogs and popups stay where they are, and Send to desktop still puts a window on a layout desktop.",
@@ -239,7 +239,7 @@ struct SettingsPageView: View {
                     }
                 }
             }
-            FoldSection(.generalSlots) {
+            PageSection(.generalSlots) {
                 SwitchRow(title: SettingRow.resizeLayouts.title,
                           detail: "Resize a window by a side it shares with another slot: the layout follows, on the nearest clean fraction.",
                           more: "The new sizes are written to the configuration as you let go. Off: a locked window snaps back." + swapHint,
@@ -251,7 +251,7 @@ struct SettingsPageView: View {
                             }))
                     .modifier(marked(.resizeLayouts))
             }
-            FoldSection(.generalDesktops) {
+            PageSection(.generalDesktops) {
                 SwitchRow(title: SettingRow.desktopNames.title,
                           detail: "For a second at the top of that display: out of the notch on a MacBook, under the menu bar elsewhere.",
                           isOn: Binding(
@@ -293,7 +293,7 @@ struct SettingsPageView: View {
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
                 }
             }
-            FoldSection(.generalCalls,
+            PageSection(.generalCalls,
                         badge: session.config.fullScreenCalls.isEmpty ? nil : "\(session.config.fullScreenCalls.count) on") {
                 VStack(alignment: .leading, spacing: 10) {
                 // Once for the section: it is the same for every app.
@@ -319,19 +319,19 @@ struct SettingsPageView: View {
         case .share:
             ShareEditor(session: session)
         case .maintenance:
-            FoldSection(.maintenanceLayouts) {
+            PageSection(.maintenanceLayouts) {
                 command(.reapply, "Puts every window back in its slot and on its desktop." + hint("reapply"), verb: "Re-apply", action: actions.reapply)
                 command(.restoreEverything, "Like at login: opens the apps that have a slot and puts every window back.",
                         verb: "Restore", action: actions.restoreEverything)
             }
-            FoldSection(.maintenanceWindows) {
+            PageSection(.maintenanceWindows) {
                 command(.bringBack, "Drawer windows and windows lost off screen.", verb: "Bring back", action: actions.bringBack)
             }
-            FoldSection(.maintenanceFile) {
+            PageSection(.maintenanceFile) {
                 command(.openConfigFile, "In your default editor.", verb: "Open", done: "Opened", action: actions.openConfigFile)
                 command(.reloadConfig, "After editing it by hand.", verb: "Reload", done: "Reloaded", action: actions.reloadConfig)
             }
-            FoldSection(.maintenanceDiagnostics) {
+            PageSection(.maintenanceDiagnostics) {
                 command(.copyDiagnostics, "Displays, desktops, windows and Fremspace's state, to the clipboard.",
                         verb: "Copy", done: "Copied", action: actions.copyDiagnostics)
                 command(.dumpWindows, "Writes every window Fremspace sees to a file and opens it.",
@@ -355,6 +355,43 @@ struct SettingsPageView: View {
     }
 }
 
+/// A section of a page: its name, and its settings on a card. Not folded: on a page of a few rows a
+/// fold with nothing beside it only hides the setting. The long list of shortcuts alone folds
+/// (`FoldSection`).
+struct PageSection<Content: View>: View {
+    let title: String
+    let badge: String?
+    let content: Content
+
+    init(_ title: String, badge: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.badge = badge
+        self.content = content()
+    }
+
+    init(_ section: SettingSection, badge: String? = nil, @ViewBuilder content: () -> Content) {
+        self.init(section.title, badge: badge, content: content)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Text(title).font(.subheadline.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                if let badge {
+                    Text(badge).font(.caption)
+                        .padding(.horizontal, 6).padding(.vertical, 1)
+                        .background(Capsule().fill(Color.primary.opacity(0.08)))
+                }
+            }
+            .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 10) { content }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 9).fill(Color.primary.opacity(0.05)))
+        }
+    }
+}
+
 /// A section of a page that folds: its header shows a badge, so a folded section still says what it
 /// holds. Whether it is open is the owner's taste, kept outside the config file.
 struct FoldSection<Content: View>: View {
@@ -368,10 +405,6 @@ struct FoldSection<Content: View>: View {
         self.badge = badge
         self.content = content()
         _open = AppStorage(wrappedValue: true, "fold.\(key)")
-    }
-
-    init(_ section: SettingSection, badge: String? = nil, @ViewBuilder content: () -> Content) {
-        self.init(section.title, key: section.rawValue, badge: badge, content: content)
     }
 
     var body: some View {
@@ -497,7 +530,7 @@ struct ShortcutsEditor: View {
         let shown = ShortcutCatalog.entries.filter { matchesFilter($0, effective[$0.id]) }
         VStack(alignment: .leading, spacing: 18) {
             if filter.isEmpty {
-                FoldSection(.shortcutsHyper, badge: session.config.hyperKey ? "On" : nil) {
+                PageSection(.shortcutsHyper, badge: session.config.hyperKey ? "On" : nil) {
                     SwitchRow(title: SettingRow.hyperKey.title,
                               detail: "Hold Caps Lock instead of the three keys: ⌃⌥⌘Space becomes Caps Lock + Space, here and in every app. Caps Lock no longer locks capitals while this is on.",
                               isOn: Binding(
@@ -803,7 +836,7 @@ struct ShareEditor: View {
     var body: some View {
         if let configuration = session.configuration, let export = session.shareExport {
             let report = export.report
-            FoldSection("Export", key: "share.export") {
+            PageSection("Export") {
                 Text("\u{201C}\(configuration.name)\u{201D} as it is in the editor, in one file to post or to send. Whoever loads it adds your desktops beside theirs.")
                     .foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
                 row("In the file") {
@@ -834,7 +867,7 @@ struct ShareEditor: View {
                         .help("A copy among the layouts below, to add to another configuration later")
                 }
             }
-            FoldSection("Add a layout", key: "share.import") {
+            PageSection("Add a layout") {
                 Text("A layout adds its desktops after yours on the displays you choose, its drawers on the edges still free, and its scenes with the desktops they show. Nothing of yours is replaced, and nothing changes on screen until you save.")
                     .foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
                 if let pending = session.pendingImport {

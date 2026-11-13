@@ -2,7 +2,7 @@ import AppKit
 import FremspaceCore
 import SwiftUI
 
-/// The sections of the settings pages. The raw value is the key under which "open or folded" is kept.
+/// The sections of the settings pages.
 enum SettingSection: String {
     case generalFremspace = "general.fremspace"
     case generalFloating = "general.floating"
@@ -28,11 +28,6 @@ enum SettingSection: String {
         case .maintenanceFile: return "Config file"
         case .maintenanceDiagnostics: return "Diagnostics"
         }
-    }
-
-    /// Opens the section, wherever the owner left it.
-    func unfold() {
-        UserDefaults.standard.set(true, forKey: "fold.\(rawValue)")
     }
 }
 
@@ -209,7 +204,6 @@ extension EditSession {
         case .page(let page):
             settingsPage = page
         case .row(let row):
-            row.section.unfold()
             shortcutFilter = ""
             settingsPage = row.page
             reveal(row.rawValue)
