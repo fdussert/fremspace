@@ -1048,6 +1048,10 @@ struct ShareEditor: View {
             if !missing.isEmpty {
                 HelpText("Not on this Mac: \(missing.joined(separator: ", ")). Their slots are added and stay empty.")
             }
+            let atLogin = pending.layout.appsOpenedAtLogin.filter { !missing.contains($0) }
+            if !atLogin.isEmpty {
+                HelpText("Opened at your next login, unless you switch that off in their slots: \(atLogin.map(appName).joined(separator: ", ")).")
+            }
             if session.importHasFilters {
                 HelpText("The file names browser profiles or window title filters: they are the author's, change them to yours in the slots.")
             }

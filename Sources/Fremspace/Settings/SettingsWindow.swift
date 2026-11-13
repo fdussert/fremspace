@@ -84,6 +84,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     func windowDidBecomeKey(_ notification: Notification) {
         // Displays and desktops may have changed while the owner was elsewhere (Mission Control).
         session?.refreshEnvironment()
+        session?.reloadIfChangedOutside()
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {

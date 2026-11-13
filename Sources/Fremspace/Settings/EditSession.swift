@@ -262,9 +262,21 @@ final class EditSession: ObservableObject {
             return
         }
         do {
-            try store.save(config, expecting: saved)
+            // A file moved or deleted since it was read is written again: there is nothing there
+            // to overwrite. Any other difference is somebody else's change, and refused.
+            if store.state(since: saved) == .missing { try store.save(config) } else { try store.save(config, expecting: saved) }
             let previewsSwitchedOn = config.windowPreviews && !saved.windowPreviews
-            saved = config
+            // What the file now holds, not what was in memory: a value the file does not keep (an
+            // option read from an older format) would make the two differ for ever, and every
+            // later Save be refused as "changed outside the editor".
+            if let onDisk = try? store.load() {
+                restoring = true
+                config = onDisk
+                restoring = false
+                saved = onDisk
+            } else {
+                saved = config
+            }
             status = Status(kind: .success, text: "Saved and applied.")
             if !removedDesktops.isEmpty {
                 // The removals are now final (links and remembered windows dropped): the undo steps
@@ -280,6 +292,10 @@ final class EditSession: ObservableObject {
             refreshAttention()
             refreshSlotWindows()
         } catch ConfigError.changedOnDisk {
+            if case .unreadable(let why) = store.state(since: saved) {
+                status = Status(kind: .error, text: "The config file can no longer be read: \(why) Nothing was saved.")
+                return
+            }
             status = Status(kind: .error, text: "The config file changed outside the editor (a Window command). Revert to load it, then make your change again. Nothing was saved.")
         } catch {
             status = Status(kind: .error, text: "Could not save: \(error.localizedDescription)")
@@ -289,7 +305,18 @@ final class EditSession: ObservableObject {
     /// Back to the file as it is now (it may have changed outside the editor). One step that Undo
     /// takes back: Revert sits beside Save, and a slip there used to cost every change since the
     /// last save, the only thing in the window that could not be undone.
+    /// The file changed outside the editor (a window command) while nothing was being changed
+    /// here: the editor shows the file as it is now, rather than refusing the next Save.
+    func reloadIfChangedOutside() {
+        guard loadError == nil, !isDirty, store.state(since: saved) == .changed else { return }
+        revert()
+    }
+
     func revert() {
+        guard store.state(since: saved) != .missing else {
+            status = Status(kind: .warning, text: "The config file is gone (moved or deleted). The editor keeps what it has; Save writes it again.")
+            return
+        }
         let before = Snapshot(config: config, removedDesktops: removedDesktops)
         let basis = saved
         if let onDisk = try? store.load() { saved = onDisk }
@@ -440,8 +467,7 @@ final class EditSession: ObservableObject {
         let items = files.filter { $0.lastPathComponent.hasSuffix(SharedLayout.fileSuffix) }
             .sorted { $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending }
             .compactMap { url -> LibraryItem? in
-                guard ((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) <= SharedLayout.Limit.bytes,
-                      let data = try? Data(contentsOf: url), let layout = try? SharedLayout.read(data) else { return nil }
+                guard let layout = try? SharedLayout.read(contentsOf: url) else { return nil }
                 return LibraryItem(url: url, layout: layout)
             }
         if items != library { library = items }
@@ -452,7 +478,9 @@ final class EditSession: ObservableObject {
         guard let configuration, let data = shareText() else { return }
         do {
             try FileManager.default.createDirectory(at: libraryFolder, withIntermediateDirectories: true)
-            let url = libraryFolder.appendingPathComponent(shareFileName(configuration.name))
+            // Never over a file already there: one of the same name may be somebody else's.
+            let taken = Set((try? FileManager.default.contentsOfDirectory(atPath: libraryFolder.path)) ?? [])
+            let url = libraryFolder.appendingPathComponent(libraryFileName(configuration.name, taken: taken))
             try data.write(to: url, options: .atomic)
             refreshLibrary()
             status = Status(kind: .success, text: "\u{201C}\(configuration.name)\u{201D} is in the library.")
@@ -487,9 +515,7 @@ final class EditSession: ObservableObject {
     func readImport(_ url: URL) {
         guard let configuration else { return }
         do {
-            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-            guard size <= SharedLayout.Limit.bytes else { throw ShareError.tooBig }
-            let layout = try SharedLayout.read(try Data(contentsOf: url))
+            let layout = try SharedLayout.read(contentsOf: url)
             let displays = configuration.displays.filter { !$0.ignored }.map(\.identity)
             pendingImport = PendingImport(layout: layout, mapping: defaultShareMapping(layout, onto: displays), file: url.lastPathComponent)
             status = nil
