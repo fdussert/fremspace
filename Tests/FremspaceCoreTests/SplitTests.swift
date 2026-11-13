@@ -99,6 +99,17 @@ final class SplitTests: XCTestCase {
         XCTAssertEqual(newWindowItem(editor), 2)
     }
 
+    func testCommandNThatNamesSomethingElseThanAWindowIsNotPressed() {
+        // A notes app, a mail app, a calendar: ⌘N makes a thing, not a window.
+        XCTAssertNil(newWindowItem([MenuShortcut(title: "New Note", key: "N", commandOnly: true)]))
+        XCTAssertNil(newWindowItem([MenuShortcut(title: "Nouveau message", key: "N", commandOnly: true)]))
+        // The same app with a window item further down still has it found.
+        XCTAssertEqual(newWindowItem([MenuShortcut(title: "New Message", key: "N", commandOnly: true),
+                                      MenuShortcut(title: "New Viewer Window", key: "N", commandOnly: false)]), 1)
+        // A document app: "New…" alone is a new document, in a window.
+        XCTAssertEqual(newWindowItem([MenuShortcut(title: "New\u{2026}", key: "N", commandOnly: true)]), 0)
+    }
+
     func testWithoutAWordForWindowCommandNAloneIsTaken() {
         XCTAssertEqual(newWindowItem([MenuShortcut(title: "Open...", key: "O", commandOnly: true),
                                       MenuShortcut(title: "Neu", key: "N", commandOnly: true)]), 1)

@@ -45,10 +45,17 @@ public struct MenuShortcut: Equatable {
 
 /// The menu item that opens a new window of the app, among its items in menu order: the first
 /// whose shortcut is on N and whose title speaks of a window and not of a private one (an editor
-/// has "New File" on ⌘N and "New Window" on ⇧⌘N); else the one on ⌘N alone. Nil when there is none.
+/// has "New File" on ⌘N and "New Window" on ⇧⌘N); else the one on ⌘N alone when its title is one
+/// word ("New", "Neu": a new document, which is a window, in whatever language). An item on ⌘N
+/// that names something else ("New Note", "New Message", "New Event") is not pressed: side by
+/// side would make a note, a message or an event instead of a window. Nil when there is none.
 public func newWindowItem(_ items: [MenuShortcut]) -> Int? {
     let onN = items.indices.filter { items[$0].key.uppercased() == "N" }
-    let windowWords = ["window", "fenêtre", "fenetre", "fenster", "ventana", "finestra", "janela", "venster"]
+    // More languages than before: now that ⌘N is only taken for a title of one word, an app in
+    // a language that is not here would lose side by side when its item is "New window" in two.
+    let windowWords = ["window", "fenêtre", "fenetre", "fenster", "ventana", "finestra", "janela", "venster",
+                       "fönster", "vindue", "vindu", "ikkuna", "okno", "окно", "вікно", "ablak", "pencere",
+                       "παράθυρο", "fereastră", "прозорец", "prozor", "ウインドウ", "ウィンドウ", "窗口", "視窗", "视窗", "창", "윈도우"]
     let privateWords = ["private", "privé", "prive", "incognito", "inkognito", "privat", "tor"]
     func words(_ title: String) -> [String] {
         title.lowercased().split(whereSeparator: { !$0.isLetter }).map(String.init)
@@ -60,5 +67,5 @@ public func newWindowItem(_ items: [MenuShortcut]) -> Int? {
     }) {
         return named
     }
-    return onN.first { items[$0].commandOnly }
+    return onN.first { items[$0].commandOnly && words(items[$0].title).count == 1 }
 }

@@ -219,6 +219,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testAStateFileWithoutPairsReadsAsNone", { try ($0 as! SplitTests).testAStateFileWithoutPairsReadsAsNone() }),
         ("testABrowsersNewWindowIsTheItemOnCommandN", { ($0 as! SplitTests).testABrowsersNewWindowIsTheItemOnCommandN() }),
         ("testAnEditorsNewWindowIsNotItsNewFile", { ($0 as! SplitTests).testAnEditorsNewWindowIsNotItsNewFile() }),
+        ("testCommandNThatNamesSomethingElseThanAWindowIsNotPressed", { ($0 as! SplitTests).testCommandNThatNamesSomethingElseThanAWindowIsNotPressed() }),
         ("testWithoutAWordForWindowCommandNAloneIsTaken", { ($0 as! SplitTests).testWithoutAWordForWindowCommandNAloneIsTaken() }),
     ]),
     ("LinkTests", { LinkTests() }, [

@@ -15,7 +15,8 @@ in their slot, stay there, and are all back where they were after a restart.
 - **Focus.** One shortcut gives a slot the whole desktop; the same shortcut puts everything back.
 - **Stacks.** Several windows share a slot, and a shortcut goes through them.
 - **Side by side.** One shortcut opens a second window of the app in front and puts the two half
-  and half in its slot; the same shortcut stacks them again.
+  and half in its slot; the same shortcut stacks them again. The second window is asked of the app
+  through its "New Window" menu item: an app without one is left alone.
 - **Drawers.** Windows parked off the side of a display, slid in when you need them.
 - **Back after a restart.** At login Fremspace opens the apps that have a slot and puts every window
   back on the right desktop.
