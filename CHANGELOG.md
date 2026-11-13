@@ -25,7 +25,8 @@ The first version to be packaged.
   number of slots of a desktop can have it.
 - **Stacks.** Several windows in one slot, and a shortcut to go through them.
 - **Side by side.** ⌃⌥⌘S opens a second window of the app in front and puts the two half and half,
-  in the window's slot or on its display; the same shortcut stacks them again.
+  in the window's slot or on its display; the same shortcut stacks them again. The second window
+  is asked of the app through its "New Window" menu item; an app that has none is left alone.
 - **Drawers.** Windows parked off the side of a display, slid in and out by a shortcut.
 - **Restore after login.** The apps that have a slot are opened and every window is put back.
   What is remembered for that (titles, a browser's tab titles, a document's address) is listed in
@@ -58,6 +59,7 @@ The first version to be packaged.
 - **Commands that change the layouts** ("Lock on this desktop", "Make focusable", swapping two
   slots, an edge resized with "resize layouts" on) write the config file at once. While the editor
   holds changes that are not saved they do nothing and say why, so that the editor can always save.
+  "Lock on this desktop" makes no slot that would lie over another, and says so.
   `config.json.bak` is the file as it was before the editor's last Save: these commands leave it.
   A config file that is a link (kept with your dotfiles) is written through the link.
 - **An editor** for the layouts. It opens on the displays it found and one button to set them up,
@@ -68,7 +70,8 @@ The first version to be packaged.
   list. Scenes and Share say which configuration they are about and can change it. Settings that
   act without Save are marked "At once". Also: desktops reordered by dragging their tab, a Status
   page that lists what needs attention, a search across the settings, every shortcut changeable,
-  and `fremspace://` links for other tools.
+  and `fremspace://` links for other tools. A shortcut written by hand in the config file that
+  cannot be used (a misspelt modifier, no ⌃, ⌥ or ⌘) is not registered, and the menu names it.
 - **What needs macOS 26.4.** Sending a window to another desktop: to the desktop of its slot, back
   where it was after a restart, a drawer following its display. On an older macOS the windows are
   arranged on the desktop where they are, and the Status page says so.
