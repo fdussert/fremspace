@@ -1,6 +1,7 @@
 ## What this changes
 
-<!-- One or two sentences: what the patch does, and why it is worth doing. -->
+<!-- One or two sentences: what the patch does, and why it is worth doing.
+     For a feature: the issue where it was agreed (see CONTRIBUTING.md). -->
 
 ## How to see it
 
