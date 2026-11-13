@@ -284,6 +284,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testAFileIsReadBackAsItWasWritten", { try ($0 as! ShareTests).testAFileIsReadBackAsItWasWritten() }),
         ("testAnotherKindOfFileOrANewerOneIsRefused", { ($0 as! ShareTests).testAnotherKindOfFileOrANewerOneIsRefused() }),
         ("testAFileWithSomethingThatCannotBeIsRefused", { ($0 as! ShareTests).testAFileWithSomethingThatCannotBeIsRefused() }),
+        ("testOnlyAPlainFileOfTheRightSizeIsReadFromTheLibrary", { try ($0 as! ShareTests).testOnlyAPlainFileOfTheRightSizeIsReadFromTheLibrary() }),
+        ("testAFileKeptInTheLibraryReplacesNone", { ($0 as! ShareTests).testAFileKeptInTheLibraryReplacesNone() }),
         ("testWhereWindowsWithoutASlotGoIsNeverInAFileNorTakenFromOne", { try ($0 as! ShareTests).testWhereWindowsWithoutASlotGoIsNeverInAFileNorTakenFromOne() }),
         ("testSlotsThatOverlapRefuseTheFile", { ($0 as! ShareTests).testSlotsThatOverlapRefuseTheFile() }),
         ("testTheLimitsOfAFileAreKept", { ($0 as! ShareTests).testTheLimitsOfAFileAreKept() }),

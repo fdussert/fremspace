@@ -191,6 +191,19 @@ public func shareFileName(_ name: String) -> String {
     return (kept.isEmpty ? "Fremspace" : kept) + SharedLayout.fileSuffix
 }
 
+/// The name of a file for the library that replaces none of `taken` (the names there, whatever
+/// their case): "Home desk.fremspace-layout.json", then "Home desk 2.fremspace-layout.json". A
+/// layout of the same name may be somebody else's.
+public func libraryFileName(_ name: String, taken: Set<String>) -> String {
+    let lowered = Set(taken.map { $0.lowercased() })
+    let first = shareFileName(name)
+    guard lowered.contains(first.lowercased()) else { return first }
+    let base = String(first.dropLast(SharedLayout.fileSuffix.count))
+    var number = 2
+    while lowered.contains("\(base) \(number)\(SharedLayout.fileSuffix)".lowercased()) { number += 1 }
+    return "\(base) \(number)\(SharedLayout.fileSuffix)"
+}
+
 // MARK: - Reading
 
 public enum ShareError: Error, Equatable {
@@ -245,6 +258,23 @@ extension SharedLayout {
         }
         layout.scenes = layout.scenes.map { checked($0, in: layout.displays) }
         return layout
+    }
+
+    /// Reads the file at `url`, which is somebody else's as much as its content: only a plain file
+    /// is opened (through a link if it is one), and never more of it than a layout may weigh.
+    /// Measured by its directory entry, a link weighs a few bytes whatever it points to, and a
+    /// pipe put in the library would be waited on for ever, on the main thread.
+    public static func read(contentsOf url: URL) throws -> SharedLayout {
+        // Without waiting: opening a pipe that nobody writes to would not return.
+        let descriptor = open(url.path, O_RDONLY | O_NONBLOCK)
+        guard descriptor >= 0 else { throw ShareError.notALayout }
+        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        var info = stat()
+        guard fstat(descriptor, &info) == 0, info.st_mode & S_IFMT == S_IFREG else { throw ShareError.notALayout }
+        guard Int(info.st_size) <= Limit.bytes else { throw ShareError.tooBig }
+        // One byte more than allowed, should the file grow while it is read: `read` then refuses it.
+        guard let data = try? handle.read(upToCount: Limit.bytes + 1) else { throw ShareError.notALayout }
+        return try read(data)
     }
 
     private static func checked(_ display: SharedDisplay, position: Int) throws -> SharedDisplay {

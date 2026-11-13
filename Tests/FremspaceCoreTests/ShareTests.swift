@@ -188,6 +188,48 @@ final class ShareTests: XCTestCase {
         XCTAssertEqual(layout.appsOpenedAtLogin, ["com.example.browser"])
     }
 
+    func testOnlyAPlainFileOfTheRightSizeIsReadFromTheLibrary() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("fremspace-tests-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let layout = sharedLayout(of: desk, withFilters: false).layout
+        let file = folder.appendingPathComponent("desk.fremspace-layout.json")
+        try layout.data().write(to: file)
+        let back = try SharedLayout.read(contentsOf: file)
+        XCTAssertEqual(back, layout)
+        func refusal(_ url: URL) -> ShareError? {
+            do {
+                _ = try SharedLayout.read(contentsOf: url)
+                return nil
+            } catch {
+                return error as? ShareError
+            }
+        }
+        // A link to a layout is the layout; a link to something too big weighs what that weighs.
+        let link = folder.appendingPathComponent("link.fremspace-layout.json")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: file)
+        XCTAssertNil(refusal(link))
+        let big = folder.appendingPathComponent("big")
+        try Data(repeating: 32, count: SharedLayout.Limit.bytes + 1).write(to: big)
+        let linkToBig = folder.appendingPathComponent("big.fremspace-layout.json")
+        try FileManager.default.createSymbolicLink(at: linkToBig, withDestinationURL: big)
+        XCTAssertEqual(refusal(linkToBig), .tooBig)
+        // A pipe nobody writes to is refused at once, not waited on; so are a folder and nothing.
+        let pipe = folder.appendingPathComponent("pipe.fremspace-layout.json")
+        XCTAssertEqual(mkfifo(pipe.path, 0o600), 0)
+        XCTAssertEqual(refusal(pipe), .notALayout)
+        XCTAssertEqual(refusal(folder), .notALayout)
+        XCTAssertEqual(refusal(folder.appendingPathComponent("missing.json")), .notALayout)
+    }
+
+    func testAFileKeptInTheLibraryReplacesNone() {
+        XCTAssertEqual(libraryFileName("Home desk", taken: []), "Home desk.fremspace-layout.json")
+        XCTAssertEqual(libraryFileName("Home desk", taken: ["home desk.fremspace-layout.json", "Other.fremspace-layout.json"]),
+                       "Home desk 2.fremspace-layout.json")
+        XCTAssertEqual(libraryFileName("Home desk", taken: ["Home desk.fremspace-layout.json", "Home desk 2.fremspace-layout.json"]),
+                       "Home desk 3.fremspace-layout.json")
+    }
+
     func testNamesAreCutToOneLineAndAScenePartThatPointsNowhereIsDropped() throws {
         var layout = sharedLayout(of: desk, withFilters: false).layout
         layout.name = "A\nB" + String(repeating: "x", count: 200)

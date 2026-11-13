@@ -73,7 +73,8 @@ on your Mac will be opened at your next login.
 `~/Library/Application Support/Fremspace/Layouts/` holds layout files ready to be added: yours
 (**Keep in the library**) and those of others (put the file in the folder, **Open the library
 folder** shows it). The Share page lists the files it can read, with their displays and desktops;
-the bin moves a file to the Trash.
+the bin moves a file to the Trash. Only a plain file of 1 MB at most is read (a link is followed
+to the file it points to).
 
 ## Where to post one
 
