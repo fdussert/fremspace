@@ -54,6 +54,26 @@ final class DrawerGeometryTests: XCTestCase {
         XCTAssertEqual(parkedFrame(w, display: rightDell, side: .right, strip: 8), CGRect(x: 8224, y: -581, width: 1244, height: 933))
     }
 
+    func testParkedThroughTheLeftOrTheTopTheStripIsTheWindowsFarEdge() {
+        let w = CGRect(x: 4880, y: -581, width: 1244, height: 933)
+        XCTAssertEqual(parkedFrame(w, display: rightDell, side: .left, strip: 8), CGRect(x: 4872 - 1244 + 8, y: -581, width: 1244, height: 933))
+        XCTAssertEqual(parkedFrame(w, display: rightDell, side: .top, strip: 8), CGRect(x: 4880, y: -589 - 933 + 8, width: 1244, height: 933))
+    }
+
+    func testAWindowDoesNotHangPastTheBottomOntoADisplayBelow() {
+        let display = CGRect(x: 0, y: 0, width: 1000, height: 800)
+        let slot = CGRect(x: 0, y: 0, width: 400, height: 700)
+        // Against the top of the left side, and the whole of the right side.
+        let beside = CGRect(x: -1000, y: 0, width: 1000, height: 300)
+        let other = CGRect(x: 1000, y: 0, width: 1000, height: 800)
+        // Nothing below: the window goes under the display on the left, past the bottom.
+        XCTAssertEqual(hiddenParkedFrame(slot, display: display, others: [beside, other], edge: .left, strip: 1),
+                       CGRect(x: -399, y: 300, width: 400, height: 700))
+        // A display below is where it would show: no side hides it.
+        let below = CGRect(x: -1000, y: 800, width: 3000, height: 600)
+        XCTAssertNil(hiddenParkedFrame(slot, display: display, others: [beside, other, below], edge: .left, strip: 1))
+    }
+
     func testCompactParkedFrameSitsInTheDrawerCorner() {
         let w = CGRect(x: 4880, y: -581, width: 1244, height: 933)
         XCTAssertEqual(compactParkedFrame(w, display: rightDell, side: .bottom, strip: 8, edge: .left, width: 160, gap: 8),

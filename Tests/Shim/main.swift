@@ -1,7 +1,9 @@
 // Adapted from Fremkit (MIT).
 // Explicit runner for the FremspaceCore tests: no runtime discovery, every test method is listed
 // here. EVERY NEW TEST METHOD MUST BE REGISTERED HERE, or it never runs; scripts/test.sh compares
-// the number of `func test` declarations with the entries below and fails on a mismatch.
+// the `func test` declarations with the entries below, name by name, and fails on a mismatch. A
+// throwing test is registered with `try`, never `try!`: a throw is then a failure of that test,
+// not the end of the run.
 
 import Foundation
 import XCTest
@@ -114,7 +116,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testNoFloatingSendsAwayAWindowDroppedByHandOnALayoutDesktop", { ($0 as! DesktopRoutingTests).testNoFloatingSendsAwayAWindowDroppedByHandOnALayoutDesktop() }),
         ("testNoFloatingAlsoMovesFixedSizeWindowsButNotDialogs", { ($0 as! DesktopRoutingTests).testNoFloatingAlsoMovesFixedSizeWindowsButNotDialogs() }),
         ("testNoFloatingKeepsEveryWindowOfAnAppOfTheLayout", { ($0 as! DesktopRoutingTests).testNoFloatingKeepsEveryWindowOfAnAppOfTheLayout() }),
-        ("testNoFloatingIsAGeneralSettingAndOlderFilesHaveItOff", { try! ($0 as! DesktopRoutingTests).testNoFloatingIsAGeneralSettingAndOlderFilesHaveItOff() }),
+        ("testNoFloatingIsAGeneralSettingAndOlderFilesHaveItOff", { try ($0 as! DesktopRoutingTests).testNoFloatingIsAGeneralSettingAndOlderFilesHaveItOff() }),
         ("testWindowOnFreeDesktopStays", { ($0 as! DesktopRoutingTests).testWindowOnFreeDesktopStays() }),
         ("testBraveOnWebStaysAlthoughItMatchesCodeToo", { ($0 as! DesktopRoutingTests).testBraveOnWebStaysAlthoughItMatchesCodeToo() }),
         ("testUnmatchedAppStays", { ($0 as! DesktopRoutingTests).testUnmatchedAppStays() }),
@@ -310,7 +312,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testAShortcutNeedsMoreThanShift", { ($0 as! ShortcutsTests).testAShortcutNeedsMoreThanShift() }),
         ("testAMisspeltModifierMakesTheShortcutUnusableInsteadOfAnotherShortcut", { try ($0 as! ShortcutsTests).testAMisspeltModifierMakesTheShortcutUnusableInsteadOfAnotherShortcut() }),
         ("testConflictNamesTheOtherCommand", { ($0 as! ShortcutsTests).testConflictNamesTheOtherCommand() }),
-        ("testShortcutsRoundTripAndOlderFilesHaveNone", { try! ($0 as! ShortcutsTests).testShortcutsRoundTripAndOlderFilesHaveNone() }),
+        ("testShortcutsRoundTripAndOlderFilesHaveNone", { try ($0 as! ShortcutsTests).testShortcutsRoundTripAndOlderFilesHaveNone() }),
     ]),
     ("ConfigCommandsTests", { ConfigCommandsTests() }, [
         ("testLockOnFreeDesktopCreatesALayout", { ($0 as! ConfigCommandsTests).testLockOnFreeDesktopCreatesALayout() }),
@@ -399,6 +401,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testTwoDrawersShareOneSetOfSlotKeys", { ($0 as! DrawerGeometryTests).testTwoDrawersShareOneSetOfSlotKeys() }),
         ("testParkSideFollowsTheFallbackOrder", { ($0 as! DrawerGeometryTests).testParkSideFollowsTheFallbackOrder() }),
         ("testParkedFrameLeavesTheStrip", { ($0 as! DrawerGeometryTests).testParkedFrameLeavesTheStrip() }),
+        ("testParkedThroughTheLeftOrTheTopTheStripIsTheWindowsFarEdge", { ($0 as! DrawerGeometryTests).testParkedThroughTheLeftOrTheTopTheStripIsTheWindowsFarEdge() }),
+        ("testAWindowDoesNotHangPastTheBottomOntoADisplayBelow", { ($0 as! DrawerGeometryTests).testAWindowDoesNotHangPastTheBottomOntoADisplayBelow() }),
         ("testCompactParkedFrameSitsInTheDrawerCorner", { ($0 as! DrawerGeometryTests).testCompactParkedFrameSitsInTheDrawerCorner() }),
         ("testAWindowHidesUnderTheDisplayThatIsAgainstPartOfTheSide", { ($0 as! DrawerGeometryTests).testAWindowHidesUnderTheDisplayThatIsAgainstPartOfTheSide() }),
         ("testARightDrawerHidesThroughTheOtherSideWhenItsOwnIsTaken", { ($0 as! DrawerGeometryTests).testARightDrawerHidesThroughTheOtherSideWhenItsOwnIsTaken() }),
