@@ -269,6 +269,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testANewConfigurationHasADesktopPerDesktopOfTheDisplay", { ($0 as! EditorRulesTests).testANewConfigurationHasADesktopPerDesktopOfTheDisplay() }),
     ]),
     ("SceneTests", { SceneTests() }, [
+        ("testASceneNoLongerGivesFocusToASlotThatIsGone", { ($0 as! SceneTests).testASceneNoLongerGivesFocusToASlotThatIsGone() }),
+        ("testWhateverNamedASlotThatIsGoneForgetsIt", { ($0 as! SceneTests).testWhateverNamedASlotThatIsGoneForgetsIt() }),
         ("testASceneNamesOneDesktopPerDisplay", { ($0 as! SceneTests).testASceneNamesOneDesktopPerDisplay() }),
         ("testScenesAreWrittenOnlyWhenThereAreSome", { try ($0 as! SceneTests).testScenesAreWrittenOnlyWhenThereAreSome() }),
         ("testRemovingADesktopShiftsTheLaterOnesAndDropsItFromItsScenes", { ($0 as! SceneTests).testRemovingADesktopShiftsTheLaterOnesAndDropsItFromItsScenes() }),

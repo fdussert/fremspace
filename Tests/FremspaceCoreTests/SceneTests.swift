@@ -35,6 +35,33 @@ final class SceneTests: XCTestCase {
         XCTAssertEqual(gone[0].desktops, [on(laptop, 3)])
     }
 
+    func testASceneNoLongerGivesFocusToASlotThatIsGone() {
+        var scene = meeting
+        scene.setFocus("web", on: big)
+        scene.setFocus("mail", on: laptop)
+        // Another desktop of the display, or a slot the scene does not name: nothing to forget.
+        XCTAssertEqual(scenes([scene], afterRemovingSlots: ["web"], ofDesktop: 0, of: big), [scene])
+        XCTAssertEqual(scenes([scene], afterRemovingSlots: ["notes"], ofDesktop: 1, of: big), [scene])
+        let cleaned = scenes([scene], afterRemovingSlots: ["web", "notes"], ofDesktop: 1, of: big)[0]
+        XCTAssertNil(cleaned.focus(on: big))
+        XCTAssertEqual(cleaned.focus(on: laptop), "mail")
+        XCTAssertEqual(cleaned.desktops, scene.desktops)
+    }
+
+    func testWhateverNamedASlotThatIsGoneForgetsIt() {
+        var scene = meeting
+        scene.setFocus("web", on: big)
+        let desk = Configuration(id: UUID(), name: "Desk", displays: [
+            DisplaySpec(identity: big, spaces: [SpaceSpec(label: "Mail"), SpaceSpec(label: "Web", focusSlot: "web")]),
+        ], scenes: [scene])
+        let after = forgetting(slots: ["web"], ofDesktop: 1, of: big, in: desk)
+        XCTAssertNil(after.displays[0].spaces[1].focusSlot)
+        XCTAssertNil(after.scenes[0].focus(on: big))
+        // A slot of that name on another desktop keeps what names it.
+        XCTAssertEqual(forgetting(slots: ["web"], ofDesktop: 0, of: big, in: desk), desk)
+        XCTAssertEqual(forgetting(slots: [], ofDesktop: 1, of: big, in: desk), desk)
+    }
+
     func testMovingADesktopKeepsTheScenesOnTheSameDesktops() {
         // Desktop 3 of the laptop goes first: the scene follows it; the big display is untouched.
         let after = scenes([meeting], afterMovingDesktop: 3, to: 0, of: laptop)

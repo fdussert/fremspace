@@ -122,6 +122,36 @@ public func scenes(_ scenes: [Scene], afterRemovingDesktop index: Int, of displa
     }
 }
 
+/// The scenes once slots of desktop `index` of `display` are gone (removed in the editor, merged by
+/// a ready-made layout, replaced with their layout): a scene that shows that desktop and put one of
+/// them in Focus leaves the Focus there as it is. Left in the file, the name of a slot that is gone
+/// would wake up the day another slot is given the same name.
+public func scenes(_ scenes: [Scene], afterRemovingSlots removed: Set<String>, ofDesktop index: Int,
+                   of display: DisplayIdentity) -> [Scene] {
+    guard !removed.isEmpty else { return scenes }
+    return scenes.map { scene in
+        guard scene.desktop(on: display) == index else { return scene }
+        var scene = scene
+        scene.focus.removeAll { $0.display == display && removed.contains($0.slotID) }
+        return scene
+    }
+}
+
+/// `configuration` once slots of desktop `index` of `display` are gone: whatever named them forgets
+/// them, the desktop's own Focus and the scenes'. One way for every way a slot goes (removed in the
+/// editor, moved to a drawer, merged by a ready-made layout, replaced with its layout).
+public func forgetting(slots removed: Set<String>, ofDesktop index: Int, of display: DisplayIdentity,
+                       in configuration: Configuration) -> Configuration {
+    guard !removed.isEmpty else { return configuration }
+    var result = configuration
+    if let d = result.displays.firstIndex(where: { $0.identity == display }), result.displays[d].spaces.indices.contains(index),
+       let focus = result.displays[d].spaces[index].focusSlot, removed.contains(focus) {
+        result.displays[d].spaces[index].focusSlot = nil
+    }
+    result.scenes = scenes(result.scenes, afterRemovingSlots: removed, ofDesktop: index, of: display)
+    return result
+}
+
 /// The scenes once a desktop of `display` moved from one position to another: they keep showing the
 /// same desktops.
 public func scenes(_ scenes: [Scene], afterMovingDesktop from: Int, to: Int, of display: DisplayIdentity) -> [Scene] {

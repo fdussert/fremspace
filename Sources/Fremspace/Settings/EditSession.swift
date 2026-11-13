@@ -861,8 +861,9 @@ final class EditSession: ObservableObject {
         }
         updateSpace { space in
             space.layout = layout.slots.count > 1 ? FremspaceCore.remove(layout, slot: id) : nil
-            if space.focusSlot == id || space.layout == nil { space.focusSlot = nil }
+            if space.layout == nil { space.focusSlot = nil }
         }
+        forgetSlots([id])
         selection.slot = nil
         let names = apps.map { appName($0.bundleID) }.joined(separator: ", ")
         status = Status(kind: .info, text: "\(names) moved to the \(edge.rawValue) drawer. Save to apply.")
@@ -922,8 +923,15 @@ final class EditSession: ObservableObject {
         guard let layout = editedLayout else { return }
         checkpoint()
         setEditedLayout(FremspaceCore.remove(layout, slot: id))
-        if selection.drawer == nil { updateSpace { if $0.focusSlot == id { $0.focusSlot = nil } } }
+        if selection.drawer == nil { forgetSlots([id]) }
         if selection.slot == id { selection.slot = nil }
+    }
+
+    /// Slots of the desktop shown are gone: its Focus and the scenes forget them (`forgetting`).
+    private func forgetSlots(_ ids: Set<String>) {
+        guard let display = selection.display else { return }
+        let desktop = selection.desktop
+        updateConfiguration { $0 = forgetting(slots: ids, ofDesktop: desktop, of: display, in: $0) }
     }
 
     // MARK: - Displays
