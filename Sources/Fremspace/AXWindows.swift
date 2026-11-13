@@ -19,6 +19,15 @@ private let createWithRemoteToken = dlsym(hiServices, "_AXUIElementCreateWithRem
     .map { unsafeBitCast($0, to: CreateWithRemoteToken.self) }
 
 /// Reads and moves other apps' windows through Accessibility.
+///
+/// Every call here is synchronous and made on the main thread, where the hot keys and the key
+/// filter of the Hyper key also run: an app that does not answer costs `messagingTimeout` per
+/// call, and typing waits meanwhile. What bounds it today: the timeout itself, one question per
+/// app before its windows are read (an app that hangs is then skipped for the pass), the scan
+/// budget of `allWindows`, and the palette, which stops asking an app after its first timeout.
+/// Moving the reads off the main thread would mean a placement pass in two steps (read, then
+/// decide and move), for the engine, the drawers, the palette and the notch alike: a redesign of
+/// its own, not done.
 final class AXWindows {
     /// Every AX call to an app waits at most this long, so a hung app cannot freeze Fremspace.
     static let messagingTimeout: Float = 0.25

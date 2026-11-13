@@ -377,18 +377,30 @@ final class Palette: NSObject, NSWindowDelegate {
         titles = titles.filter { alive.contains($0.key) }
 
         var listed: Set<UInt32> = []
+        // Apps that took the whole Accessibility timeout and did not answer (a beachball). Every
+        // further question to one of them costs the timeout again, here on the main thread, where
+        // the hot keys and the Hyper key's filter wait: a browser with ten windows kept the
+        // palette, and typing, waiting for seconds. Their windows are listed from what is known.
+        var silent: Set<pid_t> = []
         for pid in Set(candidates.map(\.pid)) {
-            for element in windows.windowElements(pid: pid) {
+            let asked = Date()
+            guard let answer = windows.windowElementsIfAnswered(pid: pid) else {
+                if Date().timeIntervalSince(asked) > Double(AXWindows.messagingTimeout) * 0.8 { silent.insert(pid) }
+                continue
+            }
+            for element in answer {
                 guard let id = AXWindows.windowID(element) else { continue }
                 listed.insert(id)
                 elements[id] = (element, pid)
             }
         }
+        if !silent.isEmpty { Log.app.notice("palette: \(silent.count) apps do not answer; their windows are listed as last known") }
         var result: [SeenWindow] = []
         var unknown: Set<pid_t> = []
         for candidate in candidates {
             guard let app = apps[candidate.pid], let bundleID = app.bundleIdentifier else { continue }
-            let element = (elements[candidate.id] ?? engine.knownElement(candidate.id))?.element
+            let quiet = silent.contains(candidate.pid)
+            let element = quiet ? nil : (elements[candidate.id] ?? engine.knownElement(candidate.id))?.element
             var title: String?
             var minimized = false
             if let element {
@@ -398,12 +410,12 @@ final class Palette: NSObject, NSWindowDelegate {
                 if let subrole, subrole != kAXStandardWindowSubrole, subrole != kAXDialogSubrole { continue }
                 title = Self.string(element, kAXTitleAttribute)
                 minimized = Self.bool(element, kAXMinimizedAttribute)
-            } else if candidate.onScreen || listed.contains(candidate.id) {
+            } else if !quiet, candidate.onScreen || listed.contains(candidate.id) {
                 continue
             }
             title = title ?? titles[candidate.id] ?? engine.knownTitle(candidate.id)
             guard let title else {
-                unknown.insert(candidate.pid)
+                if !quiet { unknown.insert(candidate.pid) }
                 continue
             }
             titles[candidate.id] = title
