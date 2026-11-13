@@ -109,6 +109,25 @@ final class ShareTests: XCTestCase {
         XCTAssertEqual(refused { $0.displays[1].desktops = Array(repeating: SpaceSpec(label: "x"), count: 40) }, .invalid("the number of desktops"))
     }
 
+    func testAFileWithTheCallOptionOfOneDayStillSavesAfterItIsAdded() throws {
+        let exported = String(decoding: try sharedLayout(of: desk, withFilters: false).layout.data(), as: UTF8.self)
+        let old = exported.replacingOccurrences(of: "\"id\" : \"ide\"", with: "\"fullScreenCalls\" : true, \"id\" : \"ide\"")
+        XCTAssertTrue(old.contains("fullScreenCalls"))
+        let shared = try SharedLayout.read(Data(old.utf8))
+        XCTAssertEqual(shared.displays[1].desktops[1].layout?.slots[0].fullScreenCalls, false)
+        // Added and saved, the configuration reads back as it is in memory: the next Save compares
+        // the two.
+        let mine = DisplayIdentity(vendor: 9, model: 1, serial: 1, name: "Mine")
+        let other = DisplayIdentity(vendor: 9, model: 2, serial: 2, name: "Other")
+        let target = Configuration(id: UUID(), name: "Office", displays: [
+            DisplaySpec(identity: mine, spaces: [SpaceSpec(label: "One")]),
+            DisplaySpec(identity: other, spaces: [SpaceSpec(label: "A")]),
+        ])
+        let config = Config(configurations: [adding(shared, to: target, onto: [0: mine, 1: other]).configuration])
+        let saved = try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(config))
+        XCTAssertEqual(saved, config)
+    }
+
     func testNamesAreCutToOneLineAndAScenePartThatPointsNowhereIsDropped() throws {
         var layout = sharedLayout(of: desk, withFilters: false).layout
         layout.name = "A\nB" + String(repeating: "x", count: 200)

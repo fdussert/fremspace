@@ -259,6 +259,10 @@ extension SharedLayout {
                 guard isUnit(slot.rect) else { throw ShareError.invalid("a slot's rectangle") }
                 guard !slot.rules.isEmpty else { throw ShareError.invalid("a slot without app") }
                 layout.slots[s].rules = try checked(slot.rules)
+                // The option of one day (see `Slot.fullScreenCalls`) is read and never written:
+                // left on, the configuration in memory would never equal the file it was saved
+                // to, and every later Save would be refused as "changed outside the editor".
+                layout.slots[s].fullScreenCalls = false
             }
             display.desktops[d].layout = layout
             if let focus = display.desktops[d].focusSlot, !ids.contains(focus) { display.desktops[d].focusSlot = nil }

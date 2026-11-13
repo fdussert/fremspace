@@ -278,6 +278,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testAFileIsReadBackAsItWasWritten", { try ($0 as! ShareTests).testAFileIsReadBackAsItWasWritten() }),
         ("testAnotherKindOfFileOrANewerOneIsRefused", { ($0 as! ShareTests).testAnotherKindOfFileOrANewerOneIsRefused() }),
         ("testAFileWithSomethingThatCannotBeIsRefused", { ($0 as! ShareTests).testAFileWithSomethingThatCannotBeIsRefused() }),
+        ("testAFileWithTheCallOptionOfOneDayStillSavesAfterItIsAdded", { try ($0 as! ShareTests).testAFileWithTheCallOptionOfOneDayStillSavesAfterItIsAdded() }),
         ("testNamesAreCutToOneLineAndAScenePartThatPointsNowhereIsDropped", { try ($0 as! ShareTests).testNamesAreCutToOneLineAndAScenePartThatPointsNowhereIsDropped() }),
         ("testAnImportAddsTheDesktopsAfterTheOwnersAndTheScenesFollow", { ($0 as! ShareTests).testAnImportAddsTheDesktopsAfterTheOwnersAndTheScenesFollow() }),
         ("testADisplayOfTheFileLeftOutTakesItsPartOfTheScenes", { ($0 as! ShareTests).testADisplayOfTheFileLeftOutTakesItsPartOfTheScenes() }),
