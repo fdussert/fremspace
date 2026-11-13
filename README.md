@@ -77,6 +77,9 @@ open dist/Fremspace.app
 - **Window previews** are off unless you switch them on. They need a second permission, Screen
   Recording, which macOS asks for at that moment; the pictures stay in memory and are never written
   or sent anywhere.
+- **The map under the notch** is on unless you switch it off, on a Mac with a notch. While it is
+  open Fremspace filters key presses too: with the pointer on the map, the arrow keys, Return and
+  Escape are the map's; every other key goes to the app in front.
 - **The Hyper key** is off unless you switch it on. While on, Caps Lock is remapped in the system and
   Fremspace filters key presses to read it; the mapping is removed when Fremspace quits.
 

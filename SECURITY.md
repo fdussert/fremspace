@@ -1,8 +1,8 @@
 # Security
 
 Fremspace holds the Accessibility permission: it can read the titles of every window and move them.
-With the Hyper key on it also filters key presses to read Caps Lock. That makes its integrity matter
-more than its size suggests.
+With the Hyper key on it also filters key presses to read Caps Lock, and so does the map of desktops
+under the notch while it is open. That makes its integrity matter more than its size suggests.
 
 ## What it does with that
 
@@ -15,6 +15,11 @@ more than its size suggests.
   keychain and nowhere else.
 - The key filter of the Hyper key reads one thing per key press: whether Caps Lock is held. It keeps
   no key, logs no key, and is not installed unless the setting is on.
+- A second key filter belongs to the map of desktops under the notch, which is on unless switched
+  off (General) and exists only on a Mac with a notch. It is installed when the map opens (the
+  pointer rested on the notch) and removed when the map closes. While the pointer is on the map it
+  takes the arrow keys, Return and Escape; every other key, and every key while the pointer is
+  elsewhere, goes on to the app in front. It keeps no key and logs no key.
 - `fremspace://` links can be opened by any app without a prompt, and by a web page after the
   browser's one. A link can:
   - show a desktop (`desktop/<label>`) or a scene (`scene/<name>`, which also gives the Focus,

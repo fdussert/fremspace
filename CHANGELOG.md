@@ -41,7 +41,8 @@ The first version to be packaged.
   beside the config file or from anywhere, adds its desktops and scenes after yours on the displays
   you choose.
 - **The notch.** A desktop's name hangs from it when the display changes desktop; resting the
-  pointer on it opens the map of desktops, which takes the arrow keys, Return and Escape.
+  pointer on it opens the map of desktops, which takes the arrow keys, Return and Escape while the
+  pointer is on the map (resting on the notch alone, the keys stay with the app in front).
 - **Window previews**, an option that is off unless you switch it on. The palette shows a picture
   of the selected window; the maps of desktops and the editor show the window of each slot. It
   needs the Screen Recording permission, which macOS asks for when you save with the option on;

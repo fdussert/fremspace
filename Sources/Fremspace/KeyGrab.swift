@@ -3,7 +3,9 @@ import Carbon.HIToolbox
 
 /// Takes a few keys away from the app in front while something of Fremspace's that never has the
 /// keyboard is shown (the map under the notch). Every other key goes on to the app: only the keys
-/// the handler answers for are kept. A filter on key presses, there only between `start` and `stop`.
+/// the handler answers for are kept. A filter on key presses, there only between `start` and `stop`:
+/// like the Hyper key's it sees every key press while it is installed, so it keeps no key, logs no
+/// key, and `SECURITY.md` says when it is there.
 final class KeyGrab {
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?

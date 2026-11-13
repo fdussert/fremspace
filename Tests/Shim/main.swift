@@ -171,6 +171,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testWhatHangsFromTheNotchStartsAtTheTopAndShowsItsContentUnderIt", { ($0 as! NotchTests).testWhatHangsFromTheNotchStartsAtTheTopAndShowsItsContentUnderIt() }),
         ("testWithoutANotchItIsCentredUnderTheMenuBar", { ($0 as! NotchTests).testWithoutANotchItIsCentredUnderTheMenuBar() }),
         ("testItStaysInsideTheScreen", { ($0 as! NotchTests).testItStaysInsideTheScreen() }),
+        ("testTheMapTakesItsKeysOnlyWhileThePointerIsOnIt", { ($0 as! NotchTests).testTheMapTakesItsKeysOnlyWhileThePointerIsOnIt() }),
         ("testTheTwoSettingsAreOnUnlessSwitchedOffAndOnlyThenWritten", { try ($0 as! NotchTests).testTheTwoSettingsAreOnUnlessSwitchedOffAndOnlyThenWritten() }),
     ]),
     ("PreviewsTests", { PreviewsTests() }, [

@@ -33,6 +33,16 @@ public func desktopBanner(label: String?, index: Int, count: Int) -> DesktopBann
     return DesktopBanner(label: name, count: max(count, index + 1), index: index)
 }
 
+/// What a key pressed while the map under the notch is open does (see `NotchGeometry.mapKeys`).
+public enum MapKeys: Equatable {
+    /// The map takes it, if it is one of its keys.
+    case map
+    /// It goes to the app in front, and the map stays.
+    case app
+    /// It goes to the app in front, and the map closes.
+    case close
+}
+
 /// Where things hang at the top of a display, in AppKit screen coordinates (y goes up). A display
 /// with a notch (a camera housing cut into the top of the screen) has no pixels there: what hangs
 /// from it starts at the top edge, as wide as the notch at least, and shows its content under it.
@@ -70,6 +80,16 @@ public struct NotchGeometry: Equatable {
         frame.size.width = min(frame.width, screen.width)
         frame.origin.x = min(max(frame.minX, screen.minX), screen.maxX - frame.width)
         return frame
+    }
+
+    /// Who a key is for while the map hangs from the notch, `panel` being the map's frame. The
+    /// pointer is what says the owner is at the map: only there does the map take its keys (the
+    /// arrows, Return, Escape). On the notch itself the pointer cannot be seen, and that is where
+    /// it stops when pushed to the top while typing elsewhere: the map stays open and the keys are
+    /// the app's. Anywhere else the map closes.
+    public func mapKeys(pointer: CGPoint, panel: CGRect, slack: CGFloat = 4) -> MapKeys {
+        if isOnNotch(pointer) { return .app }
+        return panel.insetBy(dx: -slack, dy: -slack).contains(pointer) ? .map : .close
     }
 
     /// Whether `point` is on the notch, a little under it included (the pointer cannot be seen on the

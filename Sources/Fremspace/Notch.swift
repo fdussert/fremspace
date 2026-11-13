@@ -172,6 +172,10 @@ final class NotchController {
         panel.orderFrontRegardless()
         keys.start { [weak self] keyCode in self?.mapKey(keyCode) ?? false }
         Log.app.info("notch: map of \(map.reduce(0) { $0 + $1.desktops.count }) desktops")
+        // Reading the windows for the map took a moment. A pointer that left meanwhile sends no
+        // exit, and the map and its key filter would stay until a key is pressed: it is told now.
+        let pointer = NSEvent.mouseLocation
+        if !frame.contains(pointer), !geometry.isOnNotch(pointer) { pointerLeftMap() }
     }
 
     /// A key while the map is open. True when the map took it.
@@ -180,9 +184,14 @@ final class NotchController {
             keys.stop()
             return false
         }
-        // The pointer went away and the panel was not told: the keys are the app's again.
-        let pointer = NSEvent.mouseLocation
-        guard panel.frame.insetBy(dx: -4, dy: -4).contains(pointer) || notched?.isOnNotch(pointer) == true else {
+        switch notched?.mapKeys(pointer: NSEvent.mouseLocation, panel: panel.frame) ?? .close {
+        case .map:
+            break
+        case .app:
+            // The pointer rests on the notch: someone typing elsewhere keeps the arrows and Escape.
+            return false
+        case .close:
+            // The pointer went away and the panel was not told: the keys are the app's again.
             closeMap()
             return false
         }

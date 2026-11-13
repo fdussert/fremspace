@@ -49,6 +49,17 @@ final class NotchTests: XCTestCase {
         XCTAssertEqual(frame, CGRect(x: 1512 + 1580, y: 1571 - 24 - 6 - 40, width: 200, height: 40))
     }
 
+    func testTheMapTakesItsKeysOnlyWhileThePointerIsOnIt() {
+        let panel = macbook.hanging(content: CGSize(width: 560, height: 240))
+        // On the map, under the notch: the arrows are the map's.
+        XCTAssertEqual(macbook.mapKeys(pointer: CGPoint(x: 756, y: 820), panel: panel), .map)
+        XCTAssertEqual(macbook.mapKeys(pointer: CGPoint(x: 500, y: 930), panel: panel), .map)
+        // Resting on the notch, where it opened the map: the keys are still the app's.
+        XCTAssertEqual(macbook.mapKeys(pointer: CGPoint(x: 756, y: 970), panel: panel), .app)
+        // Gone: the map closes.
+        XCTAssertEqual(macbook.mapKeys(pointer: CGPoint(x: 200, y: 400), panel: panel), .close)
+    }
+
     func testItStaysInsideTheScreen() {
         let narrow = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 400, height: 300), safeTop: 0, left: nil, right: nil)
         XCTAssertEqual(narrow.hanging(content: CGSize(width: 600, height: 40)).minX, 0)
