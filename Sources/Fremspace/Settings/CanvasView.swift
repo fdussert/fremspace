@@ -176,21 +176,33 @@ struct DesktopTabs: View {
         }
     }
 
-    /// The display has fewer desktops than the configuration asks for: offer to add them.
+    /// The display has fewer desktops than the configuration asks for. Adding them acts on the Mac at
+    /// once (Mission Control opens), so it is offered only for what runs: the saved file of the
+    /// configuration in use, and through the engine, which stops moving windows meanwhile. Desktops
+    /// that exist only in unsaved changes, or in a configuration that is not in use, are said, not added.
     @ViewBuilder
     private func missingDesktops(_ display: DisplaySpec) -> some View {
         if let present = session.desktopCounts[display.identity], present < display.spaces.count,
-           let connected = session.connected.first(where: { $0.identity == display.identity }) {
-            let missing = display.spaces.count - present
+           session.isConnected(display.identity) {
+            let active = session.configuration.map(session.isActive) ?? false
+            let addable = active ? max(0, (session.savedDesktopCount(on: display.identity) ?? 0) - present) : 0
             HStack(spacing: 8) {
                 Image(systemName: Status.Kind.warning.symbol).foregroundColor(.orange)
                 Text("This display has \(counted(present, "desktop")); \(display.spaces.count) are configured.")
-                Button("Add \(counted(missing, "desktop"))") {
-                    let added = Desktops.add(on: connected, count: missing)
-                    session.refreshEnvironment()
-                    session.status = added
-                        ? Status(kind: .success, text: "\(counted(missing, "desktop")) added.")
-                        : Status(kind: .error, text: "Could not add them: use Mission Control (the + at the top right).")
+                if addable > 0 {
+                    Button("Add \(counted(addable, "desktop"))") {
+                        let added = session.engine.addMissingDesktops()
+                        session.refreshEnvironment()
+                        session.status = added
+                            ? Status(kind: .success, text: "Desktops added.")
+                            : Status(kind: .error, text: "Could not add them: use Mission Control (the + at the top right).")
+                    }
+                    .help("Opens Mission Control and adds the desktops the saved configuration lacks, on every display")
+                }
+                if addable < display.spaces.count - present {
+                    Text(!active ? "macOS gets them when this configuration is in use."
+                         : addable > 0 ? "The others after you save." : "Save, then add them here.")
+                        .foregroundColor(.secondary)
                 }
             }
             .padding(.horizontal, 10).padding(.vertical, 6)

@@ -656,6 +656,13 @@ final class EditSession: ObservableObject {
     /// remembered windows go or follow, so that no desktop inherits another's.
     private var removedDesktops: [RemovedDesktop] = []
 
+    /// How many desktops the saved file gives `display` in the selected configuration (nil: the
+    /// configuration or the display is not saved yet).
+    func savedDesktopCount(on display: DisplayIdentity) -> Int? {
+        guard let id = configuration?.id else { return nil }
+        return saved.configurations.first { $0.id == id }?.displays.first { $0.identity == display }?.spaces.count
+    }
+
     /// Whether desktops of `display` were moved or removed and not saved yet: until then a position
     /// in the editor is not the position macOS has, and nothing may be read from the real desktop.
     func hasUnsavedDesktopOrder(on display: DisplayIdentity) -> Bool {
