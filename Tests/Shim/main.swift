@@ -404,6 +404,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
     ]),
     ("FocusStateTests", { FocusStateTests() }, [
         ("testFocusTogglesPerSpace", { ($0 as! FocusStateTests).testFocusTogglesPerSpace() }),
+        ("testFocusFollowsItsDesktopWhenAnotherOneIsRemoved", { ($0 as! FocusStateTests).testFocusFollowsItsDesktopWhenAnotherOneIsRemoved() }),
+        ("testFocusFollowsADesktopThatIsMoved", { ($0 as! FocusStateTests).testFocusFollowsADesktopThatIsMoved() }),
         ("testAFocusFoundAgainIsSetWithoutToggling", { ($0 as! FocusStateTests).testAFocusFoundAgainIsSetWithoutToggling() }),
         ("testFocusSwitchesToAnotherSlot", { ($0 as! FocusStateTests).testFocusSwitchesToAnotherSlot() }),
         ("testFocusFollowsItsConfiguredDesktopWhenTheDesktopsAreReordered", { ($0 as! FocusStateTests).testFocusFollowsItsConfiguredDesktopWhenTheDesktopsAreReordered() }),

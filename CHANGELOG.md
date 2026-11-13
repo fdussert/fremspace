@@ -13,6 +13,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   the desktop tabs, which macOS desktops the configuration in use does not list, and offers to
   remove each one through Mission Control. It asks first: macOS moves that desktop's windows to
   another one and nothing undoes it. Nothing is removed on a save.
+- Removing or moving a desktop in the editor no longer takes every slot of that display out of
+  Focus: a Focus follows its desktop, and only the Focus of a removed desktop goes.
 
 ## 0.1.1
 

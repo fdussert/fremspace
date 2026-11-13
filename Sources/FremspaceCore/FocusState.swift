@@ -75,6 +75,31 @@ public func focusToKeep(_ focus: FocusState, kept: [FocusedSlot], configurationI
     return result
 }
 
+/// What is kept of the Focus once configured desktop `index` of a display was removed (editor): its
+/// own Focus goes with it, and the Focus of the desktops after it moves up with them.
+public func focusKept(_ kept: [FocusedSlot], afterRemovingDesktop index: Int, of display: DisplayIdentity,
+                      configuration: UUID) -> [FocusedSlot] {
+    kept.compactMap { entry in
+        guard entry.configurationID == configuration, entry.desktop.display == display else { return entry }
+        if entry.desktop.index == index { return nil }
+        var entry = entry
+        if entry.desktop.index > index { entry.desktop.index -= 1 }
+        return entry
+    }
+}
+
+/// What is kept of the Focus once configured desktop `from` of a display was moved to position `to`
+/// (editor): each Focus follows its desktop to the position it has now.
+public func focusKept(_ kept: [FocusedSlot], afterMovingDesktop from: Int, to: Int, of display: DisplayIdentity,
+                      configuration: UUID) -> [FocusedSlot] {
+    kept.map { entry in
+        guard entry.configurationID == configuration, entry.desktop.display == display else { return entry }
+        var entry = entry
+        entry.desktop.index = movedIndex(entry.desktop.index, from: from, to: to)
+        return entry
+    }
+}
+
 /// The slots of a desktop the Focus hotkey enlarges: those marked focusable, and the one a file
 /// written before 2026-11-12 names as the desktop's Focus slot (there were two switches then).
 public func focusSlots(_ space: SpaceSpec) -> [Slot] {

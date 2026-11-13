@@ -526,15 +526,19 @@ final class Engine {
     /// Desktops removed or moved in the editor (saved), in order. Removed (`to` nil): their links and
     /// remembered windows go. Moved: the macOS desktops cannot be reordered, so the layout takes the
     /// desktop at its new position and the windows are carried there (owner, 2026-11-10: "my
-    /// desktops stay as before"); remembered windows follow their layout.
+    /// desktops stay as before"); remembered windows follow their layout. The caller reads the
+    /// configuration again right after (`configurationSaved`).
     func desktopsRemoved(_ removed: [(configuration: UUID, display: DisplayIdentity, index: Int, to: Int?)]) {
         guard !removed.isEmpty else { return }
-        // Focus is kept by configured position: positions changed meaning, so it is dropped there.
-        state.focused.removeAll { entry in
-            removed.contains { $0.configuration == entry.configurationID && $0.display == entry.desktop.display }
-        }
+        // Focus is kept by configured position, and positions changed meaning: each Focus follows
+        // its desktop to the position it has now, and only the Focus of a removed desktop goes.
+        // It used to be dropped on the whole display (owner, 2026-11-13: a test desktop removed
+        // took the Focus of another desktop with it). `focus`, by real desktop, is made again
+        // from this when the configuration is read.
         for r in removed {
-            for (space, _) in focus.all where space.display == r.display { focus.set(space, slot: nil) }
+            state.focused = r.to.map {
+                focusKept(state.focused, afterMovingDesktop: r.index, to: $0, of: r.display, configuration: r.configuration)
+            } ?? focusKept(state.focused, afterRemovingDesktop: r.index, of: r.display, configuration: r.configuration)
         }
         // Per display, the configured positions as they were, in their new order.
         var orders: [String: (display: DisplayIdentity, order: [Int])] = [:]

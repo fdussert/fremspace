@@ -153,4 +153,35 @@ final class FocusStateTests: XCTestCase {
         XCTAssertNil(focus.toggle(space, slot: "ide"))
         XCTAssertTrue(focus.all.isEmpty)
     }
+
+    func testFocusFollowsItsDesktopWhenAnotherOneIsRemoved() {
+        let display = DisplayIdentity(vendor: 1, model: 1, serial: 1, name: "Main")
+        let other = DisplayIdentity(vendor: 2, model: 2, serial: 2, name: "Side")
+        let home = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let travel = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+        func kept(_ configuration: UUID, _ display: DisplayIdentity, _ index: Int, _ slot: String) -> FocusedSlot {
+            FocusedSlot(configurationID: configuration, desktop: ConfiguredDesktop(display: display, index: index), slotID: slot)
+        }
+        let before = [kept(home, display, 0, "ide"), kept(home, display, 2, "web"), kept(home, display, 3, "test"),
+                      kept(home, other, 2, "mail"), kept(travel, display, 2, "notes")]
+        // Desktop 3 of 4 removed: the first keeps its Focus, the last moves up with its own, and
+        // nothing changes on another display or in another configuration.
+        XCTAssertEqual(focusKept(before, afterRemovingDesktop: 2, of: display, configuration: home),
+                       [kept(home, display, 0, "ide"), kept(home, display, 2, "test"),
+                        kept(home, other, 2, "mail"), kept(travel, display, 2, "notes")])
+        // A desktop removed after the others (a test desktop at the end) takes no Focus with it.
+        XCTAssertEqual(focusKept(before, afterRemovingDesktop: 4, of: display, configuration: home), before)
+    }
+
+    func testFocusFollowsADesktopThatIsMoved() {
+        let display = DisplayIdentity(vendor: 1, model: 1, serial: 1, name: "Main")
+        let home = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        func kept(_ index: Int, _ slot: String) -> FocusedSlot {
+            FocusedSlot(configurationID: home, desktop: ConfiguredDesktop(display: display, index: index), slotID: slot)
+        }
+        // The third desktop dragged to the front: it keeps its Focus there, the two it passed
+        // move one place with theirs.
+        XCTAssertEqual(focusKept([kept(0, "ide"), kept(2, "web")], afterMovingDesktop: 2, to: 0, of: display, configuration: home),
+                       [kept(1, "ide"), kept(0, "web")])
+    }
 }
