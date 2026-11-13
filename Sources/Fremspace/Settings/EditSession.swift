@@ -291,7 +291,22 @@ final class EditSession: ObservableObject {
     /// last save, the only thing in the window that could not be undone.
     func revert() {
         let before = Snapshot(config: config, removedDesktops: removedDesktops)
+        let basis = saved
         if let onDisk = try? store.load() { saved = onDisk }
+        guard saved == basis else {
+            // The file changed outside the editor (a Window command): the changes given up were made
+            // on the older file, and brought back by Undo they would be saved over what changed.
+            // This revert, and only this one, has no way back.
+            restoring = true
+            config = saved
+            restoring = false
+            undoStack = []
+            redoStack = []
+            removedDesktops = []
+            status = Status(kind: .info, text: "Back to the file as it is now: it had changed outside the editor.")
+            normalizeSelection()
+            return
+        }
         guard before.config != saved || !before.removedDesktops.isEmpty else {
             status = nil
             return
