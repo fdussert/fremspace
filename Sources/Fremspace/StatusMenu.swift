@@ -131,6 +131,20 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         }
     }
 
+    private var refusedShortcutItems: [NSMenuItem] = []
+
+    /// The commands whose shortcut in the config file cannot be used (see `Shortcut.isUsable`).
+    func showRefusedShortcuts(_ commands: [String]) {
+        refusedShortcutItems.forEach { menu.removeItem($0) }
+        refusedShortcutItems = []
+        for (offset, command) in commands.enumerated() {
+            let item = NSMenuItem(title: "Shortcut in the config file not usable: \(command)", action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menu.insertItem(item, at: 1 + offset)
+            refusedShortcutItems.append(item)
+        }
+    }
+
     func show(_ status: EngineStatus) {
         switch status {
         case .running(let name):

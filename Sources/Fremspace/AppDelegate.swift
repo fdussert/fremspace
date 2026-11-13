@@ -22,13 +22,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeys.unregisterAll()
         let effective = ShortcutCatalog.effective(engine.shortcuts)
         var failed: [String] = []
+        var refused: [String] = []
         for entry in ShortcutCatalog.entries {
             guard let shortcut = effective[entry.id], let combo = ShortcutCatalog.combo(shortcut),
                   let action = hotkeyActions[entry.id] else { continue }
+            // From a file edited by hand: without ⌃, ⌥ or ⌘, or with a modifier that is not one,
+            // it would be taken from every app on a key the owner did not mean.
+            guard shortcut.isUsable else {
+                refused.append(entry.title)
+                Log.app.notice("shortcut of \(entry.id, privacy: .public) in the config file is not usable; not registered")
+                continue
+            }
             let label = ShortcutCatalog.label(shortcut)
             if !hotkeys.register(combo, label: label, action) { failed.append(label) }
         }
         menu?.showFailedHotkeys(failed)
+        menu?.showRefusedShortcuts(refused)
         applyHyperKey(effective)
         // The settings of the notch and of the previews are in the config file too.
         notch.refresh()

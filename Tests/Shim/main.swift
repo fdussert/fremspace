@@ -293,6 +293,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
     ("ShortcutsTests", { ShortcutsTests() }, [
         ("testModifiersCompareWhateverTheirOrder", { ($0 as! ShortcutsTests).testModifiersCompareWhateverTheirOrder() }),
         ("testAShortcutNeedsMoreThanShift", { ($0 as! ShortcutsTests).testAShortcutNeedsMoreThanShift() }),
+        ("testAMisspeltModifierMakesTheShortcutUnusableInsteadOfAnotherShortcut", { try ($0 as! ShortcutsTests).testAMisspeltModifierMakesTheShortcutUnusableInsteadOfAnotherShortcut() }),
         ("testConflictNamesTheOtherCommand", { ($0 as! ShortcutsTests).testConflictNamesTheOtherCommand() }),
         ("testShortcutsRoundTripAndOlderFilesHaveNone", { try! ($0 as! ShortcutsTests).testShortcutsRoundTripAndOlderFilesHaveNone() }),
     ]),

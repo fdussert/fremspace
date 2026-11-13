@@ -15,6 +15,19 @@ final class ShortcutsTests: XCTestCase {
         XCTAssertTrue(Shortcut(keyCode: nil).isUsable)
     }
 
+    func testAMisspeltModifierMakesTheShortcutUnusableInsteadOfAnotherShortcut() throws {
+        // Written by hand: "cmd" for "command". Read as ⌃⌥K it would take a key from every app.
+        let json = Data(#"{"keyCode":40,"modifiers":["cmd","option","control"]}"#.utf8)
+        let shortcut = try JSONDecoder().decode(Shortcut.self, from: json)
+        XCTAssertFalse(shortcut.isUsable)
+        XCTAssertEqual(shortcut.modifiers, ["control", "option", "cmd"])
+        // It is written back as it was: the owner finds the word to correct.
+        let again = try JSONDecoder().decode(Shortcut.self, from: JSONEncoder().encode(shortcut))
+        XCTAssertEqual(again, shortcut)
+        // The only modifier, misspelt: not the bare key either.
+        XCTAssertFalse(Shortcut(keyCode: 40, modifiers: ["Command"]).isUsable)
+    }
+
     func testConflictNamesTheOtherCommand() {
         let hyperL = Shortcut(keyCode: 37, modifiers: ["control", "option", "command"])
         let effective = ["drawerLeft": hyperL, "pause": Shortcut(keyCode: 35, modifiers: ["control", "option", "command"]),

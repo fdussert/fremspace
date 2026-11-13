@@ -2,7 +2,9 @@ import Foundation
 
 /// A keyboard shortcut the owner chose for a command, instead of its default. `keyCode` is a
 /// position on the keyboard (nil: the command has no shortcut); `modifiers` are among "control",
-/// "option", "shift" and "command".
+/// "option", "shift" and "command". A name that is none of these (a file edited by hand: "cmd")
+/// is kept as it was written, after the others, and makes the shortcut unusable: dropped, it
+/// left the command on fewer modifiers than the owner meant, or on the bare key.
 public struct Shortcut: Codable, Equatable {
     public var keyCode: UInt32?
     public var modifiers: [String]
@@ -13,6 +15,7 @@ public struct Shortcut: Codable, Equatable {
         self.keyCode = keyCode
         // One order, so that two shortcuts typed differently compare equal.
         self.modifiers = Shortcut.modifierNames.filter(modifiers.contains)
+            + modifiers.filter { !Shortcut.modifierNames.contains($0) }
     }
 
     public init(from decoder: Decoder) throws {
@@ -22,9 +25,10 @@ public struct Shortcut: Codable, Equatable {
     }
 
     /// A shortcut that would fire while typing is refused: it needs Control, Option or Command
-    /// (Shift alone types a capital).
+    /// (Shift alone types a capital), and no modifier that is not one.
     public var isUsable: Bool {
-        keyCode == nil || modifiers.contains { $0 != "shift" }
+        guard keyCode != nil else { return true }
+        return modifiers.allSatisfy(Shortcut.modifierNames.contains) && modifiers.contains { $0 != "shift" }
     }
 }
 
