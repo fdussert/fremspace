@@ -582,6 +582,15 @@ final class Engine {
         for (key, entry) in orders {
             guard let uuid = uuids[entry.display],
                   let live = managed.displays.first(where: { $0.uuid == uuid })?.desktopUUIDs else { continue }
+            // A tab moved to a position means the desktop Mission Control shows there. Links kept by
+            // position say that only while the desktops already go as the tabs do; when they did
+            // not (a desktop on a spare one, desktops dragged in Mission Control), a move sent
+            // layouts and windows to desktops nobody meant (owner, 2026-11-13: "c'est devenu
+            // n'importe quoi"). So the links are put in Mission Control's order first.
+            if let aligned = alignedLinks(configured: entry.order.count, links: state.desktopLinks.links[key] ?? [], live: live) {
+                state.desktopLinks.links[key] = aligned
+                saveState()
+            }
             let after = resolveDesktops(configured: entry.order.count, links: state.desktopLinks.links[key] ?? [], live: live).real
             // Real position before → real position after, for each desktop that changes place.
             var carry: [Int: Int] = [:]
@@ -1199,6 +1208,31 @@ final class Engine {
             if let order = map.missionControlOrder(spec.identity) { result.order[spec.identity] = order }
         }
         return result
+    }
+
+    /// Puts the configured desktops of `display` in Mission Control's order, over the macOS desktops
+    /// they use: each layout takes the desktop at its tab's position and its windows are carried
+    /// there. The desktops themselves do not move. False when there was nothing to do, or when it
+    /// cannot be done for sure (`alignedLinks`).
+    func alignDesktops(on display: DisplayIdentity) -> Bool {
+        guard let configuration, let spec = displaySpec(for: display, in: configuration),
+              let live = liveDesktops(Spaces.managed())[display] else { return false }
+        let key = DesktopLinks.key(configuration: configuration.id, display: display)
+        let links = state.desktopLinks.links[key] ?? []
+        guard let aligned = alignedLinks(configured: spec.spaces.count, links: links, live: live) else { return false }
+        let before = resolveDesktops(configured: spec.spaces.count, links: links, live: live).real
+        let after = resolveDesktops(configured: spec.spaces.count, links: aligned, live: live).real
+        state.desktopLinks.links[key] = aligned
+        saveState()
+        var carry: [Int: Int] = [:]
+        for (from, to) in zip(before, after) {
+            if let from, let to, from != to { carry[from] = to }
+        }
+        Log.engine.notice("desktops of \(display.name, privacy: .public) put in Mission Control's order: \(carry.count) change desktop")
+        refreshDesktopMap()
+        carryWindows(on: display, carry)
+        scheduleApply()
+        return true
     }
 
     /// Removes from the Mac the unlisted desktop `uuid` of `display` (Mission Control opens); false

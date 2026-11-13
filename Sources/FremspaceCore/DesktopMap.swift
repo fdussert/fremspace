@@ -92,6 +92,21 @@ public func resolveDesktops(configured: Int, links: [String?], live: [String]) -
     return (real, newLinks)
 }
 
+/// Links that put the configured desktops of a display in Mission Control's order, over the macOS
+/// desktops they use now: the first configured desktop on the first of those, and so on. nil when
+/// they already go that way, and when it cannot be done for sure: a configured desktop without a
+/// real one, or the desktop without a uuid, which cannot be linked, out of the place it would get.
+public func alignedLinks(configured: Int, links: [String?], live: [String]) -> [String?]? {
+    let now = resolveDesktops(configured: configured, links: links, live: live).real
+    let positions = now.compactMap { $0 }
+    guard positions.count == configured else { return nil }
+    let used = positions.sorted()
+    guard used != positions else { return nil }
+    let aligned: [String?] = used.map { live[$0].isEmpty ? nil : live[$0] }
+    guard resolveDesktops(configured: configured, links: aligned, live: live).real == used.map(Optional.some) else { return nil }
+    return aligned
+}
+
 /// Configured ↔ real desktop positions of the active configuration, for the connected displays.
 public struct DesktopMap: Equatable {
     private var real: [DisplayIdentity: [Int?]] = [:]

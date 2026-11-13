@@ -20,7 +20,10 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   nowhere, and nothing said so. In the editor its tab goes where Mission Control shows that
   desktop, and the editor says which desktop it took.
 - The editor says when Mission Control shows the desktops of a display in another order than the
-  tabs, and in which order.
+  tabs, and in which order, and "Match the tabs" puts each layout, with its windows, on
+  the desktop at its tab's position.
+- Moving a desktop tab while the desktops were not in Mission Control's order sent layouts and
+  windows to desktops nobody chose. A move now leaves the tabs and Mission Control in one order.
 - An app that is given a slot leaves the drawer: its windows put in a drawer by hand go to the
   slot when the configuration is saved. Saving the slot used to change nothing on screen. A drawer
   that names the app in one of its own slots keeps its windows.

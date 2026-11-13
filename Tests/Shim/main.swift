@@ -65,6 +65,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testADesktopWhoseOwnIsGoneDoesNotTakeASpareOne", { ($0 as! DesktopMapTests).testADesktopWhoseOwnIsGoneDoesNotTakeASpareOne() }),
         ("testADesktopAddedOnASpareOneGoesWhereMissionControlShowsIt", { ($0 as! DesktopMapTests).testADesktopAddedOnASpareOneGoesWhereMissionControlShowsIt() }),
         ("testTheOrderOfMissionControlIsSaidWhenItIsNotTheTabs", { ($0 as! DesktopMapTests).testTheOrderOfMissionControlIsSaidWhenItIsNotTheTabs() }),
+        ("testLinksPutInTheOrderOfMissionControl", { ($0 as! DesktopMapTests).testLinksPutInTheOrderOfMissionControl() }),
     ]),
     ("StateStoreTests", { StateStoreTests() }, [
         ("testOldStateWithoutRememberedLoads", { try ($0 as! StateStoreTests).testOldStateWithoutRememberedLoads() }),

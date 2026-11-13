@@ -198,6 +198,16 @@ final class EditSession: ObservableObject {
         }
     }
 
+    /// Makes the desktops of `display` go as the tabs do, at once: it changes which desktop each
+    /// layout is on, not the configuration.
+    func alignDesktops(of display: DisplaySpec) {
+        let done = engine.alignDesktops(on: display.identity)
+        refreshEnvironment()
+        status = done
+            ? Status(kind: .success, text: "Each layout is now on the desktop at its tab's position, with its windows.")
+            : Status(kind: .error, text: "Could not do it. Drag the desktops in Mission Control to the order of the tabs.")
+    }
+
     /// Takes a window out of its drawer, at once: it is a window on the Mac, not a setting.
     func takeOutOfDrawer(_ member: SavedDrawerMember) {
         engine.drawers.takeOut(window: member.window.id)

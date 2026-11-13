@@ -187,4 +187,19 @@ final class DesktopMapTests: XCTestCase {
         let short = DesktopMap(configuration: configuration, live: [left: ["", "U2", "U3", "U4"]], links: &gone)
         XCTAssertNil(short.missionControlOrder(left))
     }
+
+    func testLinksPutInTheOrderOfMissionControl() {
+        // The tabs say Music, Chat, Mail, Teams; on the Mac, Chat is third, Mail fourth, Teams second.
+        let live = ["", "U2", "U3", "U4"]
+        let aligned = alignedLinks(configured: 4, links: [nil, "U3", "U4", "U2"], live: live)
+        XCTAssertEqual(aligned, [nil, "U2", "U3", "U4"])
+        XCTAssertEqual(resolveDesktops(configured: 4, links: aligned ?? [], live: live).real, [0, 1, 2, 3])
+        // Already in order, a spare desktop left where it is: nothing to do.
+        XCTAssertNil(alignedLinks(configured: 4, links: [nil, "U2", "U3", "U4"], live: live))
+        XCTAssertNil(alignedLinks(configured: 3, links: [nil, "U3", "U4"], live: live))
+        // Out of order around a spare desktop: the desktops in use keep being the ones in use.
+        XCTAssertEqual(alignedLinks(configured: 3, links: [nil, "U4", "U2"], live: live), [nil, "U2", "U4"])
+        // A desktop that macOS no longer has: not while it is looked for.
+        XCTAssertNil(alignedLinks(configured: 4, links: [nil, "U3", "U9", "U2"], live: live))
+    }
 }

@@ -278,14 +278,17 @@ struct DesktopTabs: View {
 
 extension DesktopTabs {
     /// Mission Control shows the desktops of this display in another order than the tabs: said, so
-    /// that "the second tab" is not looked for on the second desktop. Nothing is wrong, and the
-    /// way to one order is the owner's, in Mission Control.
+    /// that "the second tab" is not looked for on the second desktop, with the way back to one
+    /// order (the layouts change desktop; the owner may as well drag the desktops in Mission
+    /// Control, where the layouts follow them).
     @ViewBuilder
     func otherOrder(_ display: DisplaySpec) -> some View {
         if let names = session.missionControlOrder(of: display) {
             HStack(spacing: 8) {
                 Image(systemName: "info.circle").foregroundColor(.secondary)
-                Text("Mission Control shows these desktops in another order: \(names.joined(separator: ", ")). Drag them there to match the tabs.")
+                Text("Mission Control shows these desktops in another order: \(names.joined(separator: ", ")).")
+                Button("Match the tabs") { session.alignDesktops(of: display) }
+                    .help("Each layout takes the desktop at its tab's position and its windows are carried there. The desktops in Mission Control stay where they are.")
             }
             .padding(.horizontal, 10).padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8).fill(Color.secondary.opacity(0.1)))
