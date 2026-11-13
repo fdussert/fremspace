@@ -187,6 +187,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
     ("PreviewsTests", { PreviewsTests() }, [
         ("testAWindowIsCapturedOnceWhileItsPictureIsFresh", { ($0 as! PreviewsTests).testAWindowIsCapturedOnceWhileItsPictureIsFresh() }),
         ("testTheWindowsThatAreGoneAreForgotten", { ($0 as! PreviewsTests).testTheWindowsThatAreGoneAreForgotten() }),
+        ("testAClosedWindowIsForgottenOnItsOwn", { ($0 as! PreviewsTests).testAClosedWindowIsForgottenOnItsOwn() }),
         ("testAPictureKeepsTheWindowsProportionsAndIsNeverEnlarged", { ($0 as! PreviewsTests).testAPictureKeepsTheWindowsProportionsAndIsNeverEnlarged() }),
         ("testOnlyTheSlotsLeftAsSavedShowAPictureInTheEditor", { ($0 as! PreviewsTests).testOnlyTheSlotsLeftAsSavedShowAPictureInTheEditor() }),
         ("testADesktopThatMovedOrIsNewShowsNoPicture", { ($0 as! PreviewsTests).testADesktopThatMovedOrIsNewShowsNoPicture() }),

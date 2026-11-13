@@ -35,6 +35,11 @@ public struct PreviewLedger {
         return gone
     }
 
+    /// Forgets one window (it was closed).
+    public mutating func forget(_ id: UInt32) {
+        taken[id] = nil
+    }
+
     public mutating func forgetAll() {
         taken = [:]
     }

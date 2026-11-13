@@ -71,6 +71,17 @@ final class WindowPreviews: ObservableObject {
         return on
     }
 
+    /// Drops the picture of a window that was closed. The palette drops those of every window
+    /// that is gone each time it opens (`keep`); for someone who uses the map under the notch
+    /// and the editor and never the palette, pictures of about a megabyte each piled up until
+    /// Fremspace quit.
+    func forget(_ id: UInt32) {
+        // One being taken now is not kept when it arrives.
+        pending.remove(id)
+        ledger.forget(id)
+        if images[id] != nil { images[id] = nil }
+    }
+
     /// Drops the pictures of the windows that are gone.
     func keep(_ alive: Set<UInt32>) {
         for id in ledger.keep(alive) where images[id] != nil { images[id] = nil }
@@ -110,9 +121,8 @@ final class WindowPreviews: ObservableObject {
 
     /// Keeps a picture. Main thread.
     func store(_ image: NSImage, for id: UInt32) {
-        pending.remove(id)
-        // Switched off while it was being taken.
-        guard enabled else { return }
+        // Switched off, or its window closed, while it was being taken.
+        guard pending.remove(id) != nil, enabled else { return }
         ledger.took(id, at: Date())
         images[id] = image
     }

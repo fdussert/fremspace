@@ -1272,6 +1272,7 @@ final class Engine {
             drawers.forget(id)
             router.forget(id)
             calls.forget(id)
+            WindowPreviews.shared.forget(id)
         case .appTerminated(let pid):
             for (id, placement) in placements where placement.info.pid == pid {
                 forget(id)

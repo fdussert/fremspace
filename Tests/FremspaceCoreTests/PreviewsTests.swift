@@ -27,6 +27,17 @@ final class PreviewsTests: XCTestCase {
         XCTAssertEqual(ledger.due([1, 2], now: start), [1, 2])
     }
 
+    func testAClosedWindowIsForgottenOnItsOwn() {
+        var ledger = PreviewLedger(freshFor: 10)
+        let now = Date(timeIntervalSince1970: 1000)
+        ledger.took(1, at: now)
+        ledger.took(2, at: now)
+        ledger.forget(1)
+        // Its id may come back for another window: that one is pictured at once.
+        XCTAssertEqual(ledger.due([1, 2], now: now.addingTimeInterval(1)), [1])
+        XCTAssertEqual(ledger.keep([]), [2])
+    }
+
     func testAPictureKeepsTheWindowsProportionsAndIsNeverEnlarged() {
         XCTAssertEqual(previewSize(of: CGSize(width: 2560, height: 1440), longest: 640), CGSize(width: 640, height: 360))
         XCTAssertEqual(previewSize(of: CGSize(width: 900, height: 1800), longest: 640), CGSize(width: 320, height: 640))
