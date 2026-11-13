@@ -74,7 +74,6 @@ struct StatusPage: View {
                 ForEach(session.connected, id: \.identity) { display in
                     fact(session.engine.displayName(display.identity), session.desktopCounts[display.identity].map { counted($0, "desktop") } ?? "desktops not read")
                 }
-                fact("Fremspace", AppVersion.current)
             }
         }
     }
@@ -105,8 +104,15 @@ struct StatusPage: View {
             }
             Spacer(minLength: 8)
             if let fix = item.fix {
-                Button(verb(fix)) { run(fix) }
-                    .accessibilityLabel("\(verb(fix)): \(item.title)")
+                // The way out of what stops Fremspace is the button of the page, not one among others.
+                if item.level == .blocking {
+                    Button(verb(fix)) { run(fix) }
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityLabel("\(verb(fix)): \(item.title)")
+                } else {
+                    Button(verb(fix)) { run(fix) }
+                        .accessibilityLabel("\(verb(fix)): \(item.title)")
+                }
             }
         }
         .padding(12)

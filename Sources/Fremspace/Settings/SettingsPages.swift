@@ -222,7 +222,7 @@ struct SettingsPageView: View {
                                 }))
                         .modifier(marked(.autoUpdates))
                     CommandRow(title: SettingRow.checkForUpdates.title,
-                               detail: "This is Fremspace \(AppVersion.current).",
+                               detail: "Asks now, without waiting for the day's look.",
                                verb: "Check now", done: "Asked") { session.engine.updates.check?() }
                         .modifier(marked(.checkForUpdates))
                 }
