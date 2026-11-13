@@ -434,8 +434,29 @@ extension SharedLayout {
     /// slots that say so, and a slot does unless it was switched off. For the owner to read before
     /// adding somebody else's file: they are opened whether or not they are missing from the Mac.
     public var appsOpenedAtLogin: [String] {
-        let slots = displays.flatMap(\.desktops).flatMap { $0.layout?.slots ?? [] }
+        appsOpenedAtLogin(taking: Set(displays.indices))
+    }
+
+    /// The same, when only the displays at `positions` of the file are given a display here: a
+    /// display left out opens nothing.
+    public func appsOpenedAtLogin(taking positions: Set<Int>) -> [String] {
+        let slots = displays.indices.filter(positions.contains).flatMap { displays[$0].desktops }.flatMap { $0.layout?.slots ?? [] }
         return Set(slots.filter(\.launchAtLogin).flatMap { $0.rules.map(\.bundleID) }).sorted()
+    }
+
+    /// The apps that come with the displays at `positions`: those of their slots and of their
+    /// drawers, and those opened by the scenes that are still added (a scene with nothing left on
+    /// a display taken is not, see `adding`). What the owner is told is missing from the Mac is
+    /// among these, not among the apps of a display left out.
+    public func apps(taking positions: Set<Int>) -> Set<String> {
+        let taken = displays.indices.filter(positions.contains).map { displays[$0] }
+        var apps = Set(taken.flatMap(\.desktops).flatMap { $0.layout?.slots ?? [] }.flatMap(\.rules).map(\.bundleID))
+        apps.formUnion(taken.flatMap(\.drawers).flatMap(\.layout.slots).flatMap(\.rules).map(\.bundleID))
+        for scene in scenes where scene.desktops.contains(where: { positions.contains($0.display) })
+            || scene.drawers.contains(where: { positions.contains($0.display) }) {
+            apps.formUnion(scene.apps)
+        }
+        return apps.filter { !$0.isEmpty }
     }
 }
 

@@ -130,6 +130,18 @@ final class LayoutWordsTests: XCTestCase {
                        "Nothing yet: choose a display for one of its rows.")
     }
 
+    func testADisplayLeftOutBringsNoAppToMissNorToOpen() {
+        var desk = night
+        desk.displays[1].desktops = [SpaceSpec(label: "Talk", layout: Layout(slots: [slot("term", "com.example.term", 0, 0, 1, 1)]))]
+        XCTAssertEqual(desk.apps(taking: [0, 1]), ["com.example.ide", "com.example.web", "com.example.chat", "com.example.term"])
+        // The scene still shows a desktop on the display taken: the app it opens comes too.
+        XCTAssertEqual(desk.apps(taking: [0]), ["com.example.ide", "com.example.web", "com.example.chat"])
+        XCTAssertEqual(desk.apps(taking: [1]), ["com.example.term", "com.example.chat"])
+        XCTAssertEqual(desk.apps(taking: []), [])
+        XCTAssertEqual(desk.appsOpenedAtLogin(taking: [1]), ["com.example.term"])
+        XCTAssertEqual(desk.appsOpenedAtLogin(taking: [0, 1]), desk.appsOpenedAtLogin)
+    }
+
     func testADisplayOfTheOtherShapeIsSaidInWords() {
         XCTAssertEqual(shapeFitInWords(shapeFit(madeFor: 0.56, here: 1.78)), "Made for a tall display: yours is wide, the rows will be flat.")
         XCTAssertEqual(shapeFitInWords(shapeFit(madeFor: 1.78, here: 0.56)), "Made for a wide display: yours is tall, the columns will be narrow.")

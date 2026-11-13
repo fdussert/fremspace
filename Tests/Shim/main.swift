@@ -279,6 +279,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testALayoutKeptSaysWhatComesAndWhatLosesItsSlot", { ($0 as! LayoutWordsTests).testALayoutKeptSaysWhatComesAndWhatLosesItsSlot() }),
         ("testASceneOfAFileIsToldWithTheNamesOfTheDisplaysHere", { ($0 as! LayoutWordsTests).testASceneOfAFileIsToldWithTheNamesOfTheDisplaysHere() }),
         ("testWhatComesWithAFileIsCountedFromTheDisplaysChosen", { ($0 as! LayoutWordsTests).testWhatComesWithAFileIsCountedFromTheDisplaysChosen() }),
+        ("testADisplayLeftOutBringsNoAppToMissNorToOpen", { ($0 as! LayoutWordsTests).testADisplayLeftOutBringsNoAppToMissNorToOpen() }),
         ("testADisplayOfTheOtherShapeIsSaidInWords", { ($0 as! LayoutWordsTests).testADisplayOfTheOtherShapeIsSaidInWords() }),
     ]),
     ("SceneTests", { SceneTests() }, [
