@@ -414,13 +414,17 @@ final class Palette: NSObject, NSWindowDelegate {
                 continue
             }
             title = title ?? titles[candidate.id] ?? engine.knownTitle(candidate.id)
+            // A window on no desktop is never listed. Tested before its title is missed: such a
+            // window never gets one, and its app was read again in the background (up to 0.3 s,
+            // with a line in the log) at every opening of the palette, every rest on the notch
+            // and every tick of the editor.
+            let space = Spaces.spaceIndex(ofWindow: candidate.id, managed: managed, displays: displays)
+            if space == nil, Spaces.spaceIDs(ofWindow: candidate.id).isEmpty { continue }
             guard let title else {
                 if !quiet { unknown.insert(candidate.pid) }
                 continue
             }
             titles[candidate.id] = title
-            let space = Spaces.spaceIndex(ofWindow: candidate.id, managed: managed, displays: displays)
-            if space == nil, Spaces.spaceIDs(ofWindow: candidate.id).isEmpty { continue }
             result.append(SeenWindow(id: candidate.id, pid: candidate.pid, bundleID: bundleID,
                                      appName: app.localizedName ?? WindowCommands.appName(bundleID), space: space,
                                      title: title, minimized: minimized, onScreen: candidate.onScreen))
