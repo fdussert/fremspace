@@ -50,7 +50,8 @@ public let layoutPresets: [LayoutPreset] = [
 
 /// Largest first; of two as large, the one read first (higher, then further left). The order in
 /// which shapes are handed to the apps of a desktop, so the same input always gives the same desk.
-private func bySize(_ a: UnitRect, _ b: UnitRect) -> Bool {
+/// Also the order in which the sentence about it names them (`reshapeInWords`).
+func bySize(_ a: UnitRect, _ b: UnitRect) -> Bool {
     let areaA = a.w * a.h, areaB = b.w * b.h
     if abs(areaA - areaB) > tolerance { return areaA > areaB }
     if abs(a.y - b.y) > tolerance { return a.y < b.y }
