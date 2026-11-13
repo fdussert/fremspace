@@ -43,6 +43,7 @@ struct DisplayStrip: View {
         .buttonStyle(.plain)
         .help(connected ? (display.label.isEmpty ? display.identity.name : "\(display.displayName): \(display.identity.name)")
               : "\(display.displayName) is not connected: its layouts are kept and can be edited")
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -194,7 +195,11 @@ struct DesktopTabs: View {
             if drag == nil { (inside ? NSCursor.openHand : NSCursor.arrow).set() }
         }
         .help(movable ? "Drag to reorder. On save, the windows of each desktop move with it." : "")
-        .accessibilityAddTraits(.isButton)
+        // One thing to VoiceOver, with its place and its state, and which one is shown.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Desktop \(i + 1), \(space.label.isEmpty ? "untitled" : space.label)\(space.layout == nil ? ", free" : "")")
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { session.select(desktop: i) }
         .accessibilityAction(named: "Move left") { session.moveDesktop(from: i, to: i - 1) }
         .accessibilityAction(named: "Move right") { session.moveDesktop(from: i, to: i + 1) }
         .contextMenu {
@@ -480,9 +485,10 @@ struct CanvasView: View {
             }
             ForEach(layout.slots, id: \.id) { slot in
                 let r = rect(slot.rect, in: c, size: size)
-                SlotTile(slot: slot, isDrawer: editingDrawer, isFocus: space.map { focusSlots($0).contains { $0.id == slot.id } } ?? false,
-                         selected: session.selection.slot == slot.id,
-                         picture: pictured.contains(slot.id) ? session.slotWindows[slot.id].flatMap { previews.images[$0] } : nil)
+                let tile = SlotTile(slot: slot, isDrawer: editingDrawer, isFocus: space.map { focusSlots($0).contains { $0.id == slot.id } } ?? false,
+                                    selected: session.selection.slot == slot.id,
+                                    picture: pictured.contains(slot.id) ? session.slotWindows[slot.id].flatMap { previews.images[$0] } : nil)
+                tile
                     .frame(width: max(r.width - 6, 1), height: max(r.height - 6, 1))
                     .offset(x: r.minX + 3, y: r.minY + 3)
                     .onTapGesture { session.selection.slot = slot.id }
@@ -495,6 +501,15 @@ struct CanvasView: View {
                         Button("Remove") { session.remove(slot: slot.id) }
                             .disabled(layout.slots.count <= 1)
                     }
+                    // To VoiceOver a tile was a shape with loose words in it: it is a slot, named,
+                    // that can be selected, split and removed without a pointer.
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(tile.spoken)
+                    .accessibilityAddTraits(session.selection.slot == slot.id ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityAction { session.selection.slot = slot.id }
+                    .accessibilityAction(named: "Split left and right") { session.selection.slot = slot.id; session.split(slot: slot.id, along: .vertical) }
+                    .accessibilityAction(named: "Split top and bottom") { session.selection.slot = slot.id; session.split(slot: slot.id, along: .horizontal) }
+                    .accessibilityAction(named: "Remove") { session.remove(slot: slot.id) }
             }
             // How far each drawer comes over the layout (not while one is edited).
             if !editingDrawer {
@@ -540,6 +555,26 @@ struct CanvasView: View {
                 dragged = nil
                 session.checkpoint()
             })
+            // A divider can only be dragged: VoiceOver moves it from stop to stop instead.
+            .accessibilityElement()
+            .accessibilityLabel("Divider between \(names(divider.before, in: layout)) and \(names(divider.after, in: layout))")
+            .accessibilityValue(fractionLabel(divider.position))
+            .accessibilityAdjustableAction { direction in
+                guard let current = session.editedLayout,
+                      let now = dividers(current).first(where: { $0.stableID == divider.stableID }) else { return }
+                let moved = stepped(current, divider: now, forward: direction == .increment, length: length)
+                guard moved != current else { return }
+                session.checkpoint()
+                session.setEditedLayout(moved)
+                session.checkpoint()
+            }
+    }
+
+    /// The slots on one side of a divider, as VoiceOver names them.
+    private func names(_ ids: [String], in layout: CoreLayout) -> String {
+        listed(layout.slots.filter { ids.contains($0.id) }.map { slot in
+            slot.rule.bundleID.isEmpty ? "an empty slot" : appName(slot.rule.bundleID)
+        })
     }
 }
 
@@ -868,6 +903,15 @@ struct SlotTile: View {
             }
         }
         .foregroundColor(.white)
+    }
+
+    /// The tile in words, for VoiceOver: what is on it, and that an ordinary slot is locked, which the
+    /// tile itself leaves unsaid.
+    var spoken: String {
+        var parts = [empty ? "Empty slot, needs an app" : title, sizeWords(width: slot.rect.w, height: slot.rect.h)]
+        if !isDrawer { parts.append(slot.locked ? "locked" : "unlocked") }
+        if isFocus && !isDrawer { parts.append("Focus enlarges it") }
+        return parts.joined(separator: ", ")
     }
 
     private var title: String {

@@ -336,6 +336,7 @@ struct SlotInspector: View {
                     }
                     .buttonStyle(.borderless)
                     .help("Take \(appName(rule.bundleID)) out of this slot")
+                    .accessibilityLabel("Take \(appName(rule.bundleID)) out of this slot")
                 }
             }
             AppMenu(title: "Add an app\u{2026}", bundleID: nil, known: configuredApps) { id in
@@ -483,6 +484,7 @@ struct DrawerSlotInspector: View {
                 }
                 .buttonStyle(.borderless)
                 .help("Take \(appName(rule.bundleID)) out of this slot")
+                .accessibilityLabel("Take \(appName(rule.bundleID)) out of this slot")
             }
             if isTabbedBrowser(rule.bundleID) {
                 // The profiles Fremspace has seen in this browser's window titles.

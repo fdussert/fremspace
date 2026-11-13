@@ -285,6 +285,7 @@ struct Sidebar: View {
                     }
                     .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 24)
                     .help("Add a configuration")
+                    .accessibilityLabel("Add a configuration")
                     Button {
                         session.deleteConfiguration(at: session.selection.configuration)
                     } label: {
@@ -293,6 +294,7 @@ struct Sidebar: View {
                     .buttonStyle(.borderless)
                     .disabled(session.configuration == nil || session.settingsPage != nil)
                     .help("Delete the selected configuration (Undo brings it back)")
+                    .accessibilityLabel("Delete the selected configuration")
                 }
                 .padding(.trailing, 4)
                 ForEach(Array(session.config.configurations.enumerated()), id: \.element.id) { i, configuration in
@@ -352,6 +354,7 @@ struct Sidebar: View {
         }
         .buttonStyle(.plain)
         .help(page.summary)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     @ViewBuilder
@@ -394,7 +397,12 @@ struct Sidebar: View {
         }
         // Simultaneous, so that selecting does not wait to see whether a second click comes.
         .simultaneousGesture(TapGesture(count: 2).onEnded { beginRenaming(i, configuration) })
-        .accessibilityAddTraits(.isButton)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction {
+            session.settingsPage = nil
+            session.select(configuration: i)
+        }
         .contextMenu {
             Button("Rename") { beginRenaming(i, configuration) }
             Button("Duplicate") { session.select(configuration: i); session.duplicateConfiguration() }
