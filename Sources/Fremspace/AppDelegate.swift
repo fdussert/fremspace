@@ -44,14 +44,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let on = engine.hyperKey && hyper.set(true)
         if !on { hyper.set(false) }
         ShortcutCatalog.hyperOn = on
-        if engine.hyperKey, !on, HyperKey.isPossible {
-            // Accessibility was not granted yet: tried again once the engine runs.
+        if engine.hyperKey, !on, HyperKey.isPossible, !hyperRetryPending {
+            // Accessibility was not granted yet: tried again once the engine runs. One try at a
+            // time, and of the Hyper key alone: each try used to register every hot key again
+            // (also while a shortcut was being recorded) and to start a chain of its own, as did
+            // every reload of the configuration.
+            hyperRetryPending = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
-                guard let self, self.engine.hyperKey, !self.hyper.isOn else { return }
-                self.registerHotkeys()
+                guard let self else { return }
+                self.hyperRetryPending = false
+                guard self.engine.hyperKey, !self.hyper.isOn else { return }
+                self.applyHyperKey(ShortcutCatalog.effective(self.engine.shortcuts))
             }
         }
     }
+    private var hyperRetryPending = false
     private var termSources: [DispatchSourceSignal] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
