@@ -38,11 +38,19 @@ The first version to be packaged.
   or close a drawer and open apps that are not running; asked for again while it is shown, it is
   left: the displays go back to the desktops they showed, and the Focus it gave and the drawers it
   moved to what they were.
-- **Layouts to share.** The Share page writes a configuration to a `.fremspace-layout.json`
-  (desktops, layouts, drawers, scenes) without the displays' models or serial numbers, and with
-  browser profiles and title filters only if you tick them. A layout file, from a library kept
-  beside the config file or from anywhere, adds its desktops and scenes after yours on the displays
-  you choose.
+- **Layouts to choose and to share.** The Layouts page shows layouts as pictures. For one
+  desktop: eight ready-made layouts (shapes; you choose the apps) and the desktops you kept, with
+  a preview of what the one chosen makes of your desktop, drawn at the shape of its display, and
+  a sentence that says what changes. A ready-made layout keeps the apps the desktop had, the
+  largest slot first; a desktop you kept comes with its own. Either is used on the desktop or
+  added as a new one, in one step to undo, and nothing moves until you save. For a whole desk:
+  the Share page writes a configuration to a `.fremspace-layout.json` (desktops, layouts, drawers,
+  scenes, and the shape of each display) without the displays' models or serial numbers, and with
+  browser profiles and title filters only if you tick them. A layout file, imported, dropped on
+  the page or kept beside the config file, is seen before it is added: each of its displays with
+  its desktops drawn, the apps named in their slots, an app that is not on your Mac marked on the
+  drawing, a layout made for a tall display announced on a wide one, and its scenes in words. Its
+  desktops and scenes are added after yours on the displays you choose.
 - **The notch.** A desktop's name hangs from it when the display changes desktop; resting the
   pointer on it opens the map of desktops, which takes the arrow keys, Return and Escape while the
   pointer is on the map (resting on the notch alone, the keys stay with the app in front).

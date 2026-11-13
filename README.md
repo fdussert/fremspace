@@ -35,8 +35,9 @@ in their slot, stay there, and are all back where they were after a restart.
 - **Calls in full screen.** The meeting window of Microsoft Teams or Zoom goes to full screen when
   the call starts.
 - **Hyper key.** Caps Lock can stand for ⌃⌥⌘, with nothing else to install.
-- **Layouts to share.** A configuration as one file to post, and somebody else's added beside
-  yours, from a library of layouts.
+- **Layouts to choose from pictures.** Eight ready-made layouts and the desktops you kept, each
+  drawn, with a preview of what the one you choose makes of your desktop. A configuration as one
+  file to post, and somebody else's seen in full before it is added beside yours.
 - **`fremspace://` links** for launchers, button decks and scripts: `open -g fremspace://desktop/Web`.
 
 ![The palette: a field over the map of desktops and the list of windows](site/assets/palette.png)
@@ -121,16 +122,19 @@ Shortcuts page (⌃⌥ and a key is what other window tools already use).
 
 A desk worth a photo is worth a file. **Share → Export** in the editor writes the configuration to
 a `.fremspace-layout.json`: the desktops, their layouts, the drawers and the scenes. The page shows
-what is in the file first. Never in it: the models and serial numbers of your displays, your
-shortcuts, what Fremspace remembers about your windows. Browser profiles and window title filters
-go in only if you tick them. Post the file with a screenshot in the repository's
-**Discussions → Show and tell**.
+what is in the file first. Of each display the file tells its shape (how wide for how high), so
+that a layout made for a tall display is not a surprise on a wide one. Never in it: the models and
+serial numbers of your displays, your shortcuts, what Fremspace remembers about your windows.
+Browser profiles and window title filters go in only if you tick them. Post the file with a
+screenshot in the repository's **Discussions → Show and tell**.
 
-To use somebody else's, **Share → Import**: choose which of your displays takes each display
-of the file, and its desktops come after yours, with its scenes. Nothing of yours is replaced, and
-nothing changes until you save. Layouts kept in the library
-(`~/Library/Application Support/Fremspace/Layouts/`) are listed there, ready to add. The details
-are in `docs/sharing.md`.
+To use somebody else's, **Layouts → Import a file…** (or drop the file on the page): each display
+of the file is a row with its desktops drawn and the apps named in their slots, an app that is not
+on your Mac marked on the drawing. Choose which of your displays takes each row, and its desktops
+come after yours, with its scenes. Nothing of yours is replaced, and nothing changes until you
+save. The same page has eight ready-made layouts and the desktops you kept, to use on a desktop or
+to add as a new one. Layouts are kept in `~/Library/Application Support/Fremspace/Layouts/`. The
+details are in `docs/sharing.md`.
 
 ## Working on it
 
