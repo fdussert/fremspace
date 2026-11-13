@@ -38,6 +38,9 @@ final class EditSession: ObservableObject {
     @Published var shareWithFilters = false
     @Published var pendingImport: PendingImport?
     @Published private(set) var library: [LibraryItem] = []
+    /// The Layouts page: which of its two views is shown, and the layout chosen for one desktop.
+    @Published var layoutsView = LayoutsView.oneDesktop
+    @Published var layoutChoice: LayoutChoice?
     /// The page of settings shown instead of the selected configuration, if any.
     @Published var settingsPage: SettingsPage?
 
@@ -104,6 +107,8 @@ final class EditSession: ObservableObject {
         config = loaded
         saved = loaded
         refreshEnvironment()
+        // The layouts kept are found by the search before their page was ever opened.
+        refreshLibrary()
         // Open on the configuration in use, when there is one.
         if let active = engine.activeConfigurationID, let i = loaded.configurations.firstIndex(where: { $0.id == active }) {
             selection.configuration = i
@@ -395,12 +400,14 @@ final class EditSession: ObservableObject {
 
     // MARK: - Sharing
 
-    /// A layout file read, waiting for the owner to say where its displays go.
+    /// A layout file seen before it is added: the owner says where its displays go.
     struct PendingImport {
         var layout: SharedLayout
         /// Position in the file: the display of the selected configuration it goes to.
         var mapping: [Int: DisplayIdentity]
         var file: String
+        /// The file is one of the library's: it is already kept, and can be removed from there.
+        var kept = false
     }
 
     /// The shape of each connected display, width over height: the one thing an export says of a
@@ -457,8 +464,8 @@ final class EditSession: ObservableObject {
         status = Status(kind: .success, text: "The layout is on the clipboard.")
     }
 
-    // The library: layout files kept beside the config file, the owner's and those of others,
-    // ready to be added to a configuration.
+    // The library: layout files kept beside the config file, the owner's and those of others. The
+    // Layouts page draws them: those of one desktop to use on a desktop, the others to add as desks.
 
     struct LibraryItem: Identifiable, Equatable {
         var url: URL
@@ -481,20 +488,44 @@ final class EditSession: ObservableObject {
         if items != library { library = items }
     }
 
-    /// Keeps the selected configuration in the library, under its name.
-    func keepInLibrary() {
-        guard let configuration, let data = shareText() else { return }
+    /// Writes a layout among the library's, never over a file already there (one of the same name
+    /// may be somebody else's), and gives the name of its file. Nil, with the reason in the status
+    /// bar, when it could not: the folder, or a layout that would not be read back (a slot without
+    /// an app is not a slot of a file, and a file nobody can read would be kept and never listed).
+    @discardableResult
+    func keep(_ layout: SharedLayout) -> String? {
+        guard let data = try? layout.data() else {
+            status = Status(kind: .error, text: "The layout could not be written.")
+            return nil
+        }
+        do {
+            _ = try SharedLayout.read(data)
+        } catch {
+            let slots = layout.displays.flatMap(\.desktops).flatMap { $0.layout?.slots ?? [] }
+            var why = "choose the app of every slot first."
+            if !slots.contains(where: { $0.rules.contains { $0.bundleID.isEmpty } }) {
+                if case ShareError.invalid(let what) = error { why = "\(what) is more than a layout file holds." } else { why = "it is more than a layout file holds." }
+            }
+            status = Status(kind: .warning, text: "\u{201C}\(layout.name)\u{201D} cannot be kept as it is: \(why)")
+            return nil
+        }
         do {
             try FileManager.default.createDirectory(at: libraryFolder, withIntermediateDirectories: true)
-            // Never over a file already there: one of the same name may be somebody else's.
             let taken = Set((try? FileManager.default.contentsOfDirectory(atPath: libraryFolder.path)) ?? [])
-            let url = libraryFolder.appendingPathComponent(libraryFileName(configuration.name, taken: taken))
-            try data.write(to: url, options: .atomic)
+            let name = libraryFileName(layout.name, taken: taken)
+            try data.write(to: libraryFolder.appendingPathComponent(name), options: .atomic)
             refreshLibrary()
-            status = Status(kind: .success, text: "\u{201C}\(configuration.name)\u{201D} is in the library.")
+            return name
         } catch {
             status = Status(kind: .error, text: "The library could not be written: \(error.localizedDescription)")
+            return nil
         }
+    }
+
+    /// Keeps the selected configuration among the layouts, under its name.
+    func keepInLibrary() {
+        guard let export = shareExport, keep(export.layout) != nil else { return }
+        status = Status(kind: .success, text: "\u{201C}\(export.layout.name)\u{201D} is kept in Layouts, under Whole desks.")
     }
 
     /// Shows the library folder in the Finder: a layout file dropped there is listed.
@@ -506,29 +537,30 @@ final class EditSession: ObservableObject {
     func removeFromLibrary(_ item: LibraryItem) {
         // To the Trash, where it can be taken back.
         try? FileManager.default.trashItem(at: item.url, resultingItemURL: nil)
+        if layoutChoice == .kept(item.id) { layoutChoice = nil }
+        if pendingImport?.kept == true, pendingImport?.file == item.id { pendingImport = nil }
         refreshLibrary()
+        status = Status(kind: .info, text: "\u{201C}\(item.layout.name)\u{201D} is in the Trash.")
     }
 
-    /// Asks for a layout file and reads it.
+    /// Asks for a layout file and opens it on the Layouts page.
     func chooseImport() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.message = "Choose a .fremspace-layout.json"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        readImport(url)
+        openLayoutFile(url)
     }
 
-    /// Reads somebody else's file. Nothing is added yet: the owner chooses where its displays go.
-    func readImport(_ url: URL) {
-        guard let configuration else { return }
+    /// Reads a layout file, somebody else's as much as its content; nil with the reason in the
+    /// status bar when it is not one this Fremspace can read.
+    private func readLayoutFile(_ url: URL) -> SharedLayout? {
         do {
             let layout = try SharedLayout.read(contentsOf: url)
-            let displays = configuration.displays.filter { !$0.ignored }.map(\.identity)
-            pendingImport = PendingImport(layout: layout, mapping: defaultShareMapping(layout, onto: displays), file: url.lastPathComponent)
             status = nil
+            return layout
         } catch let error as ShareError {
-            pendingImport = nil
             switch error {
             case .notALayout: status = Status(kind: .error, text: "\(url.lastPathComponent) is not a Fremspace layout file.")
             case .newer(let version):
@@ -537,9 +569,36 @@ final class EditSession: ObservableObject {
             case .invalid(let what): status = Status(kind: .error, text: "\(url.lastPathComponent) cannot be loaded: \(what) is not valid. Nothing was added.")
             }
         } catch {
-            pendingImport = nil
             status = Status(kind: .error, text: "\(url.lastPathComponent) could not be read: \(error.localizedDescription)")
         }
+        return nil
+    }
+
+    /// A file chosen or dropped on the Layouts page. One desktop is kept at once among "Yours" and
+    /// chosen, ready to be used on a desktop; a whole desk is shown before anything is added.
+    func openLayoutFile(_ url: URL) {
+        guard let layout = readLayoutFile(url) else { return }
+        guard layout.singleDesktop != nil else { return readImport(url) }
+        let inLibrary = url.deletingLastPathComponent().standardizedFileURL == libraryFolder.standardizedFileURL
+        guard let name = inLibrary ? url.lastPathComponent : keep(layout) else { return }
+        pendingImport = nil
+        layoutsView = .oneDesktop
+        layoutChoice = .kept(name)
+        if !inLibrary { status = Status(kind: .success, text: "\u{201C}\(layout.name)\u{201D} is kept in Layouts: use it on a desktop, or add it as a new one.") }
+    }
+
+    /// Shows a whole desk before it is added. Nothing is added yet: the owner chooses where its
+    /// displays go.
+    func readImport(_ url: URL) {
+        guard let configuration else { return }
+        guard let layout = readLayoutFile(url) else {
+            pendingImport = nil
+            return
+        }
+        let displays = configuration.displays.filter { !$0.ignored }.map(\.identity)
+        pendingImport = PendingImport(layout: layout, mapping: defaultShareMapping(layout, onto: displays), file: url.lastPathComponent,
+                                      kept: url.deletingLastPathComponent().standardizedFileURL == libraryFolder.standardizedFileURL)
+        layoutsView = .wholeDesks
     }
 
     /// A display of the file goes to a display here, or is left out. One display here takes one
@@ -553,13 +612,12 @@ final class EditSession: ObservableObject {
         pendingImport = pending
     }
 
-    /// The apps of the file that are not installed here, by their identifier.
+    /// The apps of the file that are not installed here, by their identifier: those of every
+    /// display, for the drawings, whichever displays are taken.
     var importMissingApps: [String] {
         guard let layout = pendingImport?.layout else { return [] }
-        let rules = layout.displays.flatMap(\.desktops).flatMap { $0.layout?.slots ?? [] }.flatMap(\.rules)
-            + layout.displays.flatMap(\.drawers).flatMap(\.layout.slots).flatMap(\.rules)
-        let apps = Set(rules.map(\.bundleID)).union(layout.scenes.flatMap(\.apps))
-        return apps.filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) == nil }.sorted()
+        return layout.apps(taking: Set(layout.displays.indices))
+            .filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) == nil }.sorted()
     }
 
     var importHasFilters: Bool {
@@ -569,13 +627,34 @@ final class EditSession: ObservableObject {
         return rules.contains { $0.profile != nil || $0.titleContains != nil }
     }
 
+    /// What adding the file with the displays chosen would add: for the owner to read before.
+    var importReport: ImportReport? {
+        guard let pending = pendingImport, let configuration else { return nil }
+        return adding(pending.layout, to: configuration, onto: pending.mapping).report
+    }
+
     /// Adds the file read to the selected configuration, as one step to undo. Applies with Save.
+    /// The editor then shows the first of the desktops added.
     func applyImport() {
         guard let pending = pendingImport, let configuration else { return }
         let result = adding(pending.layout, to: configuration, onto: pending.mapping)
+        // The first display of the file that was given one here, and where its desktops start.
+        let first = pending.mapping.keys.sorted().first.flatMap { position -> (DisplayIdentity, Int)? in
+            guard let identity = pending.mapping[position],
+                  let display = configuration.displays.first(where: { $0.identity == identity && !$0.ignored }) else { return nil }
+            return (identity, display.spaces.count)
+        }
         checkpoint()
         updateConfiguration { $0 = result.configuration }
         pendingImport = nil
+        if let first {
+            selection.display = first.0
+            selection.desktop = first.1
+            selection.slot = nil
+            selection.drawer = nil
+            normalizeSelection()
+            settingsPage = nil
+        }
         let report = result.report
         var parts = ["\(report.desktops) desktops"]
         if report.drawers > 0 { parts.append("\(report.drawers) drawers") }
@@ -583,6 +662,13 @@ final class EditSession: ObservableObject {
         var text = "Added \(parts.joined(separator: ", ")) from \u{201C}\(pending.layout.name)\u{201D}. Save to apply."
         if report.drawersKept > 0 { text += " \(report.drawersKept) of its drawers are on an edge that has yours: yours stay." }
         status = Status(kind: .success, text: text)
+    }
+
+    /// Keeps the file being looked at among the layouts without adding it to the configuration.
+    func keepPendingImport() {
+        guard let pending = pendingImport, !pending.kept, keep(pending.layout) != nil else { return }
+        pendingImport = nil
+        status = Status(kind: .success, text: "\u{201C}\(pending.layout.name)\u{201D} is kept in Layouts, under Whole desks.")
     }
 
     // MARK: - Scenes

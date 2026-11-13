@@ -5,7 +5,7 @@ import SwiftUI
 /// Fremspace's own pages, listed in the sidebar under the configurations: what holds whatever the
 /// configuration and the displays.
 enum SettingsPage: String, CaseIterable, Identifiable {
-    case status, general, shortcuts, scenes, share, maintenance
+    case status, general, shortcuts, scenes, layouts, share, maintenance
 
     var id: String { rawValue }
 
@@ -15,6 +15,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .general: return "General"
         case .shortcuts: return "Shortcuts"
         case .scenes: return "Scenes"
+        case .layouts: return "Layouts"
         case .share: return "Share"
         case .maintenance: return "Maintenance"
         }
@@ -26,6 +27,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .general: return "gearshape"
         case .shortcuts: return "keyboard"
         case .scenes: return "rectangle.3.group"
+        case .layouts: return "square.grid.2x2"
         case .share: return "square.and.arrow.up"
         case .maintenance: return "wrench.and.screwdriver"
         }
@@ -38,13 +40,14 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .general: return "How Fremspace runs and what it does with windows, on every configuration. Changes apply when you save, except where marked \u{201C}At once\u{201D}."
         case .shortcuts: return "Click a shortcut and type the new one. ⌫ removes it, ⎋ cancels."
         case .scenes: return "Desktops that several displays show together: one shortcut, or one name in the palette, switches them all."
-        case .share: return "This configuration as a file for somebody else, and somebody else's added to it."
+        case .layouts: return "Ready-made layouts and the ones you kept: for one desktop, or a whole desk seen before it is added."
+        case .share: return "This configuration as a file for somebody else. A file from somebody else is added on the Layouts page."
         case .maintenance: return "Commands for now, and for when something went wrong. They act at once."
         }
     }
 
     /// The page is about one configuration, the one selected: its header says which and can change it.
-    var isOfAConfiguration: Bool { self == .scenes || self == .share }
+    var isOfAConfiguration: Bool { self == .scenes || self == .layouts || self == .share }
 
     /// Beside the page's name in the sidebar.
     func badge(_ session: EditSession) -> String? {
@@ -62,7 +65,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .scenes:
             let count = session.configuration?.scenes.count ?? 0
             return count == 0 ? nil : "\(count)"
-        case .share, .maintenance:
+        case .layouts, .share, .maintenance:
             return nil
         }
     }
@@ -81,7 +84,7 @@ struct SettingsPageView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    title
+                    PageTitle(session: session, page: page)
                     Text(page.summary).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
@@ -122,48 +125,6 @@ struct SettingsPageView: View {
                 .onAppear { scrollToRevealed(proxy) }
                 .onChange(of: session.revealed) { _ in scrollToRevealed(proxy) }
             }
-        }
-    }
-
-    /// The page's name; for a page about one configuration, with that configuration, which the sidebar
-    /// no longer shows as selected, and a way to change it without leaving the page.
-    @ViewBuilder
-    private var title: some View {
-        if page.isOfAConfiguration, let configuration = session.configuration {
-            let several = session.config.configurations.count > 1
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(page == .scenes ? "Scenes of" : "Share").font(.title2.weight(.semibold))
-                if several {
-                    // A menu as wide as the name it shows: a pop-up button is as wide as its longest
-                    // item, which a configuration's name can make very long.
-                    Menu {
-                        ForEach(Array(session.config.configurations.enumerated()), id: \.element.id) { index, each in
-                            Button {
-                                // An import being placed was read for the other configuration's displays.
-                                session.pendingImport = nil
-                                session.select(configuration: index)
-                            } label: {
-                                let name = each.name.isEmpty ? "Untitled" : each.name
-                                if index == session.selection.configuration {
-                                    Label(name, systemImage: "checkmark")
-                                } else {
-                                    Text(name)
-                                }
-                            }
-                        }
-                    } label: {
-                        Text(configuration.name.isEmpty ? "Untitled" : configuration.name).font(.title2.weight(.semibold))
-                    }
-                    .menuStyle(.borderlessButton).fixedSize()
-                    .help("Show the \(page == .scenes ? "scenes" : "sharing") of another configuration")
-                    .accessibilityLabel("Configuration: \(configuration.name)")
-                } else {
-                    Text(configuration.name.isEmpty ? "Untitled" : configuration.name).font(.title2.weight(.semibold))
-                        .lineLimit(1).truncationMode(.middle)
-                }
-            }
-        } else {
-            Text(page.title).font(.title2.weight(.semibold))
         }
     }
 
@@ -329,6 +290,9 @@ struct SettingsPageView: View {
             ShortcutsEditor(session: session, actions: actions, filter: session.shortcutFilter)
         case .scenes:
             ScenesEditor(session: session)
+        case .layouts:
+            // Its own page (`LayoutsPage`): a grid and a preview beside it, not a column of sections.
+            EmptyView()
         case .share:
             ShareEditor(session: session)
         case .maintenance:
@@ -370,6 +334,54 @@ struct SettingsPageView: View {
 
     private func hasFreeDesktop(_ configuration: Configuration) -> Bool {
         configuration.displays.contains { !$0.ignored && $0.spaces.contains { $0.layout == nil } }
+    }
+}
+
+/// A page's name; for a page about one configuration, with that configuration, which the sidebar
+/// no longer shows as selected, and a way to change it without leaving the page.
+struct PageTitle: View {
+    @ObservedObject var session: EditSession
+    let page: SettingsPage
+
+    var body: some View {
+        let several = session.config.configurations.count > 1
+        // Layouts are for any configuration: the page names one only when there is a choice to make.
+        if page.isOfAConfiguration, let configuration = session.configuration, several || page != .layouts {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(page == .scenes ? "Scenes of" : page == .share ? "Share" : "Layouts for").font(.title2.weight(.semibold))
+                if several {
+                    // A menu as wide as the name it shows: a pop-up button is as wide as its longest
+                    // item, which a configuration's name can make very long.
+                    Menu {
+                        ForEach(Array(session.config.configurations.enumerated()), id: \.element.id) { index, each in
+                            Button {
+                                // A file being placed was read for the other configuration's displays.
+                                session.pendingImport = nil
+                                session.select(configuration: index)
+                            } label: {
+                                let name = each.name.isEmpty ? "Untitled" : each.name
+                                if index == session.selection.configuration {
+                                    Label(name, systemImage: "checkmark")
+                                } else {
+                                    Text(name)
+                                }
+                            }
+                        }
+                    } label: {
+                        Text(configuration.name.isEmpty ? "Untitled" : configuration.name).font(.title2.weight(.semibold))
+                    }
+                    .menuStyle(.borderlessButton).fixedSize()
+                    .help(page == .scenes ? "Show the scenes of another configuration"
+                          : page == .share ? "Show the sharing of another configuration" : "Put layouts on the desktops of another configuration")
+                    .accessibilityLabel("Configuration: \(configuration.name)")
+                } else {
+                    Text(configuration.name.isEmpty ? "Untitled" : configuration.name).font(.title2.weight(.semibold))
+                        .lineLimit(1).truncationMode(.middle)
+                }
+            }
+        } else {
+            Text(page.title).font(.title2.weight(.semibold))
+        }
     }
 }
 
@@ -732,11 +744,12 @@ struct Choice: View {
     let selection: Int
     /// What the choice is about, for VoiceOver: it has no visible label of its own.
     let name: String
+    var width: CGFloat = 220
     let choose: (Int) -> Void
 
     var body: some View {
         PopUp(options: options, selection: selection, name: name, choose: choose)
-            .frame(width: 220, height: 22)
+            .frame(width: width, height: 22)
             .opacity(selection == -1 ? 0.55 : 1)
     }
 
@@ -914,9 +927,9 @@ struct ScenesEditor: View {
     }
 }
 
-/// The configuration selected as a file for somebody else, and somebody else's file added to it.
-/// The export is shown before it is written: what is in the file, what never is, and the free
-/// text that goes in only when the owner says so.
+/// The configuration selected as a file for somebody else. The export is shown before it is written:
+/// what is in the file, what never is, and the free text that goes in only when the owner says so.
+/// Files from others, and the ones kept, are on the Layouts page.
 struct ShareEditor: View {
     @ObservedObject var session: EditSession
 
@@ -970,103 +983,19 @@ struct ShareEditor: View {
                         .buttonStyle(.borderedProminent)
                     Button("Copy") { session.copyLayout() }
                         .help("The same text on the clipboard")
-                    Button("Keep in the library") { session.keepInLibrary() }
-                        .help("A copy among the layouts below, to add to another configuration later")
+                    Button("Keep in Layouts") { session.keepInLibrary() }
+                        .help("A copy among the whole desks of the Layouts page, to add to another configuration later")
                 }
             }
-            PageSection("Import") {
-                // A file being placed takes the section: it was a card inside the card, under a
-                // paragraph that no longer applied.
-                if let pending = session.pendingImport {
-                    pendingImport(pending, into: configuration)
-                } else {
-                    HelpText("A layout file adds its desktops after yours on the displays you choose, its drawers on the edges still free, and its scenes with the desktops they show. Nothing of yours is replaced, and nothing changes on screen until you save.")
-                    ForEach(session.library) { item in
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(item.layout.name).lineLimit(1)
-                                Text(item.layout.displays.map { "\($0.name): \($0.desktops.map(\.label).joined(separator: ", "))" }.joined(separator: " \u{00B7} ")
-                                     + (item.layout.scenes.isEmpty ? "" : " \u{00B7} \(count(item.layout.scenes.count, "scene"))"))
-                                    .font(.subheadline).foregroundColor(.secondary).lineLimit(2)
-                            }
-                            Spacer(minLength: 8)
-                            Button("Add\u{2026}") { session.readImport(item.url) }
-                                .accessibilityLabel("Add the layout \(item.layout.name)")
-                            Button {
-                                session.removeFromLibrary(item)
-                            } label: {
-                                Image(systemName: "trash").hitTarget()
-                            }
-                            .buttonStyle(.borderless)
-                            .help("Move this layout file to the Trash")
-                            .accessibilityLabel("Remove the layout \(item.layout.name) from the library")
-                        }
-                        .padding(.horizontal, 10).padding(.vertical, 7)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
-                    }
-                    if session.library.isEmpty {
-                        HelpText("The library is empty: keep a configuration in it, or put a layout file from somebody else in its folder.")
-                    }
-                    HStack(spacing: 8) {
-                        Button("Add from a file\u{2026}") { session.chooseImport() }
-                        Button("Open the library folder") { session.openLibraryFolder() }
-                    }
+            PageSection("From somebody else") {
+                HelpText("A layout file you were sent is opened on the Layouts page, where you see what it holds before anything is added.")
+                Button("Show the Layouts page") {
+                    session.layoutsView = .wholeDesks
+                    session.settingsPage = .layouts
                 }
             }
-            .onAppear { session.refreshLibrary() }
         } else {
             NoConfiguration(session: session, text: "Sharing is of a configuration: make one first.")
-        }
-    }
-
-    @ViewBuilder
-    private func pendingImport(_ pending: EditSession.PendingImport, into configuration: Configuration) -> some View {
-        let displays = configuration.displays.filter { !$0.ignored }
-        let layout = pending.layout
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\u{201C}\(layout.name)\u{201D}").font(.headline)
-            HelpText("\(pending.file), written by Fremspace \(layout.app). \(counts([(layout.displays.count, "display"), (layout.displays.reduce(0) { $0 + $1.desktops.count }, "desktop"), (layout.scenes.count, "scene")])).")
-            ForEach(Array(layout.displays.enumerated()), id: \.offset) { position, display in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(display.name).lineLimit(1)
-                        Text(display.desktops.map(\.label).joined(separator: ", ")
-                             + (display.drawers.isEmpty ? "" : " \u{00B7} \(count(display.drawers.count, "drawer"))"))
-                            .font(.subheadline).foregroundColor(.secondary).lineLimit(2)
-                    }
-                    .frame(width: 260, alignment: .leading)
-                    Image(systemName: "arrow.right").foregroundColor(.secondary)
-                    Picker("", selection: Binding(
-                        get: { pending.mapping[position].flatMap { identity in displays.firstIndex { $0.identity == identity } } ?? -1 },
-                        set: { choice in session.mapImport(position, to: choice < 0 ? nil : displays[choice].identity) })) {
-                        Text("Leave out").tag(-1)
-                        ForEach(Array(displays.enumerated()), id: \.offset) { index, own in
-                            Text("After the \(count(own.spaces.count, "desktop")) of \(own.displayName)").tag(index)
-                        }
-                    }
-                    .labelsHidden().fixedSize()
-                    .accessibilityLabel("Where the desktops of \(display.name) go")
-                }
-            }
-            let missing = session.importMissingApps
-            if !missing.isEmpty {
-                HelpText("Not on this Mac: \(missing.joined(separator: ", ")). Their slots are added and stay empty.")
-            }
-            let atLogin = pending.layout.appsOpenedAtLogin.filter { !missing.contains($0) }
-            if !atLogin.isEmpty {
-                HelpText("Opened at your next login, unless you switch that off in their slots: \(atLogin.map(appName).joined(separator: ", ")).")
-            }
-            if session.importHasFilters {
-                HelpText("The file names browser profiles or window title filters: they are the author's, change them to yours in the slots.")
-            }
-            HelpText("macOS needs as many desktops as the configuration lists: after you save, the Status page offers to add the ones that are missing.")
-            HStack(spacing: 8) {
-                Button("Add to \u{201C}\(configuration.name)\u{201D}") { session.applyImport() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(pending.mapping.isEmpty)
-                    .help(pending.mapping.isEmpty ? "Choose where the desktops of at least one display go" : "")
-                Button("Cancel") { session.pendingImport = nil }
-            }
         }
     }
 }

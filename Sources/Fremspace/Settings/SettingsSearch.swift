@@ -132,6 +132,7 @@ struct SearchHit: Identifiable {
         case configuration(Int)
         case desktop(Selection)
         case scenes(configuration: Int)
+        case layout(LayoutChoice)
     }
 
     let id: String
@@ -142,12 +143,22 @@ struct SearchHit: Identifiable {
 }
 
 extension EditSession {
-    /// Everything the window holds that has a name: pages, settings, commands, configurations,
-    /// desktops, scenes and shortcuts.
+    /// Everything the window holds that has a name: pages, settings, commands, layouts,
+    /// configurations, desktops, scenes and shortcuts.
     private var searchable: [(hit: SearchHit, keywords: [String])] {
         var all: [(SearchHit, [String])] = []
         for page in SettingsPage.allCases {
-            all.append((SearchHit(id: "page.\(page.rawValue)", title: page.title, subtitle: "Page", symbol: page.symbol, target: .page(page)), []))
+            // The Layouts page is also where one looks for a preset, a template or an import.
+            all.append((SearchHit(id: "page.\(page.rawValue)", title: page.title, subtitle: "Page", symbol: page.symbol, target: .page(page)),
+                        page == .layouts ? ["preset", "template", "ready made", "library", "import", "kept"] : []))
+        }
+        for preset in layoutPresets {
+            all.append((SearchHit(id: "preset.\(preset.id)", title: preset.name, subtitle: "Layouts \u{203A} Ready made, \(preset.detail)",
+                                  symbol: SettingsPage.layouts.symbol, target: .layout(.preset(preset.id))), ["layout", "preset"]))
+        }
+        for item in keptDesktops {
+            all.append((SearchHit(id: "kept.\(item.id)", title: item.layout.name, subtitle: "Layouts \u{203A} Yours",
+                                  symbol: SettingsPage.layouts.symbol, target: .layout(.kept(item.id))), ["layout", "kept"]))
         }
         // A build without an updater has nothing to find about updates.
         let updateRows: Set<SettingRow> = engine.updates.isAvailable ? [] : [.autoUpdates, .checkForUpdates]
@@ -221,6 +232,10 @@ extension EditSession {
         case .scenes(let index):
             select(configuration: index)
             settingsPage = .scenes
+        case .layout(let choice):
+            layoutsView = .oneDesktop
+            layoutChoice = choice
+            settingsPage = .layouts
         }
     }
 }

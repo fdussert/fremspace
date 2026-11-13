@@ -143,7 +143,9 @@ struct SettingsView: View {
                 Sidebar(session: session)
                     .frame(width: 210)
                 Divider()
-                if let page = session.settingsPage {
+                if session.settingsPage == .layouts {
+                    LayoutsPage(session: session)
+                } else if let page = session.settingsPage {
                     SettingsPageView(session: session, page: page, actions: actions)
                         .id(page)
                 } else if session.configuration != nil {
