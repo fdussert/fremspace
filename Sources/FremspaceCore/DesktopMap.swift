@@ -42,6 +42,11 @@ public struct DesktopLinks: Codable, Equatable {
 /// can never be linked: when another desktop was moved to its position in Mission Control, the
 /// unlinked configured desktop that found its place taken follows it to the position that has no
 /// uuid, instead of resolving to nothing.
+///
+/// An unlinked desktop that still has no place takes the first desktop nothing else uses, and is
+/// linked to it. That is a desktop just added to a configuration whose display has a spare one
+/// before the end: one removed from the middle of the configuration leaves its macOS desktop
+/// there, and the new layout applied nowhere, with no desktop short to say so.
 public func resolveDesktops(configured: Int, links: [String?], live: [String]) -> (real: [Int?], links: [String?]) {
     var newLinks = Array(links.prefix(configured))
     newLinks += Array(repeating: nil, count: configured - newLinks.count)
@@ -59,10 +64,20 @@ public func resolveDesktops(configured: Int, links: [String?], live: [String]) -
         used.insert(i)
         if !live[i].isEmpty { newLinks[i] = live[i] }
     }
-    for i in 0..<configured where real[i] == nil && newLinks[i] == nil && i < live.count && used.contains(i) {
-        guard let position = live.indices.first(where: { live[$0].isEmpty && !used.contains($0) }) else { break }
+    for i in 0..<configured where real[i] == nil && newLinks[i] == nil {
+        // The desktop without a uuid first: an unlinked desktop may be the one that was on it.
+        if i < live.count, used.contains(i),
+           let position = live.indices.first(where: { live[$0].isEmpty && !used.contains($0) }) {
+            real[i] = position
+            used.insert(position)
+            continue
+        }
+        guard let position = live.indices.first(where: {
+            !live[$0].isEmpty && !used.contains($0) && !linked.contains(live[$0])
+        }) else { continue }
         real[i] = position
         used.insert(position)
+        newLinks[i] = live[position]
     }
     return (real, newLinks)
 }

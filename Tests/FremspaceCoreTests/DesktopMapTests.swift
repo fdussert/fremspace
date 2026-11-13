@@ -111,4 +111,34 @@ final class DesktopMapTests: XCTestCase {
         XCTAssertNil(desktopNumber(inTitle: "Notes"))
         XCTAssertNil(desktopNumber(inTitle: ""))
     }
+
+    func testANewDesktopTakesTheSpareOneLeftInTheMiddle() {
+        // "Web" was removed from the middle of the configuration (its macOS desktop U2 stayed),
+        // then "Notes" was added at the end: it takes U2 instead of applying nowhere.
+        let r = resolveDesktops(configured: 3, links: [nil, "U3", nil], live: ["", "U2", "U3"])
+        XCTAssertEqual(r.real, [0, 2, 1])
+        XCTAssertEqual(r.links, [nil, "U3", "U2"])
+        // Two new desktops and one spare: the first takes it, the second waits for a desktop.
+        let two = resolveDesktops(configured: 4, links: [nil, "U3", nil, nil], live: ["", "U2", "U3"])
+        XCTAssertEqual(two.real, [0, 2, 1, nil])
+        // With its own position free, a new desktop takes that one, as before.
+        let end = resolveDesktops(configured: 4, links: [nil, "U3", nil, nil], live: ["", "U2", "U3", "U4"])
+        XCTAssertEqual(end.real, [0, 2, 1, 3])
+        XCTAssertEqual(end.links, [nil, "U3", "U2", "U4"])
+    }
+
+    func testTheDesktopWithoutUuidIsPreferredToASpareOne() {
+        // The first desktop of the main display dragged to the end in Mission Control, with a
+        // spare desktop before it: its layout follows it, and does not take the spare one.
+        let r = resolveDesktops(configured: 2, links: [nil, "U2"], live: ["U2", "UX", ""])
+        XCTAssertEqual(r.real, [2, 0])
+        XCTAssertEqual(r.links, [nil, "U2"])
+    }
+
+    func testADesktopWhoseOwnIsGoneDoesNotTakeASpareOne() {
+        // Linked to a desktop macOS no longer has: it is looked for, not replaced.
+        let r = resolveDesktops(configured: 2, links: ["U1", "U2"], live: ["UX", "U2"])
+        XCTAssertEqual(r.real, [nil, 1])
+        XCTAssertEqual(r.links, ["U1", "U2"])
+    }
 }

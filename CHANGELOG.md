@@ -15,6 +15,9 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   another one and nothing undoes it. Nothing is removed on a save.
 - Removing or moving a desktop in the editor no longer takes every slot of that display out of
   Focus: a Focus follows its desktop, and only the Focus of a removed desktop goes.
+- A desktop added to a configuration takes the macOS desktop that nothing uses on its display, when
+  one was left before the end by a desktop removed from the middle. Its layout used to apply
+  nowhere, and nothing said so.
 
 ## 0.1.1
 
