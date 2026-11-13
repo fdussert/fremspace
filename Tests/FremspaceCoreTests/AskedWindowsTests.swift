@@ -27,4 +27,14 @@ final class AskedWindowsTests: XCTestCase {
         var asked = AskedWindows()
         XCTAssertFalse(asked.take(12, bundleID: finder, now: start))
     }
+
+    func testAWindowShowsAFolderByItsDocumentAddressElseByItsTitleInTheFinder() {
+        let folder = URL(fileURLWithPath: "/Users/someone/Library/Application Support/Example/Layouts", isDirectory: true)
+        XCTAssertTrue(windowShows(folder, document: "file:///Users/someone/Library/Application%20Support/Example/Layouts/", title: nil, byTitle: false))
+        // Another folder of the same name: its address says it is not the one, whatever its title.
+        XCTAssertFalse(windowShows(folder, document: "file:///Users/someone/Other/Layouts/", title: "Layouts", byTitle: true))
+        XCTAssertTrue(windowShows(folder, document: nil, title: "Layouts", byTitle: true))
+        XCTAssertFalse(windowShows(folder, document: nil, title: "Layouts", byTitle: false))
+        XCTAssertFalse(windowShows(folder, document: nil, title: "Downloads", byTitle: true))
+    }
 }

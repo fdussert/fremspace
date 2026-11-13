@@ -360,6 +360,10 @@ final class AXWindows {
         copy(element, kAXChildrenAttribute) as? [AXUIElement] ?? []
     }
 
+    /// A window's title and the address of the document or folder it shows, when it gives them.
+    func title(of element: AXUIElement) -> String? { copy(element, kAXTitleAttribute) as? String }
+    func document(of element: AXUIElement) -> String? { copy(element, kAXDocumentAttribute) as? String }
+
     private func copy(_ element: AXUIElement, _ attribute: String) -> CFTypeRef? {
         var value: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success else { return nil }

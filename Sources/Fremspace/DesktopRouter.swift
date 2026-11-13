@@ -134,6 +134,13 @@ final class DesktopRouter {
 
     // MARK: - New windows
 
+    /// A window Fremspace brought to the desktop shown because the owner asked for what it shows:
+    /// it stays there, like the new window that would have opened.
+    func keepHere(_ id: UInt32) {
+        askedFor.insert(id)
+        sentByCommand.insert(id)
+    }
+
     /// Fremspace is about to ask the app `bundleID` for a window (a folder in the Finder, a file in
     /// its editor): the app's next new window stays on the desktop where it opens.
     func expectWindow(of bundleID: String) {

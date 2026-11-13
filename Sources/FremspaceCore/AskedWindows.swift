@@ -31,3 +31,13 @@ public struct AskedWindows {
         return true
     }
 }
+
+/// Whether a window shows the file or folder at `url`: by the address Accessibility gives for its
+/// document ("file:///…/Layouts/"), which settles it either way; without one, and only where the
+/// title of a window is the name of what it shows (`byTitle`: the Finder), by its title.
+public func windowShows(_ url: URL, document: String?, title: String?, byTitle: Bool) -> Bool {
+    if let document, let shown = URL(string: document), shown.isFileURL {
+        return shown.standardizedFileURL.path == url.standardizedFileURL.path
+    }
+    return byTitle && title == url.lastPathComponent
+}

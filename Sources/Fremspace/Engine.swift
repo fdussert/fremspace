@@ -149,16 +149,45 @@ final class Engine {
     /// Opens a file or a folder the owner asked for from Fremspace's own window or menu. The
     /// window that comes stays where it opens, whatever "no floating windows" says.
     func openForOwner(_ url: URL) {
-        if let app = NSWorkspace.shared.urlForApplication(toOpen: url).flatMap({ Bundle(url: $0)?.bundleIdentifier }) {
-            router.expectWindow(of: app)
+        guard let app = NSWorkspace.shared.urlForApplication(toOpen: url).flatMap({ Bundle(url: $0)?.bundleIdentifier }) else {
+            NSWorkspace.shared.open(url)
+            return
         }
-        NSWorkspace.shared.open(url)
+        router.expectWindow(of: app)
+        bringHere(windowOf: app, showing: url) { NSWorkspace.shared.open(url) }
     }
 
     /// Shows files in the Finder for the owner, as `openForOwner` opens one.
     func revealForOwner(_ urls: [URL]) {
-        router.expectWindow(of: "com.apple.finder")
-        NSWorkspace.shared.activateFileViewerSelecting(urls)
+        router.expectWindow(of: Self.finder)
+        guard let folder = urls.first?.deletingLastPathComponent() else { return }
+        bringHere(windowOf: Self.finder, showing: folder) { NSWorkspace.shared.activateFileViewerSelecting(urls) }
+    }
+
+    private static let finder = "com.apple.finder"
+
+    /// The app may already show `url` in a window on a desktop that is not shown: asked to open
+    /// it, macOS takes the owner to that desktop instead of opening a window where they are
+    /// (owner, 2026-11-13: the Layouts folder, still open on the free desktop from the time
+    /// before). Such a window is first brought to the desktop its display shows; then `then`.
+    private func bringHere(windowOf bundleID: String, showing url: URL, then: @escaping () -> Void) {
+        guard SpaceMover.isPresent, AXIsProcessTrusted(), !Self.sessionIsLocked else { return then() }
+        let shown = Spaces.current()
+        for app in NSRunningApplication.runningApplications(withBundleIdentifier: bundleID) {
+            for element in windows.allWindows(pid: app.processIdentifier) {
+                // A window in a slot or in a drawer is where the layout wants it.
+                guard let id = AXWindows.windowID(element), placements[id] == nil, !drawers.isMember(id),
+                      let place = Spaces.spaceIndex(ofWindow: id), let here = shown[place.display], here != place.spaceIndex,
+                      windowShows(url, document: windows.document(of: element), title: windows.title(of: element),
+                                  byTitle: bundleID == Self.finder),
+                      let space = Spaces.spaceID(display: place.display, real: here) else { continue }
+                router.keepHere(id)
+                Log.engine.info("window \(id) \(bundleID, privacy: .public) already shows what was asked for, on another desktop: brought to the one shown")
+                SpaceMover.send(id, toSpace: space, lookEvery: SpaceMover.eagerPollInterval) { _ in then() }
+                return
+            }
+        }
+        then()
     }
     /// Commands on the active window (quick resize, send, lock).
     private(set) lazy var commands = WindowCommands(engine: self, windows: windows)
