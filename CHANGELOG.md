@@ -1,0 +1,66 @@
+# Changelog
+
+What changed for the person using Fremspace, release by release. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver, and the version is
+the one in `Sources/FremspaceCore/Version.swift`.
+
+Anything that changes what Fremspace does gets a line under **Unreleased** in the same commit. A
+release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs/releasing.md`).
+
+## Unreleased
+
+## 0.1.0
+
+The first version to be packaged.
+
+- **Layouts per desktop.** Each desktop (Space) of each display has a layout of slots; an app's
+  windows go to their slot and stay there. Free desktops take whatever has no slot.
+  With "No floating windows on layout desktops", a window dropped where it has no slot goes to a
+  free desktop, and a fixed-size window (a mail reminder) joins the desktop of its app.
+- **Configurations per set of displays.** The desk, the laptop alone, another office: the one that
+  matches the displays connected is applied. A "travel version" turns the slots of the big
+  displays into desktops of the laptop. A display can have a name of yours ("Left") instead of the
+  model macOS shows.
+- **Focus.** One shortcut gives a slot the whole desktop, the same shortcut gives it back. Any
+  number of slots of a desktop can have it.
+- **Stacks.** Several windows in one slot, and a shortcut to go through them.
+- **Side by side.** ⌃⌥⌘S opens a second window of the app in front and puts the two half and half,
+  in the window's slot or on its display; the same shortcut stacks them again.
+- **Drawers.** Windows parked off the side of a display, slid in and out by a shortcut.
+- **Restore after login.** The apps that have a slot are opened and every window is put back.
+- **Palette.** One field finds an open window on any desktop, an app to launch, a desktop, a scene
+  or a command; without a query it is a switcher, over a map of every desktop that the arrow keys
+  go through.
+- **Scenes.** Several displays change desktop at once. A scene can also put a slot in Focus, open
+  or close a drawer and open apps that are not running; asked for again while it is shown, it is
+  left: the displays go back to the desktops they showed, and the Focus it gave and the drawers it
+  moved to what they were.
+- **Layouts to share.** The Share page writes a configuration to a `.fremspace-layout.json`
+  (desktops, layouts, drawers, scenes) without the displays' models or serial numbers, and with
+  browser profiles and title filters only if you tick them. A layout file, from a library kept
+  beside the config file or from anywhere, adds its desktops and scenes after yours on the displays
+  you choose.
+- **The notch.** A desktop's name hangs from it when the display changes desktop; resting the
+  pointer on it opens the map of desktops, which takes the arrow keys, Return and Escape.
+- **Window previews**, an option that is off unless you switch it on. The palette shows a picture
+  of the selected window; the maps of desktops and the editor show the window of each slot. It
+  needs the Screen Recording permission, which macOS asks for when you save with the option on;
+  the pictures stay in memory.
+- **Hyper key.** Caps Lock can stand for ⌃⌥⌘, with no other tool.
+- **Quick sizes.** A half, a third or two thirds of the display, the whole of it or its centre for
+  the window in front, from the menu of window commands (⌃⌥⌘W). They have no shortcut until you
+  give them one on the Shortcuts page.
+- **Calls in full screen.** The meeting window of Microsoft Teams or Zoom goes to full screen when
+  the call starts.
+- **An editor** for the layouts. It opens on the displays it found and one button to set them up,
+  with a desktop per desktop macOS has; a free desktop offers "Capture this desktop" where its
+  layout will be. Each slot's tile says what is particular to it (Focus, unlocked, several apps)
+  and its size in plain fractions ("3/5"); a drawer shows how far it comes over the layout when
+  the pointer is on its rail. The inspector shows the selected slot alone, with its apps in one
+  list. Scenes and Share say which configuration they are about and can change it. Settings that
+  act without Save are marked "At once". Also: desktops reordered by dragging their tab, a Status
+  page that lists what needs attention, a search across the settings, every shortcut changeable,
+  and `fremspace://` links for other tools.
+- **Updates.** The downloaded app updates itself (Sparkle): about once a day it looks for a newer
+  version, and **Check for Updates…** is in the menu. It fetches one file and sends nothing; the
+  switch is on the General page.

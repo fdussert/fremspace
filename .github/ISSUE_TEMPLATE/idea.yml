@@ -1,0 +1,22 @@
+name: Idea
+description: Something Fremspace could do, or do differently.
+labels: [idea]
+body:
+  - type: textarea
+    id: moment
+    attributes:
+      label: The moment you wished for it
+      description: What you were doing, with which displays and apps, and what got in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+      description: How it could work. A sketch is welcome.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing issues.

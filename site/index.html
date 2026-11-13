@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fremspace: every window has a place</title>
+<meta name="description" content="A window manager for macOS: every desktop of every display has a layout of slots, apps open in their slot and stay there, and everything comes back after a restart.">
+<link rel="canonical" href="https://fremspace.app/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Fremspace">
+<meta property="og:title" content="Fremspace: every window has a place">
+<meta property="og:description" content="A window manager for macOS. Every desktop of every display has a layout of slots; apps open in their slot, stay there, and come back after a restart.">
+<meta property="og:url" content="https://fremspace.app/">
+<meta property="og:image" content="https://fremspace.app/assets/social.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#070b1d">
+<link rel="icon" href="assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- page:start -->
+<a class="skip" href="#moves">Skip to what it does</a>
+
+<header class="bar">
+  <a class="brand" href="#top"><img src="assets/icon.png" alt="" width="22" height="22"><span>Fremspace</span></a>
+  <div class="bar-right">
+    <a class="bar-gh" href="https://github.com/fdussert/fremspace"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a>
+    <a class="bar-get" href="#get">Download</a>
+  </div>
+</header>
+
+<!-- The page has a notch, and it does what Fremspace does with the MacBook's: it names the part of
+     the page you reach, and it opens a map of the parts when the pointer rests on it. -->
+<div class="notch" id="notch">
+  <button class="notch-pill" type="button" aria-expanded="false" aria-controls="notch-map" aria-label="Map of this page">
+    <span class="notch-dots" aria-hidden="true"></span>
+  </button>
+  <div class="notch-drop" aria-hidden="true"><span></span></div>
+  <nav class="notch-map" id="notch-map" aria-label="On this page">
+    <a href="#top"><svg viewBox="0 0 64 40" aria-hidden="true"><rect x="2" y="17" width="14" height="13" rx="2"/><rect x="19" y="7" width="28" height="23" rx="2"/><rect x="50" y="9" width="12" height="21" rx="2"/></svg>Home</a>
+    <a href="#moves"><svg viewBox="0 0 64 40" aria-hidden="true"><rect x="2" y="2" width="35" height="36" rx="3"/><rect x="40" y="2" width="22" height="17" rx="3"/><rect x="40" y="22" width="22" height="16" rx="3"/></svg>Layouts</a>
+    <a href="#palette"><svg viewBox="0 0 64 40" aria-hidden="true"><rect x="8" y="3" width="48" height="9" rx="3"/><rect x="8" y="16" width="48" height="5" rx="2"/><rect x="8" y="24" width="48" height="5" rx="2" opacity=".5"/><rect x="8" y="32" width="48" height="5" rx="2" opacity=".5"/></svg>Palette</a>
+    <a href="#scenes"><svg viewBox="0 0 64 40" aria-hidden="true"><rect x="2" y="13" width="15" height="11" rx="2"/><rect x="20" y="3" width="26" height="21" rx="2"/><rect x="49" y="5" width="13" height="19" rx="2"/><rect x="2" y="30" width="18" height="7" rx="3.5"/><rect x="23" y="30" width="18" height="7" rx="3.5" opacity=".5"/><rect x="44" y="30" width="18" height="7" rx="3.5" opacity=".5"/></svg>Scenes</a>
+    <a href="#notch-demo"><svg viewBox="0 0 64 40" aria-hidden="true"><rect x="2" y="2" width="60" height="36" rx="3" opacity=".45"/><rect x="22" y="2" width="20" height="9" rx="3"/></svg>Notch</a>
+    <a href="#keys"><svg viewBox="0 0 64 40" aria-hidden="true"><rect x="2" y="6" width="9" height="8" rx="2"/><rect x="13" y="6" width="9" height="8" rx="2"/><rect x="24" y="6" width="9" height="8" rx="2"/><rect x="35" y="6" width="9" height="8" rx="2"/><rect x="46" y="6" width="16" height="8" rx="2"/><rect x="2" y="16" width="14" height="8" rx="2"/><rect x="18" y="16" width="9" height="8" rx="2"/><rect x="29" y="16" width="9" height="8" rx="2"/><rect x="40" y="16" width="9" height="8" rx="2"/><rect x="51" y="16" width="11" height="8" rx="2"/><rect x="2" y="26" width="9" height="8" rx="2"/><rect x="13" y="26" width="32" height="8" rx="2"/><rect x="47" y="26" width="15" height="8" rx="2"/></svg>Keyboard</a>
+    <a href="#editor"><svg viewBox="0 0 64 40" aria-hidden="true"><rect x="2" y="2" width="14" height="36" rx="3" opacity=".5"/><rect x="19" y="2" width="43" height="25" rx="3"/><rect x="19" y="30" width="43" height="8" rx="3" opacity=".5"/></svg>Editor</a>
+    <a href="#honest"><svg viewBox="0 0 64 40" aria-hidden="true"><rect x="2" y="2" width="29" height="17" rx="3"/><rect x="33" y="2" width="29" height="17" rx="3"/><rect x="2" y="21" width="29" height="17" rx="3"/><rect x="33" y="21" width="29" height="17" rx="3"/></svg>Before you install</a>
+    <a href="#get"><svg viewBox="0 0 64 40" aria-hidden="true"><path d="M32 4v18m-8-7 8 8 8-8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="12" y="30" width="40" height="6" rx="3"/></svg>Download</a>
+  </nav>
+</div>
+
+<main>
+  <section class="hero" id="top" data-desktop="Home">
+    <div class="wrap hero-top">
+      <h1><span class="w" style="--i:0;--dx:-28px;--dy:16px">Every</span> <span class="w" style="--i:1;--dx:34px;--dy:-14px">window</span><br><em><span class="w" style="--i:2;--dx:-20px;--dy:-18px">has</span> <span class="w" style="--i:3;--dx:14px;--dy:22px">a</span> <span class="w" style="--i:4;--dx:36px;--dy:10px">place.</span></em></h1>
+      <div class="hero-side">
+        <p class="lede">Fremspace gives every desktop of every display a layout of slots. Apps open in their slot, stay there, and are all back where they were after a restart.</p>
+        <div class="actions">
+          <a class="btn" href="https://github.com/fdussert/fremspace/releases/latest/download/Fremspace.dmg">Download for macOS</a>
+          <a class="btn ghost" href="https://github.com/fdussert/fremspace"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+        </div>
+        <p class="fine">Free and open source. macOS 13 or later, Apple silicon and Intel. Sending windows between desktops needs macOS 26.4.</p>
+      </div>
+    </div>
+
+    <div class="desk">
+      <div class="fit" id="desk" role="img" aria-label="A MacBook and a display, drawn. Five windows lie in a pile across them, then each one goes to its slot on its own display.">
+        <noscript><p class="fine">A drawing of a MacBook and a display whose windows go to their slots. It needs JavaScript.</p></noscript>
+      </div>
+      <div class="desk-foot">
+        <p class="chord" id="hero-chord" aria-hidden="true"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd><span>Put every window back</span></p>
+        <p class="desk-hint">Drag a window away from its slot and let go.</p>
+        <button class="btn ghost small" id="scatter" type="button">Scatter the windows</button>
+      </div>
+      <p class="sr" id="desk-status" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- Several screens tall once the script runs: the stage stays in the window and the scroll is the
+       camera. Without the script it is this heading and these six texts. -->
+  <section class="story" id="moves" data-desktop="Layouts">
+    <div class="dive" id="dive">
+     <div class="dive-in">
+      <div class="dive-glow" aria-hidden="true"></div>
+      <div class="dive-stage" id="stage" aria-hidden="true"></div>
+      <div class="story-head">
+        <h2>Draw the layout <em>once.</em></h2>
+        <p class="lede">A layout is a few slots drawn on a desktop, each with the apps that live in it. From then on Fremspace does the arranging.</p>
+      </div>
+      <div class="steps" id="steps">
+        <article class="step" data-act="layout">
+          <h3>A layout for each desktop</h3>
+          <p>Split a desktop into slots and say which apps live where. A window that opens goes to its slot, on its desktop, on its display.</p>
+        </article>
+        <article class="step" data-act="focus">
+          <h3>Focus</h3>
+          <p>One shortcut gives a slot the whole desktop. The same shortcut puts everything back.</p>
+          <p class="chord"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>Space</kbd></p>
+        </article>
+        <article class="step" data-act="stack">
+          <h3>Stacks</h3>
+          <p>Several windows share a slot. A shortcut goes through them, and a mark says which one is in front.</p>
+          <p class="chord"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>⇥</kbd></p>
+        </article>
+        <article class="step" data-act="drawer">
+          <h3>Drawers</h3>
+          <p>Windows parked off the side of a display, slid in when you need them: your notes, a chat, a calendar.</p>
+          <p class="chord"><b><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>L</kbd><span>left</span></b><b><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>D</kbd><span>right</span></b></p>
+        </article>
+        <article class="step" data-act="restart">
+          <h3>Back after a restart</h3>
+          <p>At login Fremspace opens the apps that have a slot and puts every window back, on the right desktop.</p>
+        </article>
+        <article class="step" data-act="sets">
+          <h3>One setup per set of displays</h3>
+          <p>The desk, the laptop alone, another office: Fremspace applies the configuration that matches the displays connected. A travel version turns the slots of the big displays into desktops of the laptop.</p>
+        </article>
+      </div>
+      <nav class="dive-prog" id="prog" aria-label="The six parts of this section"></nav>
+     </div>
+    </div>
+  </section>
+
+  <section class="band-blue" id="palette" data-desktop="Palette">
+    <div class="wrap pal-grid">
+      <div class="pal-copy">
+        <h2>One field <em>finds it.</em></h2>
+        <p class="lede">The palette knows where every window is, on every desktop. Type a few letters and press Return. Without typing anything it is a switcher: the window you had before is already selected.</p>
+        <p class="chord"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>K</kbd><span>opens it</span></p>
+        <dl class="finds">
+          <div><dt>Windows</dt><dd>on any desktop, by title or app</dd></div>
+          <div><dt>Apps</dt><dd>to open, or bring forward when they run</dd></div>
+          <div><dt>Desktops and scenes</dt><dd>by the name you gave them</dd></div>
+          <div><dt>Commands</dt><dd>everything a shortcut can do</dd></div>
+        </dl>
+      </div>
+      <div class="pal-side">
+        <div class="pal" id="pal">
+          <div class="pal-field">
+            <span class="pal-glyph" aria-hidden="true"><i></i><i></i><i></i></span>
+            <input id="pal-input" type="text" placeholder="A window, an app, a desktop, a command" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="A drawing of the palette that takes real typing" aria-controls="pal-list">
+          </div>
+          <div class="pal-map" id="pal-map" aria-hidden="true"></div>
+          <ul class="pal-list" id="pal-list" aria-label="Results"></ul>
+        </div>
+        <p class="pal-note" id="pal-note">This one is a drawing, and it takes real typing: click the field.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="scenes" id="scenes" data-desktop="Scenes">
+    <div class="wrap scenes-copy">
+      <h2>A scene sets <em>the whole desk.</em></h2>
+      <div class="cols">
+        <p>A scene is a named set of desktops that several displays show together. Showing it switches every display it names at once. A display it does not name keeps what it shows.</p>
+        <p>On each display a scene can also put a slot in Focus and open or close a drawer, and it opens its apps that are not running. The editor makes one from what the displays show now.</p>
+      </div>
+    </div>
+    <div class="wrap scene-bar">
+      <div class="scene-chips" id="scene-chips" role="group" aria-label="Scenes of this desk">
+        <button class="scene-chip" type="button" aria-pressed="false"><span class="scene-keys" aria-hidden="true"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>1</kbd></span><b>Spice run</b></button>
+        <button class="scene-chip" type="button" aria-pressed="false"><span class="scene-keys" aria-hidden="true"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>2</kbd></span><b>Storm watch</b></button>
+        <button class="scene-chip" type="button" aria-pressed="false"><span class="scene-keys" aria-hidden="true"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>3</kbd></span><b>Council</b></button>
+      </div>
+      <p class="scene-status" id="scene-status">Choose a scene. Choose it again to leave it.</p>
+    </div>
+    <div class="scene-desk">
+      <div class="fit" id="scene-desk" role="img" aria-label="Three displays, drawn: Laptop, Main and Right. A scene changes the desktop of each one it names, puts a slot in Focus on one display and opens a drawer on another."></div>
+    </div>
+    <div class="wrap">
+      <dl class="scene-facts">
+        <div><dt>Four shortcuts</dt><dd><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>1</kbd> to <kbd>4</kbd> show the first four scenes. With Caps Lock as ⌃⌥⌘, it is Caps Lock and the digit.</dd></div>
+        <div><dt>By name</dt><dd>The palette lists every scene. Type a few letters of its name and press Return.</dd></div>
+        <div><dt>From another tool</dt><dd>A link shows a scene from a launcher, a button deck or a script: <code>open -g fremspace://scene/Council</code></dd></div>
+        <div><dt>Leave it the same way</dt><dd>Show a scene again while it is shown and you leave it. Each display it switched goes back to the desktop it showed before, the Focus it gave is given back and the drawers it moved go back as they were.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="notch-sec" id="notch-demo" data-desktop="Notch">
+    <div class="wrap notch-copy">
+      <h2>The notch says <em>where you are.</em></h2>
+      <div class="cols">
+        <p>macOS never tells you the name of a desktop. When a display changes desktop, Fremspace hangs its name from the notch for a moment, or under the menu bar on a display without one.</p>
+        <p>Rest the pointer on the notch and the map of every desktop opens. A click takes you there. The notch at the top of this page works the same way.</p>
+      </div>
+    </div>
+    <div class="lid-crop">
+      <div class="lid" id="lid" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="band-paper" id="keys" data-desktop="Keyboard">
+    <div class="wrap keys-grid">
+      <div class="keys-copy">
+        <h2>Hands stay <em>on the keyboard.</em></h2>
+        <p class="lede">Every command has a shortcut and every shortcut can be changed. They all begin with <kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd> by default.</p>
+        <p>Three keys are a handful. Fremspace can make Caps Lock stand for them, with nothing else to install.</p>
+        <button class="switch" id="hyper" type="button" role="switch" aria-checked="false"><i aria-hidden="true"></i>Caps Lock is ⌃⌥⌘</button>
+        <p class="fine">Off unless you switch it on. While it is on, Caps Lock no longer locks capitals, and the mapping is removed when Fremspace quits.</p>
+      </div>
+      <div class="keys-side">
+        <div class="kb" id="kb" aria-hidden="true"></div>
+        <p class="fine kb-hint">Choose a command to see its keys. The keyboard also lights up under your own.</p>
+        <ul class="cuts" id="cuts">
+          <li><button type="button" data-keys="k">Open the palette</button></li>
+          <li><button type="button" data-keys="space">Focus a slot, and back</button></li>
+          <li><button type="button" data-keys="left right up down">Go to the slot beside</button></li>
+          <li><button type="button" data-keys="left right up down" data-shift>Swap two slots</button></li>
+          <li><button type="button" data-keys="tab">Next window of a stack</button></li>
+          <li><button type="button" data-keys="l">Open the left drawer</button></li>
+          <li><button type="button" data-keys="d">Open the right drawer</button></li>
+          <li><button type="button" data-keys="1 2 3 4">Show a scene</button></li>
+          <li><button type="button" data-keys="r">Put every window back</button></li>
+          <li><button type="button" data-keys="p">Pause</button></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="editor-sec" id="editor" data-desktop="Editor">
+    <div class="wrap editor-grid">
+      <div class="editor-copy">
+        <h2>Set up in an editor, <em>kept in one file.</em></h2>
+        <p class="lede">Open the editor from the menu bar. Make a configuration from the connected displays, split a desktop into slots, choose the apps, Save. Nothing changes until you save.</p>
+        <dl class="rest">
+          <div><dt>Capture this desktop</dt><dd>starts a layout from the windows as they are now.</dd></div>
+          <div><dt>Scenes</dt><dd>switch several displays to their desktops at once.</dd></div>
+          <div><dt>Status</dt><dd>a page that lists what needs attention, and says so when a macOS update broke something.</dd></div>
+          <div><dt>Links</dt><dd>for launchers, button decks and scripts: <code>open -g fremspace://desktop/Web</code></dd></div>
+          <div><dt>Calls</dt><dd>the meeting window of Microsoft Teams or Zoom goes to full screen when the call starts.</dd></div>
+        </dl>
+      </div>
+      <figure class="editor-shot">
+        <img src="assets/editor.png" alt="The Fremspace editor: a desktop split into three slots, with the apps of each slot and the options of the selected one." width="1600" height="1030" loading="lazy">
+      </figure>
+    </div>
+  </section>
+
+  <section class="honest" id="honest" data-desktop="Before you install">
+    <div class="wrap">
+      <div class="honest-head">
+        <h2>Before you <em>install.</em></h2>
+        <p class="lede">A window manager sees and moves every window on your Mac. Here is what Fremspace needs and what it does with it.</p>
+      </div>
+      <div class="facts">
+        <article><h3>It needs Accessibility</h3><p>That is the permission macOS gives to apps that read and move other apps' windows. Fremspace asks for it at first launch and does nothing without it. One option, window previews, needs Screen Recording as well: it is off unless you switch it on, and macOS asks only then.</p></article>
+        <article><h3>It keeps to itself</h3><p>There is no account and no telemetry. The one request it makes is for its own updates, about once a day, and you can switch that off. Your layouts are one JSON file in your Library folder.</p></article>
+        <article><h3>It uses private parts of macOS</h3><p>macOS has no public way to send a window to another desktop. Fremspace uses the window server's own calls for that, so a macOS update can break it until Fremspace is updated. Its Status page tells you when that happens.</p></article>
+        <article><h3>It is not on the App Store</h3><p>For the same reason. The download is signed and notarized by Apple, and the source is there to read.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="get" id="get" data-desktop="Download">
+    <div class="wrap get-slots">
+      <div class="get-main">
+        <img src="assets/icon.png" alt="" width="72" height="72">
+        <h2>Get <em>Fremspace.</em></h2>
+        <p>Free and open source under the MIT license. Version 0.1.0, macOS 13 or later, Apple silicon and Intel. Sending windows between desktops needs macOS 26.4 or later.</p>
+        <div class="actions">
+          <a class="btn" href="https://github.com/fdussert/fremspace/releases/latest/download/Fremspace.dmg">Download Fremspace 0.1.0</a>
+          <a class="btn ghost" href="https://github.com/fdussert/fremspace/blob/main/CHANGELOG.md">What is in this version</a>
+        </div>
+      </div>
+      <div class="get-install">
+        <h3>Install it</h3>
+        <ol>
+          <li>Open the disk image.</li>
+          <li>Drag Fremspace to Applications.</li>
+          <li>Launch it and allow Accessibility.</li>
+        </ol>
+        <p>It lives in the menu bar.</p>
+      </div>
+      <div class="get-build">
+        <h3>Or build it yourself</h3>
+        <p>It takes the Command Line Tools and nothing else.</p>
+        <pre><code>git clone https://github.com/fdussert/fremspace.git
+cd fremspace
+scripts/build.sh &amp;&amp; open dist/Fremspace.app</code></pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>Fremspace 0.1.0, under the MIT license.</span>
+    <a href="https://github.com/fdussert/fremspace">GitHub</a>
+    <a href="https://github.com/fdussert/fremspace/blob/main/CHANGELOG.md">Changelog</a>
+    <a href="https://github.com/fdussert/fremspace/issues">Report a problem</a>
+    <p>The name is a nod to Dune and its Fremen, like its sibling <a href="https://fremkit.app/">Fremkit</a>.</p>
+  </div>
+</footer>
+<!-- page:end -->
+<script src="main.js"></script>
+</body>
+</html>

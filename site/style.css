@@ -1,0 +1,1063 @@
+/* Fremspace. The page is drawn with the app's own things: a Mac, its desktops, slots, windows, the
+   notch, keys. Colours come from the icon: its navy ground, its blue slot, its white slot, its grey
+   slot. Type: Bricolage Grotesque for everything read, Instrument Serif in italic for the turn of a
+   headline, JetBrains Mono for the small print. Inside the drawn Mac, the system's own fonts. */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  color-scheme: dark;
+  --night: #070b1d;    /* the page */
+  --rim: #232b52;      /* rules on the page */
+  --paper: #eef1f7;    /* the icon's white slot: text, and one light band */
+  --mist: #a9b2cf;     /* quieter text */
+  --blue: #4f9bff;     /* the icon's blue slot */
+  --blue-hi: #8fbeff;  /* the same blue, for words on the night */
+  --cobalt: #2150ea;   /* the same blue, deep enough to carry white text */
+  --steel: #8a91a5;    /* the icon's grey slot */
+  --ink: #0a1030;      /* text on the light slots */
+  --black: #07080c;    /* bezels and the notch */
+
+  --display: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --serif: "Instrument Serif", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", sans-serif;
+  --ui-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --bar: 38px;         /* the page's menu bar */
+  --nw: 196px;         /* the page's notch */
+  --pad: clamp(76px, 10vw, 150px);
+  --spring: cubic-bezier(.3, 1.4, .45, 1);
+  --out: cubic-bezier(.2, .8, .2, 1);
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: calc(var(--bar) + 16px); -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0;
+  background: var(--night);
+  color: var(--paper);
+  font: 400 1.0625rem/1.6 var(--display);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-underline-offset: 0.18em; }
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { font-weight: 600; letter-spacing: -0.03em; }
+h1 { font-size: clamp(2.75rem, 7.4vw, 6.5rem); line-height: 0.98; letter-spacing: -0.035em; white-space: nowrap; }
+h2 { font-size: clamp(2.1rem, 5vw, 3.9rem); line-height: 1.02; text-wrap: balance; }
+h3 { font-size: 1.35rem; line-height: 1.2; letter-spacing: -0.02em; }
+/* The turn of a headline is set in the serif, in italic. */
+h1 em, h2 em { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -0.02em; color: var(--blue-hi); }
+h1 em { font-size: 1.1em; }
+h2 em { white-space: nowrap; }
+h2 em { font-size: 1.08em; }
+:focus-visible { outline: 2.5px solid var(--blue); outline-offset: 3px; border-radius: 6px; }
+
+.wrap { width: min(100% - 32px, 1360px); margin-inline: auto; }
+.lede { max-width: 36em; color: var(--mist); font-size: clamp(1.0625rem, 1.5vw, 1.1875rem); line-height: 1.55; }
+.fine { color: var(--mist); font: 400 0.78rem/1.65 var(--mono); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.skip { position: fixed; left: 12px; top: -80px; z-index: 90; padding: 10px 14px; border-radius: 10px; background: var(--paper); color: var(--ink); font-weight: 600; }
+.skip:focus { top: calc(var(--bar) + 10px); }
+
+/* The headline's words arrive a little off their place and settle into it, as the windows do
+   under them a moment later. */
+h1 .w { display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+  h1 .w { animation: settle 0.8s var(--spring) both; animation-delay: calc(var(--i) * 70ms + 80ms); }
+  @keyframes settle { from { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
+}
+
+/* --- Keys --------------------------------------------------------------------------------------- */
+kbd {
+  display: inline-grid; place-items: center; min-width: 1.75em; height: 1.75em; padding: 0 0.42em;
+  border-radius: 0.42em; font: 600 0.9em/1 var(--ui); color: inherit;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 1.5px 0 rgba(0, 0, 0, 0.5);
+}
+.chord { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.chord kbd { font-size: 1rem; min-width: 2.05em; height: 2.05em; transition: transform 0.08s, background 0.14s, color 0.14s, box-shadow 0.14s; }
+.chord span { margin: 0 12px 0 8px; color: var(--mist); font: 400 0.8125rem var(--mono); }
+/* Two shortcuts in one line: each keeps its keys together when the line breaks. */
+.chord b { display: inline-flex; align-items: center; gap: inherit; font-weight: inherit; white-space: nowrap; }
+kbd.is-down { transform: translateY(2px); background: var(--blue); color: #04102e; box-shadow: none; }
+
+/* --- Buttons ------------------------------------------------------------------------------------ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 0 24px;
+  border: 0; border-radius: 999px; background: var(--paper); color: var(--ink);
+  font: 600 1rem var(--display); text-decoration: none; cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.btn:hover { background: #fff; }
+.btn:active { transform: translateY(1px); }
+.btn.ghost { background: transparent; color: inherit; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3); }
+.btn.ghost:hover { background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 1.5px currentColor; }
+.btn.small { min-height: 40px; padding: 0 18px; font-size: 0.9rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* --- The page's menu bar and notch -------------------------------------------------------------- */
+.bar {
+  position: fixed; inset: 0 0 auto 0; z-index: 40; height: var(--bar);
+  display: flex; align-items: center; justify-content: space-between;
+  /* No wider than the first column under it (the hero's), so the name and the buttons stay above
+     the content instead of at the far ends of a wide display. */
+  --bar-pad: calc((100% - max(1360px, min(1500px, 100% - 420px))) / 2);
+  padding: 0 max(16px, env(safe-area-inset-right, 0px), var(--bar-pad)) 0 max(16px, env(safe-area-inset-left, 0px), var(--bar-pad));
+  background: rgba(7, 11, 29, 0.74);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+  font-size: 0.875rem;
+}
+.brand { display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 600; font-size: 1rem; letter-spacing: -0.02em; }
+.bar-right { display: flex; align-items: center; gap: 8px; }
+.bar-gh {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px;
+  color: var(--paper); font-weight: 600; text-decoration: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+}
+.bar-gh:hover { background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+.btn svg { margin-right: 9px; }
+.bar-get { padding: 4px 13px; border-radius: 999px; background: var(--paper); color: var(--ink); font-weight: 600; text-decoration: none; }
+.bar-get:hover { background: #fff; }
+
+.notch { position: fixed; top: 0; left: 50%; z-index: 50; width: var(--nw); height: var(--bar); margin-left: calc(var(--nw) / -2); }
+.notch-pill {
+  position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; padding: 0;
+  border: 0; border-radius: 0 0 13px 13px; background: #000; cursor: pointer;
+}
+.notch-pill::before, .notch-pill::after { content: ""; position: absolute; top: 0; width: 8px; height: 8px; }
+.notch-pill::before { right: 100%; background: radial-gradient(circle at 0 100%, transparent 7.5px, #000 8px); }
+.notch-pill::after { left: 100%; background: radial-gradient(circle at 100% 100%, transparent 7.5px, #000 8px); }
+.notch-pill:focus-visible { outline-offset: -4px; border-radius: 0 0 13px 13px; }
+.notch-dots { display: flex; gap: 5px; }
+.notch-dots i { width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 255, 255, 0.3); transition: background 0.3s; }
+.notch-dots i.on { background: #fff; }
+/* The name of the part of the page you reach hangs under the notch, then goes back up. */
+.notch-drop {
+  position: absolute; inset: 0 0 auto 0; z-index: 2; height: calc(var(--bar) + 30px);
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 9px;
+  border-radius: 0 0 15px 15px; background: #000; color: #fff;
+  font: 600 0.8125rem var(--ui); white-space: nowrap; pointer-events: none;
+  transform: translateY(-31px); transition: transform 0.5s var(--spring);
+}
+.notch.is-speaking .notch-drop { transform: none; }
+/* The map opens out of the notch when the pointer rests on it. */
+.notch-map {
+  position: absolute; top: 0; left: 50%; z-index: 1; width: min(720px, 100vw - 16px);
+  transform: translateX(-50%);
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px;
+  padding: calc(var(--bar) + 12px) 14px 14px;
+  border-radius: 0 0 26px 26px; background: #000;
+  visibility: hidden;
+  clip-path: inset(0 calc(50% - var(--nw) / 2) calc(100% - var(--bar)) calc(50% - var(--nw) / 2) round 0 0 13px 13px);
+  transition: clip-path 0.36s var(--out), visibility 0s 0.36s;
+}
+.notch.is-open .notch-map, .notch:focus-within .notch-map {
+  visibility: visible; clip-path: inset(0 0 0 0 round 0 0 26px 26px);
+  transition: clip-path 0.5s var(--out), visibility 0s;
+}
+@media (hover: hover) {
+  .notch:hover .notch-map {
+    visibility: visible; clip-path: inset(0 0 0 0 round 0 0 26px 26px);
+    transition: clip-path 0.5s var(--out) 0.12s, visibility 0s 0.12s;
+  }
+}
+.notch.is-shut .notch-map {
+  visibility: hidden;
+  clip-path: inset(0 calc(50% - var(--nw) / 2) calc(100% - var(--bar)) calc(50% - var(--nw) / 2) round 0 0 13px 13px);
+  transition: clip-path 0.3s var(--out), visibility 0s 0.3s;
+}
+.notch-map a {
+  display: grid; gap: 7px; justify-items: center; align-content: start; padding: 12px 6px 10px;
+  border: 2px solid transparent; border-radius: 14px;
+  color: rgba(255, 255, 255, 0.66); font: 500 0.8125rem/1.2 var(--ui); text-align: center; text-decoration: none;
+}
+.notch-map svg { width: min(72px, 100%); fill: currentColor; opacity: 0.6; }
+.notch-map a:hover, .notch-map a:focus-visible { border-color: var(--blue); color: #fff; outline: 0; }
+.notch-map a[aria-current] { color: #fff; font-weight: 700; }
+.notch-map a[aria-current] svg { opacity: 1; }
+
+/* --- Scenes: drawn at a fixed size, scaled to fit ------------------------------------------------ */
+.fit { position: relative; width: 100%; }
+.fit-in { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+
+/* A display is placed by its screen; the bezel, the stand or the base are drawn around it. */
+.display { position: absolute; }
+.display::before {
+  content: ""; position: absolute; inset: -12px; border-radius: 16px; background: var(--black);
+  box-shadow: 0 0 0 1.5px #4a4f5c, 0 0 0 3px #0c0d12, 0 60px 90px -50px rgba(0, 0, 0, 0.95);
+}
+.display.laptop::before {
+  inset: -11px -11px -14px; border-radius: 18px 18px 5px 5px;
+  box-shadow: 0 0 0 2px #aeb4c1, 0 0 0 3px #5d6370;
+}
+.stand {
+  position: absolute; left: 50%; top: calc(100% + 12px); width: 104px; height: 96px; margin-left: -52px;
+  background: linear-gradient(90deg, #8d93a2, #cfd3dc 22%, #eceef3 48%, #c0c5d0 76%, #858b9b);
+}
+.stand::before { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(10, 14, 34, 0.55), transparent 30%); }
+.stand::after {
+  content: ""; position: absolute; left: -104px; right: -104px; bottom: -6px; height: 11px; border-radius: 7px 7px 3px 3px;
+  background: linear-gradient(#eef0f5, #b9bfcb 55%, #858c9c); box-shadow: 0 22px 30px -8px rgba(0, 0, 0, 0.75);
+}
+.base {
+  position: absolute; left: -66px; right: -66px; top: calc(100% + 14px); height: 17px;
+  border-radius: 3px 3px 17px 17px / 3px 3px 13px 13px;
+  background: linear-gradient(#f3f5f8 0, #d3d7df 16%, #b6bbc8 55%, #7c8393 100%);
+  box-shadow: inset 0 1px 0 #fff, 0 26px 34px -12px rgba(0, 0, 0, 0.85);
+}
+.base::before {
+  content: ""; position: absolute; left: 50%; top: 0; width: 104px; height: 7px; margin-left: -52px;
+  border-radius: 0 0 9px 9px; background: linear-gradient(#858b9a, #b4b9c5);
+}
+.screen, .lid-screen { --mb: 24px; --dk: 32px; --wf: 11px; }
+.screen, .lid-screen, .page {
+  /* The wallpaper: the blue hour, the icon's blue rising from under the horizon. */
+  background:
+    radial-gradient(135% 86% at 50% 122%, #b9d6ff 0%, #6ea4f7 20%, #3a6bdb 40%, rgba(40, 72, 176, 0) 72%),
+    linear-gradient(180deg, #152461 0%, #2240a2 50%, #3463d6 100%);
+}
+/* Other desktops, other hours: Arrakis at dusk, then green and violet. Deep, so windows stay in front. */
+.page.tint-1 {
+  background:
+    radial-gradient(135% 86% at 50% 122%, #ffe2b4 0%, #eea763 20%, #c26a42 40%, rgba(150, 72, 62, 0) 72%),
+    linear-gradient(180deg, #2a1b45 0%, #5a2c54 50%, #9a4b46 100%);
+}
+.page.tint-2 {
+  background:
+    radial-gradient(135% 86% at 50% 122%, #c6f3e6 0%, #5cc0b0 20%, #258581 40%, rgba(24, 104, 104, 0) 72%),
+    linear-gradient(180deg, #0b2a3e 0%, #114a5c 50%, #1c6d74 100%);
+}
+.page.tint-3 {
+  background:
+    radial-gradient(135% 86% at 50% 122%, #e4d4ff 0%, #a388f3 20%, #6652d0 40%, rgba(84, 64, 184, 0) 72%),
+    linear-gradient(180deg, #1a1447 0%, #2d2579 50%, #473db2 100%);
+}
+.screen { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; }
+/* While windows are away from their slots they may cross from one display to another. */
+.is-loose .screen { overflow: visible; }
+
+.mbar {
+  position: absolute; inset: 0 0 auto 0; z-index: 1; height: var(--mb);
+  display: flex; align-items: center; gap: 1.3em; padding: 0 1em;
+  background: rgba(8, 13, 40, 0.32); color: #fff;
+  font: 500 calc(var(--mb) * 0.46)/1 var(--ui); white-space: nowrap;
+}
+.mbar b { font-weight: 700; }
+.mbar em { display: flex; align-items: center; gap: 1.1em; margin-left: auto; font-style: normal; }
+.mbar i { flex: none; display: block; }
+/* Fremspace lives in the menu bar: its three slots. */
+.mb-fold {
+  width: 1.15em; height: 0.95em; border-radius: 0.16em;
+  background: linear-gradient(#fff, #fff) 0 0 / 52% 100% no-repeat, linear-gradient(#fff, #fff) 100% 0 / 38% 42% no-repeat, linear-gradient(#fff, #fff) 100% 100% / 38% 42% no-repeat;
+}
+.mb-batt { position: relative; width: 1.9em; height: 0.92em; border: 1px solid rgba(255, 255, 255, 0.75); border-radius: 0.3em; }
+.mb-batt::before { content: ""; position: absolute; inset: 1.5px 22% 1.5px 1.5px; border-radius: 0.14em; background: #fff; }
+.mb-batt::after { content: ""; position: absolute; left: calc(100% + 1.5px); top: 28%; width: 1.5px; height: 44%; border-radius: 1px; background: rgba(255, 255, 255, 0.75); }
+.mb-find { position: relative; width: 0.78em; height: 0.78em; border: 1.5px solid #fff; border-radius: 50%; }
+.mb-find::after { content: ""; position: absolute; left: 88%; top: 88%; width: 0.42em; height: 1.5px; background: #fff; transform: rotate(45deg); transform-origin: 0 50%; }
+.lnotch {
+  position: absolute; top: 0; left: 50%; z-index: 60; width: 86px; height: 20px; margin-left: -43px; border-radius: 0 0 8px 8px;
+  background: radial-gradient(circle at 50% 46%, #23304f 0 2px, #0d1220 2.2px 3.4px, transparent 3.6px), var(--black);
+}
+
+.dock {
+  position: absolute; left: 50%; bottom: calc(var(--dk) * 0.22); z-index: 1; transform: translateX(-50%);
+  display: flex; gap: calc(var(--dk) * 0.16); padding: calc(var(--dk) * 0.16);
+  border-radius: calc(var(--dk) * 0.44); background: rgba(235, 242, 255, 0.24);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.5), 0 8px 22px rgba(4, 10, 40, 0.28);
+}
+.dock .ico { position: relative; width: var(--dk); height: var(--dk); }
+.dock .ico.run::after { content: ""; position: absolute; left: 50%; top: calc(100% + 1.5px); width: 3px; height: 3px; margin-left: -1.5px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); }
+
+.ico {
+  flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 24%;
+  background: linear-gradient(180deg, var(--i1, #9aa0b0), var(--i2, #6f7587));
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+.ico svg { width: 68%; height: 68%; fill: none; stroke: var(--ig, #fff); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.ico .f { fill: var(--ig, #fff); stroke: none; }
+.ico-finder { --i1: #6fc3ff; --i2: #2a86ee; }
+.ico-code { --i1: #5aa8ff; --i2: #2463dc; }
+.ico-safari { --i1: #fdfdff; --i2: #dfe4ee; --ig: #1c7cf0; }
+.ico-terminal { --i1: #3a3c44; --i2: #17181c; }
+.ico-mail { --i1: #5bb8ff; --i2: #1f7af0; }
+.ico-messages { --i1: #6fe07a; --i2: #24b33f; }
+.ico-calendar { --i1: #fdfdff; --i2: #e4e7ee; --ig: #f0453a; }
+.ico-notes { --i1: #ffe27a; --i2: #f4b81f; --ig: #7a5600; }
+.ico-music { --i1: #ff7189; --i2: #f02d55; }
+.ico-desktop, .ico-scene, .ico-command { --i1: #62677a; --i2: #454959; }
+
+.slot {
+  position: absolute; display: grid; place-items: center; border-radius: 11px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.5); background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.78); font: 600 calc(var(--wf) * 1.1) var(--ui);
+}
+
+/* --- Windows ------------------------------------------------------------------------------------
+   Sized in em, so the same window is drawn larger where the Mac is seen from closer. */
+.win {
+  position: absolute; left: 0; top: 0; z-index: 2; display: flex; flex-direction: column;
+  overflow: hidden; border-radius: 0.95em; background: #fff; color: #1d1d1f;
+  font: 400 var(--wf)/1.35 var(--ui);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.32), 0 2px 5px rgba(3, 8, 30, 0.2), 0 14px 34px -4px rgba(3, 8, 30, 0.42);
+  -webkit-user-select: none; user-select: none;
+}
+.win.is-key { box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.36), 0 3px 8px rgba(3, 8, 30, 0.24), 0 24px 54px -6px rgba(3, 8, 30, 0.62); }
+.hero .win { cursor: grab; touch-action: pan-y; will-change: transform; }
+.hero .win.is-held { cursor: grabbing; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.4), 0 6px 14px rgba(3, 8, 30, 0.3), 0 40px 70px -8px rgba(3, 8, 30, 0.75); }
+.win-bar {
+  position: relative; flex: 0 0 2.55em; display: flex; align-items: center; padding: 0 0.95em;
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.16); background: #ebebed; color: #a2a2a7; font-size: 0.96em; font-weight: 600;
+}
+.win.is-key .win-bar { background: #e9e9eb; color: #3c3c40; }
+.lights { flex: none; display: flex; gap: 0.62em; }
+.lights i { width: 1em; height: 1em; border-radius: 50%; background: #d3d3d7; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.14); }
+.win.is-key .lights i:nth-child(1) { background: #ff5f57; }
+.win.is-key .lights i:nth-child(2) { background: #febc2e; }
+.win.is-key .lights i:nth-child(3) { background: #28c840; }
+.win-title { position: absolute; left: 6.2em; right: 6.2em; overflow: hidden; text-align: center; white-space: nowrap; text-overflow: ellipsis; }
+.win-body { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; container-type: inline-size; }
+.win-body p, .win-body h4, .win-body figure { margin: 0; }
+.win-body i, .win-body em, .win-body u { font-style: normal; text-decoration: none; }
+.app-code .win-bar, .app-terminal .win-bar, .app-music .win-bar { border-bottom-color: #000; background: #2a2b30; color: #77787f; }
+.app-code.is-key .win-bar, .app-terminal.is-key .win-bar, .app-music.is-key .win-bar { background: #303136; color: #d2d3d9; }
+.app-code .lights i, .app-terminal .lights i, .app-music .lights i { background: #4b4c53; }
+
+/* Safari: the address in the toolbar, then a page of a magazine. */
+.app-safari .win-bar { flex-basis: 3em; }
+.url {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.45em; max-width: 26em; height: 1.85em; margin: 0 auto; padding: 0 0.8em;
+  overflow: hidden; border-radius: 0.55em; background: #dcdce0; color: #55555a; font-size: 0.93em; font-weight: 400; white-space: nowrap;
+}
+.url i { position: relative; flex: none; width: 0.6em; height: 0.5em; margin-top: 0.2em; border-radius: 0.12em; background: #8a8a90; }
+.url i::before { content: ""; position: absolute; left: 16%; right: 16%; bottom: 92%; height: 0.36em; border: 0.1em solid #8a8a90; border-bottom: 0; border-radius: 0.3em 0.3em 0 0; }
+.app-safari .lights { margin-right: 0.9em; }
+.sk-web { display: flex; flex-direction: column; height: 100%; background: #fff; --tone: #b0522a; }
+.sk-web header { flex: none; display: flex; align-items: baseline; gap: 1.4em; padding: 0.75em 1.6em 0.65em; overflow: hidden; border-bottom: 0.5px solid #e4e4e8; color: #6e6e73; font-size: 0.88em; white-space: nowrap; }
+.sk-web header b { margin-right: 0.3em; color: #1d1d1f; font: italic 700 1.5em Georgia, "Times New Roman", serif; }
+.sk-web .col { flex: 1; display: grid; grid-template-columns: minmax(0, 44em); justify-content: center; gap: 0.7em; align-content: start; min-height: 0; padding: 1.2em 1.6em 0; }
+.sk-web figure {
+  height: 8em; border-radius: 0.6em;
+  background:
+    radial-gradient(circle at 68% 30%, #fff3d6 0 3.4%, transparent 3.9%),
+    radial-gradient(circle at 79% 48%, #ffe2b8 0 1.9%, transparent 2.4%),
+    radial-gradient(95% 130% at 8% 142%, #7a3b1d 0 55%, transparent 55.6%),
+    radial-gradient(95% 120% at 92% 152%, #b5652f 0 55%, transparent 55.6%),
+    linear-gradient(#f3b561, #ea8a4a 55%, #d2603c);
+}
+.sk-web small { color: var(--tone); font-size: 0.78em; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.sk-web h4 { color: #1d1d1f; font: 700 1.65em/1.12 Georgia, "Times New Roman", serif; letter-spacing: -0.01em; }
+.sk-web p { color: #48484d; font-size: 0.96em; line-height: 1.5; }
+.sk-web.tone-1 { --tone: #8a5a2a; }
+.sk-web.tone-1 figure {
+  background:
+    radial-gradient(60% 100% at 26% 128%, #5b3a2e 0 60%, transparent 60.6%),
+    radial-gradient(74% 120% at 80% 134%, #7a4d3a 0 60%, transparent 60.6%),
+    linear-gradient(#f6dcae, #efba84 60%, #d98d5d);
+}
+.sk-web.tone-2 { --tone: #17707c; }
+.sk-web.tone-2 figure {
+  background:
+    radial-gradient(70% 90% at 24% 150%, #0f4a5c 0 60%, transparent 60.6%),
+    radial-gradient(80% 80% at 78% 150%, #17667a 0 60%, transparent 60.6%),
+    linear-gradient(#a9cdd5, #74a8b7 55%, #44849a);
+}
+
+/* Terminal: a build and its tests. */
+.sk-term { height: 100%; padding: 0.8em 1.05em; background: #1b1c20; color: #dcdde3; font: 500 0.94em/1.62 var(--ui-mono); white-space: nowrap; }
+.sk-term b { color: #6cc7f5; font-weight: 600; }
+.sk-term .dim { color: #8c8e98; }
+.sk-term .ok { color: #72d48d; }
+.sk-term u { display: inline-block; width: 0.6em; height: 1.15em; vertical-align: -0.22em; background: #dcdde3; animation: blink 1.1s steps(2, jump-none) infinite; }
+@keyframes blink { to { opacity: 0; } }
+
+/* Code: files on the left, tabs, a Swift file. */
+.sk-code { display: flex; height: 100%; background: #1f2126; color: #d9dbe2; }
+.sk-code aside { flex: 0 0 10.6em; display: grid; gap: 0.12em; align-content: start; padding: 0.8em 0.6em; border-right: 0.5px solid #000; background: #25272d; color: #b9bbc5; font-size: 0.93em; }
+.sk-code aside b { padding: 0.15em 0.5em 0.45em; color: #fff; font-weight: 600; }
+.sk-code aside span { padding: 0.24em 0.5em 0.24em 1.5em; overflow: hidden; border-radius: 0.4em; white-space: nowrap; text-overflow: ellipsis; }
+.sk-code aside .d { margin-top: 0.35em; padding-left: 0.5em; color: #878993; font-size: 0.88em; font-weight: 600; }
+.sk-code aside .on { background: #3567d6; color: #fff; }
+.sk-code .ed { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.sk-code nav { flex: none; display: flex; border-bottom: 0.5px solid #000; background: #25272d; color: #878993; font-size: 0.9em; }
+.sk-code nav span { padding: 0.5em 1.3em; border-right: 0.5px solid #000; }
+.sk-code nav .on { background: #1f2126; color: #e8e9ee; }
+.sk-code pre { margin: 0; padding: 0.7em 0; overflow: hidden; font: 500 0.94em/1.62 var(--ui-mono); white-space: pre; }
+.sk-code pre p { min-height: 1.62em; }
+.sk-code pre i { display: inline-block; width: 2.7em; padding-right: 1.1em; color: #5c5e68; text-align: right; }
+.sk-code pre b { font-weight: inherit; }
+.sk-code .k { color: #ff7ab2; }
+.sk-code .t { color: #a8ecdc; }
+.sk-code .f { color: #7cc4ff; }
+.sk-code .s { color: #ff8f7a; }
+.sk-code .c { color: #7f8c98; }
+@container (max-width: 30em) { .sk-code aside { display: none; } }
+
+/* Notes: the list of notes, and a shopping list. */
+.sk-notes { display: flex; height: 100%; background: #fff; }
+.sk-notes aside { flex: 0 0 11.5em; display: grid; gap: 0.15em; align-content: start; padding: 0.6em; border-right: 0.5px solid #e2e2e6; background: #f3f3f5; }
+.sk-notes aside p { display: grid; gap: 0.1em; padding: 0.5em 0.7em; border-radius: 0.55em; }
+.sk-notes aside b { font-weight: 700; }
+.sk-notes aside span { overflow: hidden; color: #77777c; font-size: 0.86em; white-space: nowrap; text-overflow: ellipsis; }
+.sk-notes aside .on { background: #fbdb6f; }
+.sk-notes aside .on span { color: #6b5a1e; }
+.sk-notes article { flex: 1; min-width: 0; padding: 0.8em 1.5em; }
+.sk-notes small { display: block; margin-bottom: 0.9em; overflow: hidden; color: #a3a3a8; font-size: 0.84em; text-align: center; white-space: nowrap; }
+.sk-notes h4 { margin-bottom: 0.55em; font-size: 1.5em; font-weight: 700; letter-spacing: -0.015em; }
+.sk-notes ul { display: grid; gap: 0.5em; margin: 0; padding: 0; list-style: none; }
+.sk-notes li { display: flex; align-items: center; gap: 0.65em; white-space: nowrap; }
+.sk-notes li::before { content: ""; flex: none; width: 1.1em; height: 1.1em; border: 1.5px solid #c6c6ca; border-radius: 50%; }
+.sk-notes li.done { color: #a3a3a8; text-decoration: line-through; }
+.sk-notes li.done::before { border-color: #e9b61c; background: radial-gradient(circle, #fff 0 24%, #e9b61c 27%); }
+@container (max-width: 25em) { .sk-notes aside { display: none; } }
+
+/* Mail: the inbox and one message. */
+.sk-mail { display: flex; height: 100%; background: #fff; }
+.sk-mail aside { flex: 0 0 15em; display: grid; align-content: start; border-right: 0.5px solid #e2e2e6; background: #fbfbfc; }
+.sk-mail aside p { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.1em 0.6em; padding: 0.6em 0.9em; border-bottom: 0.5px solid #e8e8ec; }
+.sk-mail aside b { font-weight: 700; }
+.sk-mail aside i { color: #8a8a90; font-size: 0.86em; }
+.sk-mail aside span, .sk-mail aside em { grid-column: 1 / -1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sk-mail aside span { font-size: 0.95em; }
+.sk-mail aside em { color: #8a8a90; font-size: 0.88em; }
+.sk-mail aside .on { background: #2b7bf2; color: #fff; }
+.sk-mail aside .on i, .sk-mail aside .on em { color: rgba(255, 255, 255, 0.8); }
+.sk-mail article { flex: 1; display: grid; gap: 0.75em; align-content: start; min-width: 0; padding: 1.1em 1.5em; }
+.sk-mail h4 { font-size: 1.3em; font-weight: 700; letter-spacing: -0.01em; }
+.sk-mail small { margin-top: -0.4em; padding-bottom: 0.8em; border-bottom: 0.5px solid #e6e6ea; color: #8a8a90; font-size: 0.88em; }
+.sk-mail article p { color: #3a3a3f; line-height: 1.5; }
+.sk-mail article div { display: flex; align-items: baseline; gap: 0.9em; padding: 0.8em 1em; border-radius: 0.7em; background: #f1f4fa; }
+.sk-mail article div b { font-size: 1.5em; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sk-mail article div span { color: #55555a; }
+@container (max-width: 30em) { .sk-mail aside { display: none; } }
+
+/* Messages: one conversation. */
+.sk-msg { display: flex; flex-direction: column; height: 100%; background: #fff; }
+.sk-msg header { flex: none; display: grid; justify-items: center; gap: 0.25em; padding: 0.6em 0 0.5em; border-bottom: 0.5px solid #e6e6ea; background: #f8f8fa; font-size: 0.86em; }
+.sk-msg header i { display: grid; place-items: center; width: 2.5em; height: 2.5em; border-radius: 50%; background: linear-gradient(#b5bac6, #878d9d); color: #fff; font-weight: 700; }
+.sk-msg > div { flex: 1; display: flex; flex-direction: column; gap: 0.38em; min-height: 0; padding: 0.9em 1em; overflow: hidden; }
+.sk-msg p { align-self: flex-start; max-width: 80%; padding: 0.45em 0.9em; border-radius: 1.2em; background: #e9e9eb; line-height: 1.3; }
+.sk-msg p.me { align-self: flex-end; background: #2b8cff; color: #fff; }
+
+/* Calendar: a week. */
+.sk-cal { display: flex; flex-direction: column; height: 100%; background: #fff; }
+.sk-cal header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 1em; padding: 0.7em 1em; white-space: nowrap; }
+.sk-cal header b { font-size: 1.3em; font-weight: 700; letter-spacing: -0.01em; }
+.sk-cal header span { display: flex; padding: 0.15em; border-radius: 0.55em; background: #ececef; font-size: 0.86em; }
+.sk-cal header i { padding: 0.2em 0.85em; border-radius: 0.42em; color: #55555a; }
+.sk-cal header i.on { background: #fff; box-shadow: 0 0.5px 2px rgba(0, 0, 0, 0.22); color: #1d1d1f; font-weight: 600; }
+.sk-cal .days { flex: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); min-height: 0; border-top: 0.5px solid #dedee2; }
+.sk-cal .days > div { position: relative; border-left: 0.5px solid #ececf0; background: repeating-linear-gradient(#fff 0 2.38em, #ededf1 2.38em 2.44em) 0 2.1em no-repeat; }
+.sk-cal .days > div:first-child { border-left: 0; }
+.sk-cal .days b { display: flex; align-items: center; gap: 0.35em; height: 2.1em; padding: 0 0.55em; font-weight: 500; white-space: nowrap; }
+.sk-cal .days b span { color: #77777c; font-size: 0.86em; }
+.sk-cal .days b u { font-size: 0.92em; font-weight: 600; }
+.sk-cal .today b u { display: grid; place-items: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: #ff3b30; color: #fff; }
+.sk-cal .days em { position: absolute; left: 0.2em; right: 0.2em; padding: 0.2em 0.5em; overflow: hidden; border-radius: 0.4em; }
+.sk-cal .days em span { display: block; overflow: hidden; font-size: 0.84em; font-weight: 600; line-height: 1.25; white-space: nowrap; text-overflow: ellipsis; }
+.sk-cal .e1 { background: #dce9ff; box-shadow: inset 2.5px 0 0 #3b82f6; color: #1d57b8; }
+.sk-cal .e2 { background: #ffe2df; box-shadow: inset 2.5px 0 0 #ff3b30; color: #b3261e; }
+.sk-cal .e3 { background: #dcf5e3; box-shadow: inset 2.5px 0 0 #34c759; color: #1b7a3c; }
+.sk-cal .e4 { background: #efe3ff; box-shadow: inset 2.5px 0 0 #af52de; color: #7334c0; }
+.sk-cal .e5 { background: #ffecd6; box-shadow: inset 2.5px 0 0 #ff9500; color: #a35a00; }
+@container (max-width: 27em) {
+  .sk-cal header span { display: none; }
+  .sk-cal .days { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sk-cal .days > div:nth-child(-n+2) { display: none; }
+}
+
+/* Music: what is playing, and what comes next. */
+.sk-music { display: flex; flex-direction: column; height: 100%; background: linear-gradient(160deg, #3b2242, #1a1527 72%); color: #fff; }
+.sk-music .now { flex: none; display: flex; align-items: center; gap: 1.1em; padding: 1.1em; }
+.sk-music .now em {
+  flex: none; width: 6em; height: 6em; border-radius: 0.6em; box-shadow: 0 0.6em 1.4em rgba(0, 0, 0, 0.45);
+  background:
+    radial-gradient(circle at 50% 118%, transparent 0 34%, rgba(255, 255, 255, 0.5) 34.5% 36%, transparent 36.5% 48%, rgba(255, 255, 255, 0.35) 48.5% 50%, transparent 50.5% 62%, rgba(255, 255, 255, 0.2) 62.5% 64%, transparent 64.5%),
+    linear-gradient(150deg, #ff8a5c, #e23d74 55%, #5b3fc4);
+}
+.sk-music .now > div { flex: 1; display: grid; gap: 0.3em; min-width: 0; max-width: 26em; }
+.sk-music .now b { font-size: 1.2em; font-weight: 700; letter-spacing: -0.01em; }
+.sk-music .now span { color: rgba(255, 255, 255, 0.6); }
+.sk-music .seek { height: 0.3em; margin-top: 0.45em; border-radius: 0.2em; background: rgba(255, 255, 255, 0.2); }
+.sk-music .seek i { display: block; width: 42%; height: 100%; border-radius: inherit; background: #ff6b9a; }
+.sk-music .ctl { display: flex; align-items: center; gap: 1.3em; margin-top: 0.5em; }
+.sk-music .ctl i { width: 1.05em; height: 1.05em; background: #fff; }
+.sk-music .prev { clip-path: polygon(100% 0, 100% 100%, 50% 50%, 50% 100%, 0 50%, 50% 0, 50% 50%); }
+.sk-music .pause { clip-path: polygon(8% 0, 38% 0, 38% 100%, 8% 100%, 8% 0, 62% 0, 62% 100%, 92% 100%, 92% 0, 62% 0); }
+.sk-music .next { clip-path: polygon(0 0, 0 100%, 50% 50%, 50% 100%, 100% 50%, 50% 0, 50% 50%); }
+.sk-music ol { flex: 1; min-height: 0; margin: 0; padding: 0 0.7em; overflow: hidden; border-top: 0.5px solid rgba(255, 255, 255, 0.12); list-style: none; }
+.sk-music li { display: flex; justify-content: space-between; gap: 1em; padding: 0.55em 0.5em; border-bottom: 0.5px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.78); white-space: nowrap; }
+.sk-music li b { font-weight: 500; }
+.sk-music li span { color: rgba(255, 255, 255, 0.45); font-variant-numeric: tabular-nums; }
+.sk-music li.on { color: #ff86ad; }
+
+/* --- Hero --------------------------------------------------------------------------------------- */
+.hero {
+  position: relative; overflow: clip;
+  padding: calc(var(--bar) + clamp(26px, 5vh, 52px)) 0 clamp(40px, 6vw, 84px);
+  background: radial-gradient(70% 44% at 56% 70%, rgba(40, 80, 234, 0.3), transparent 72%), var(--night);
+}
+/* As wide as the other sections, and as wide as the desk on the screens where the desk is wider. */
+.hero-top {
+  width: min(100% - 32px, max(1360px, min(1500px, 100% - 420px)));
+  display: grid; grid-template-columns: auto minmax(0, 30rem); justify-content: space-between; align-items: end; gap: 28px 56px;
+}
+.hero-side { display: grid; gap: 16px; padding-bottom: 8px; }
+.desk { position: relative; width: min(100% - 32px, 1500px, max(960px, (100svh - 350px) * 2.406)); margin: clamp(22px, 3.6vh, 40px) auto 0; }
+.desk-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 8px; margin-top: 18px; }
+.desk-hint { margin-right: auto; color: var(--mist); font: 400 0.78rem/1.5 var(--mono); }
+/* On a wide screen the keys sit in the quiet corner above the MacBook. */
+@media (min-width: 901px) {
+  .desk-foot { position: absolute; left: 4.7%; bottom: 65%; width: 34%; margin: 0; display: grid; gap: 10px; justify-items: start; }
+  .desk-hint { margin: 0; }
+}
+/* On a very wide window the opening grows with it: the dive that follows fills the window, and a
+   desk half its width would look lost above it. */
+@media (min-width: 2000px) {
+  .bar { --bar-pad: calc((100% - max(1500px, 64vw)) / 2); }
+  .hero-top { width: min(100% - 32px, max(1500px, 64vw)); grid-template-columns: auto minmax(0, 40rem); }
+  h1 { font-size: max(6.5rem, min(4.7vw, 11rem)); }
+  .hero .lede { font-size: clamp(1.1875rem, 0.8vw, 1.75rem); }
+  .desk { width: min(100% - 32px, max(1500px, 64vw), max(960px, (100svh - 440px) * 2.406)); }
+}
+
+/* --- Desktops, their names and the drawers, as the scenes draw them ------------------------------ */
+/* The desktops of a display, in a row: changing desktop slides the row, as macOS does. */
+.strip { position: absolute; inset: 0; z-index: 0; display: flex; transition: transform 0.85s cubic-bezier(.3, .86, .22, 1); }
+.page { position: relative; flex: 0 0 100%; height: 100%; overflow: hidden; }
+.page .win.fixed { transition: opacity 0.4s, transform 0.5s var(--out); }
+.win.is-top { z-index: 400 !important; }
+/* Focus: the other windows of the desktop are gone while one has it all. */
+.page.is-focus .win.fixed { opacity: 0; transform: scale(0.94); }
+
+/* A desktop's name, as Fremspace says it: a pill under the menu bar, or out of the notch. */
+.pill {
+  position: absolute; top: calc(var(--mb) + 14px); left: 50%; z-index: 700; display: flex; align-items: center; gap: 11px;
+  padding: 10px 20px; border-radius: 999px; background: rgba(28, 30, 38, 0.86); color: #fff; font: 600 16px var(--ui); white-space: nowrap;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.28), 0 12px 32px rgba(0, 0, 0, 0.4);
+  opacity: 0; transform: translate(-50%, -16px) scale(0.9); transition: opacity 0.25s, transform 0.5s var(--spring); pointer-events: none;
+}
+.pill.is-on { opacity: 1; transform: translate(-50%, 0); }
+.ndrop {
+  position: absolute; top: 0; left: 50%; z-index: 55; min-width: 86px; padding: 25px 14px 7px;
+  display: grid; justify-items: center; gap: 4px; border-radius: 0 0 11px 11px; background: var(--black); color: #fff; font: 600 10.5px var(--ui); white-space: nowrap;
+  transform: translate(-50%, -100%); transition: transform 0.5s var(--spring);
+}
+.ndrop.is-on { transform: translate(-50%, 0); }
+.pill em, .ndrop em, .lid-drop em { display: flex; align-items: center; gap: 4px; }
+.pill u, .lid-drop u { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.36); }
+.ndrop em { gap: 3px; }
+.ndrop u { width: 3.5px; height: 3.5px; border-radius: 50%; background: rgba(255, 255, 255, 0.36); }
+.pill u.on, .ndrop u.on, .lid-drop u.on { background: #fff; }
+.tag { position: absolute; left: 0; right: 0; top: calc(100% + 136px); color: var(--mist); font: 400 24px var(--mono); text-align: center; transition: opacity 0.3s; }
+.laptop .tag { top: calc(100% + 46px); }
+
+.drawer { position: absolute; top: var(--mb); bottom: 60px; z-index: 500; width: 372px; transition: transform 0.75s cubic-bezier(.22, 1.1, .36, 1); }
+.drawer.left { left: 0; transform: translateX(-100%); }
+.drawer.right { right: 0; transform: translateX(100%); }
+.drawer.is-open { transform: none; }
+.drawer::after { content: ""; position: absolute; top: 50%; width: 5px; height: 70px; margin-top: -35px; border-radius: 3px; background: rgba(255, 255, 255, 0.85); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+.drawer.left::after { right: -10px; }
+.drawer.right::after { left: -10px; }
+.drawer .win { box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.4), 0 6px 14px rgba(3, 8, 30, 0.3), 0 30px 70px rgba(3, 8, 30, 0.75); }
+
+/* --- The dive: one stage, held in the window while the page scrolls ------------------------------
+   Without the script this is a heading and six short texts. With it the section is several screens
+   tall, its stage stays in the window, and the scroll is the camera (main.js). Sizes on the stage
+   hang on --u, the size on the page of one pixel of the drawing: a display is laid out at the size
+   it has from closest and only ever made smaller, so its text stays sharp. */
+/* Under it, room for the shoulders of the sheet that follows. */
+.story { position: relative; padding: var(--pad) 0 calc(var(--pad) * 0.7 + 56px); }
+.dive-in { width: min(100% - 32px, 1360px); margin-inline: auto; }
+.story-head { display: grid; gap: 20px; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 30px 44px; margin-top: clamp(36px, 5vw, 64px); }
+.step { display: grid; gap: 12px; align-content: start; }
+.step h3 { font-size: 1.5rem; line-height: 1.12; letter-spacing: -0.03em; }
+.step p { max-width: 26em; color: var(--mist); }
+.dive-glow, .dive-prog { display: none; }
+
+.js .story { padding: 0; }
+.js .dive { position: sticky; top: 0; height: min(100vh, 2400px); height: min(100svh, 2400px); overflow: hidden; overflow: clip; }
+.js .is-flat .dive { position: relative; height: 860px; }
+.js .dive-in { position: absolute; inset: 0; width: auto; margin: 0; will-change: transform; }
+.js .dive-stage { position: absolute; inset: 0; }
+
+/* The light a display throws on the night around it, in the colours of its wallpaper. */
+.js .dive-glow { display: block; position: absolute; left: 0; top: 0; width: 400px; pointer-events: none; transform-origin: 50% 50%; will-change: transform; }
+.dive-glow canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; will-change: opacity; }
+
+/* The heading is the nearest thing on the way in: it is set as wide as the window lets it, and
+   the camera goes past it. */
+.js .story-head {
+  position: absolute; left: 0; right: 0; top: calc(var(--bar) + 6.5%); z-index: 3; justify-items: center; gap: clamp(14px, 1.7vw, 36px);
+  padding: 0 16px; text-align: center; pointer-events: none; transform-origin: 50% 46%; will-change: transform, opacity;
+}
+.js .story-head h2 { font-size: clamp(2.6rem, 7.3vw, 15.5rem); line-height: 0.95; letter-spacing: -0.045em; }
+.js .story-head .lede { max-width: 33em; color: #c9d1ea; font-size: clamp(1.0625rem, 1.32vw, 2.1rem); will-change: opacity; }
+.js .dive:not(.is-wide) .story-head { top: calc(var(--bar) + 22px); justify-items: start; text-align: left; transform-origin: 0 30%; }
+.js .dive:not(.is-wide) .story-head h2 { font-size: clamp(2.5rem, 12.6vw, 6rem); }
+
+/* The words of the feature that plays: a title and a sentence, beside the display or under it. */
+.js .steps {
+  position: absolute; left: var(--cx, 16px); top: var(--cy, 50%); width: var(--cw, 300px); height: var(--ch, 300px); z-index: 4;
+  display: block; margin: 0; container-type: inline-size; pointer-events: none;
+}
+.js .step { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-start; gap: clamp(12px, 3.4cqw, 34px); }
+.js .step > * { opacity: 0; will-change: transform, opacity; }
+.js .step h3 { font-size: clamp(1.75rem, 8.6cqw, 3.8rem); line-height: 1; letter-spacing: -0.04em; text-wrap: balance; }
+.js .step p { max-width: 27em; color: #c9d1ea; font-size: clamp(1.0625rem, 3.7cqw, 1.5rem); line-height: 1.45; }
+.js .step .chord { gap: clamp(5px, 1cqw, 9px); margin-top: 2px; }
+.js .step .chord kbd { font-size: clamp(1rem, 3.3cqw, 1.7rem); }
+.js .step .chord span { font-size: clamp(0.8125rem, 2.1cqw, 1.05rem); }
+.js .is-wide .step { justify-content: center; }
+.js .is-wide .step h3 { font-size: clamp(2.2rem, 12.6cqw, 6.8rem); line-height: 0.97; }
+.js .is-wide .step p { font-size: clamp(1.0625rem, 4.3cqw, 2.3rem); line-height: 1.42; }
+
+/* Where the film is: six bars, each filled as far as its feature has played, and a way to it. */
+.js .dive-prog {
+  position: absolute; left: var(--cx, 16px); top: calc(var(--cy, 50%) + var(--ch, 300px)); width: var(--cw, 300px); z-index: 5;
+  display: flex; align-items: flex-start; gap: 14px; container-type: inline-size; will-change: opacity;
+}
+.dive-segs { flex: 1; display: flex; gap: 6px; min-width: 0; }
+.dive-segs button { flex: 1; display: grid; gap: 7px; min-width: 0; margin: 0; padding: 14px 0 6px; border: 0; background: none; color: var(--mist); font: 500 clamp(0.75rem, 2cqw, 1rem)/1.2 var(--display); text-align: left; cursor: pointer; }
+.dive-segs i { display: block; height: 3px; overflow: hidden; border-radius: 2px; background: rgba(255, 255, 255, 0.16); }
+.dive-segs u { display: block; height: 100%; border-radius: inherit; background: var(--blue); transform: scaleX(0); transform-origin: 0 50%; will-change: transform; }
+.dive-segs span { display: none; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: color 0.2s; }
+.dive-segs button:hover span, .dive-segs .is-on span { color: var(--paper); }
+.dive-segs button:hover i { background: rgba(255, 255, 255, 0.3); }
+.dive-count { flex: none; padding-top: 7px; color: var(--mist); font: 400 0.78rem var(--mono); white-space: nowrap; }
+@container (min-width: 440px) {
+  .dive-segs span { display: block; }
+  .dive-count { display: none; }
+}
+
+/* The two displays. They are placed by the script, in the plane of the page or tipped back in it.
+   A bezel is a ring here and the screen has no ground of its own: its desktops cover it, and what
+   is not painted is not kept in memory, which counts at the size these are laid out. */
+.dive .display { left: 0; top: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
+.dive .display::before {
+  inset: calc(var(--u) * -12); border: calc(var(--u) * 16) solid var(--black); border-radius: calc(var(--u) * 17); background: none;
+  box-shadow: 0 0 0 1.5px #4a4f5c, 0 0 0 3px #0c0d12, 0 calc(var(--u) * 70) calc(var(--u) * 110) calc(var(--u) * -50) rgba(0, 0, 0, 0.95);
+}
+.dive .display.laptop::before { inset: calc(var(--u) * -11) calc(var(--u) * -11) calc(var(--u) * -14); border-width: calc(var(--u) * 15) calc(var(--u) * 15) calc(var(--u) * 18); border-radius: calc(var(--u) * 18) calc(var(--u) * 18) calc(var(--u) * 5) calc(var(--u) * 5); box-shadow: 0 0 0 2px #aeb4c1, 0 0 0 3px #5d6370; }
+.dive .stand { will-change: opacity; top: calc(100% + var(--u) * 12); width: calc(var(--u) * 104); height: calc(var(--u) * 96); margin-left: calc(var(--u) * -52); }
+.dive .stand::after {
+  left: calc(var(--u) * -104); right: calc(var(--u) * -104); bottom: calc(var(--u) * -6); height: calc(var(--u) * 11);
+  border-radius: calc(var(--u) * 7) calc(var(--u) * 7) calc(var(--u) * 3) calc(var(--u) * 3); box-shadow: 0 calc(var(--u) * 22) calc(var(--u) * 30) calc(var(--u) * -8) rgba(0, 0, 0, 0.75);
+}
+.dive .base {
+  left: calc(var(--u) * -66); right: calc(var(--u) * -66); top: calc(100% + var(--u) * 14); height: calc(var(--u) * 17);
+  border-radius: calc(var(--u) * 3) calc(var(--u) * 3) calc(var(--u) * 17) calc(var(--u) * 17) / calc(var(--u) * 3) calc(var(--u) * 3) calc(var(--u) * 13) calc(var(--u) * 13);
+  box-shadow: inset 0 1px 0 #fff, 0 calc(var(--u) * 26) calc(var(--u) * 34) calc(var(--u) * -12) rgba(0, 0, 0, 0.85);
+}
+.dive .base::before { width: calc(var(--u) * 104); height: calc(var(--u) * 7); margin-left: calc(var(--u) * -52); border-radius: 0 0 calc(var(--u) * 9) calc(var(--u) * 9); }
+.dive .lnotch { z-index: 60; width: calc(var(--u) * 86); height: calc(var(--u) * 20); margin-left: calc(var(--u) * -43); border-radius: 0 0 calc(var(--u) * 8) calc(var(--u) * 8); background: var(--black); }
+.dive .screen { --mb: calc(var(--u) * 26); --dk: calc(var(--u) * 36); --wf: calc(var(--u) * 12.5); border-radius: calc(var(--u) * 8); background: none; }
+.dive .laptop .screen { --mb: calc(var(--u) * 24); --dk: calc(var(--u) * 32); --wf: calc(var(--u) * 11); }
+.dive .mbar, .dive .dock { z-index: 2; }
+.dv-pages { position: absolute; inset: 0; z-index: 1; }
+.dive .page { position: absolute; inset: 0; height: auto; will-change: transform; }
+.dive .win {
+  transform-origin: 0 0; will-change: transform, opacity;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.32), 0 0.16em 0.4em rgba(3, 8, 30, 0.2), 0 1.1em 2.7em -0.3em rgba(3, 8, 30, 0.42);
+}
+.dive .win.is-key { box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.36), 0 0.24em 0.64em rgba(3, 8, 30, 0.24), 0 1.9em 4.3em -0.5em rgba(3, 8, 30, 0.62); }
+/* A name under each display of the desk. */
+.dv-name { position: absolute; left: 0; right: 0; top: calc(100% + var(--u) * 132); opacity: 0; color: var(--mist); font: 400 16px var(--mono); text-align: center; will-change: opacity; }
+.laptop .dv-name { top: calc(100% + var(--u) * 46); }
+
+/* A layout: two cuts in a desktop, the slots they leave, and the app each one is for. */
+.dv-cut { position: absolute; z-index: 3; border-radius: 99px; background: #fff; box-shadow: 0 0 calc(var(--u) * 16) calc(var(--u) * 2) rgba(143, 190, 255, 0.95); will-change: transform, opacity; }
+.dv-cut.v { width: max(2px, var(--u) * 3); margin-left: calc(max(2px, var(--u) * 3) / -2); transform-origin: 50% 0; }
+.dv-cut.h { height: max(2px, var(--u) * 3); margin-top: calc(max(2px, var(--u) * 3) / -2); transform-origin: 0 50%; }
+.dive .slot { z-index: 1; border-radius: calc(var(--u) * 12); border-width: max(1.5px, var(--u) * 1.5); opacity: 0; will-change: opacity; }
+.dive .slot b { display: inline-flex; align-items: center; gap: 0.6em; font-weight: 600; will-change: transform; }
+.dive .slot .ico { width: 2.3em; height: 2.3em; }
+
+/* Focus: the window is as wide as the desktop and cut down to its slot, so that the cut alone
+   changes. Its shadow, which a cut takes away, is a box of its own under it, stretched with it. */
+.dv-side { transform-origin: 50% 50% !important; }
+.dv-fshadow { position: absolute; z-index: 1; border-radius: calc(var(--wf) * 0.95); background: #fff; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.36), 0 calc(var(--wf) * 0.24) calc(var(--wf) * 0.64) rgba(3, 8, 30, 0.24), 0 calc(var(--wf) * 1.9) calc(var(--wf) * 4.3) calc(var(--wf) * -0.5) rgba(3, 8, 30, 0.62); transform-origin: 0 0; will-change: transform; }
+.dv-fwin { box-shadow: none !important; }
+.dv-fwin .lights, .dv-fwin .url, .dv-fwin .sk-web header, .dv-fwin .sk-web .col { will-change: transform; }
+
+/* A stack: the mark that says which of its windows is in front. */
+.dv-mark {
+  position: absolute; z-index: 600; display: flex; align-items: center; gap: calc(var(--u) * 9); padding: calc(var(--u) * 9) calc(var(--u) * 16); border-radius: 999px;
+  background: rgba(22, 23, 28, 0.9); color: #fff; font: 500 calc(var(--u) * 14) var(--ui); white-space: nowrap;
+  box-shadow: 0 calc(var(--u) * 8) calc(var(--u) * 24) rgba(0, 0, 0, 0.35); opacity: 0; transform: translateX(-50%); will-change: opacity;
+}
+.dv-mark b { font-weight: 700; }
+.dv-mark em, .dv-pill em, .dv-ndrop em { display: flex; align-items: center; gap: calc(var(--u) * 4); font-style: normal; }
+.dv-mark u, .dv-pill u { width: calc(var(--u) * 6); height: calc(var(--u) * 6); border-radius: 50%; background: rgba(255, 255, 255, 0.36); }
+.dv-ndrop u { width: calc(var(--u) * 3.5); height: calc(var(--u) * 3.5); border-radius: 50%; background: rgba(255, 255, 255, 0.36); }
+.dv-mark u.on, .dv-pill u.on, .dv-ndrop u.on { background: #fff; }
+
+/* The name of the desktop a display goes to: under the menu bar, or out of the notch. */
+.dv-pill {
+  position: absolute; top: calc(var(--mb) + var(--u) * 14); left: 50%; z-index: 700; display: flex; align-items: center; gap: calc(var(--u) * 11);
+  padding: calc(var(--u) * 10) calc(var(--u) * 20); border-radius: 999px; background: rgba(28, 30, 38, 0.86); color: #fff; font: 600 calc(var(--u) * 16) var(--ui); white-space: nowrap;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.28), 0 calc(var(--u) * 12) calc(var(--u) * 32) rgba(0, 0, 0, 0.4); opacity: 0; pointer-events: none; will-change: transform, opacity;
+}
+.dv-ndrop {
+  position: absolute; top: 0; left: 50%; z-index: 55; min-width: calc(var(--u) * 86); padding: calc(var(--u) * 25) calc(var(--u) * 14) calc(var(--u) * 7);
+  display: grid; justify-items: center; gap: calc(var(--u) * 4); border-radius: 0 0 calc(var(--u) * 11) calc(var(--u) * 11); background: var(--black); color: #fff;
+  font: 600 calc(var(--u) * 10.5) var(--ui); white-space: nowrap; transform: translate(-50%, -100%); will-change: transform;
+}
+
+/* Drawers: windows parked off the side of the display come in over the layout. */
+.dv-dim { position: absolute; inset: 0; z-index: 50; background: #050818; opacity: 0; pointer-events: none; will-change: opacity; }
+.dv-drawer { position: absolute; top: var(--mb); bottom: calc(var(--u) * 60); z-index: 500; visibility: hidden; will-change: transform; }
+.dv-drawer.left { left: 0; }
+.dv-drawer.right { right: 0; }
+.dv-drawer::after { content: ""; position: absolute; top: 50%; width: calc(var(--u) * 5); height: calc(var(--u) * 70); margin-top: calc(var(--u) * -35); border-radius: 99px; background: rgba(255, 255, 255, 0.85); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+.dv-drawer.left::after { right: calc(var(--u) * -10); }
+.dv-drawer.right::after { left: calc(var(--u) * -10); }
+.dive .dv-drawer .win { will-change: auto; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.4), 0 0.5em 1.1em rgba(3, 8, 30, 0.3), 0 2.4em 5.6em rgba(3, 8, 30, 0.75); }
+
+/* A restart: black with a bar, then the login field. */
+.dv-boot { position: absolute; inset: 0; z-index: 900; display: grid; place-items: center; background: #000; opacity: 0; visibility: hidden; will-change: opacity; }
+.dv-boot b { width: 22%; height: max(3px, var(--u) * 6); overflow: hidden; border-radius: 99px; background: rgba(255, 255, 255, 0.22); }
+.dv-boot i { display: block; height: 100%; background: #fff; transform: scaleX(0); transform-origin: 0 50%; will-change: transform; }
+.dv-login {
+  position: absolute; inset: 0; z-index: 890; display: grid; place-content: center; justify-items: center; gap: calc(var(--u) * 20);
+  background: linear-gradient(rgba(6, 9, 28, 0.82), rgba(6, 9, 28, 0.58)); opacity: 0; visibility: hidden; will-change: opacity;
+}
+.dv-login > i {
+  width: calc(var(--u) * 92); height: calc(var(--u) * 92); border-radius: 50%; box-shadow: 0 0 0 calc(var(--u) * 3) rgba(255, 255, 255, 0.28);
+  background: radial-gradient(circle at 50% 38%, #f4f6fb 0 17%, transparent 18%), radial-gradient(62% 50% at 50% 104%, #f4f6fb 0 98%, transparent 100%), linear-gradient(#9da6c0, #68718e);
+}
+.dv-login > b { display: flex; align-items: center; gap: calc(var(--u) * 8); width: calc(var(--u) * 210); height: calc(var(--u) * 38); padding: 0 calc(var(--u) * 16); border-radius: 99px; background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32); }
+.dv-login u { width: calc(var(--u) * 9); height: calc(var(--u) * 9); border-radius: 50%; background: #fff; opacity: 0; }
+
+/* The far view: the two configurations, named as their owner would name them, and the desktops
+   of the Laptop. A desktop it gains when it travels comes from the slot of Main it was. */
+.dv-cfg, .dv-chips { position: absolute; z-index: 6; display: flex; align-items: center; justify-content: center; margin: 0; visibility: hidden; }
+.dv-cfg { gap: 0.6em; will-change: transform, opacity; }
+.dv-cfg span { display: grid; gap: 0.1em; min-width: 9.5em; padding: 0.5em 1.3em 0.56em; border-radius: 1em; color: var(--mist); text-align: center; box-shadow: inset 0 0 0 1.5px var(--rim); transition: background 0.3s, color 0.3s; }
+.dv-cfg b { font: 600 1.15em/1.1 var(--display); letter-spacing: -0.02em; }
+.dv-cfg i { font: 400 0.68em var(--mono); }
+.dv-cfg .is-on { background: var(--paper); color: var(--ink); box-shadow: none; }
+.dv-chips { gap: 0.55em; }
+.dv-chips > i { margin-right: 0.5em; color: var(--mist); font: 400 0.82em var(--mono); white-space: nowrap; will-change: opacity; }
+.dv-chip {
+  display: inline-flex; align-items: center; gap: 0.5em; padding: 0.34em 0.9em 0.34em 0.4em; border-radius: 999px; background: #151b3a; color: var(--paper);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); font: 600 1em var(--display); white-space: nowrap; opacity: 0;
+  transition: background 0.25s, color 0.25s; will-change: transform, opacity;
+}
+.dv-chip .ico { width: 1.5em; height: 1.5em; }
+.dv-chip.is-on { background: var(--paper); color: var(--ink); box-shadow: none; }
+
+/* --- The palette, on the blue of its selected row ------------------------------------------------ */
+/* A sheet with round shoulders: it slides up over the stage of the dive, which leaves at half its speed. */
+.band-blue {
+  --sheet: clamp(22px, 3vw, 56px);
+  position: relative; z-index: 2; margin-top: calc(var(--sheet) * -1); padding: var(--pad) 0;
+  border-radius: var(--sheet) var(--sheet) 0 0; background: var(--cobalt); color: #fff;
+}
+.band-blue :focus-visible { outline-color: #fff; }
+.band-blue h2 em { color: #fff; }
+.band-blue .lede { color: rgba(255, 255, 255, 0.9); }
+.band-blue .chord span { color: rgba(255, 255, 255, 0.9); }
+.band-blue kbd { background: rgba(255, 255, 255, 0.16); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 1.5px 0 rgba(4, 16, 80, 0.5); }
+.pal-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(32px, 6vw, 96px); align-items: center; }
+.pal-copy { display: grid; gap: 22px; }
+.finds { display: grid; margin: 6px 0 0; }
+.finds div { display: grid; grid-template-columns: 11.5em minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid rgba(255, 255, 255, 0.3); }
+.finds dt { font-weight: 600; }
+.finds dd { margin: 0; color: rgba(255, 255, 255, 0.9); }
+
+.pal {
+  overflow: hidden; border-radius: 22px; background: #26272d; color: #f2f3f7; font-family: var(--ui);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.5), 0 10px 24px rgba(3, 10, 60, 0.3), 0 60px 100px -24px rgba(3, 10, 60, 0.85);
+}
+.pal-field { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.pal-field:focus-within { box-shadow: inset 0 0 0 2px var(--blue); border-radius: 22px 22px 0 0; }
+.pal-glyph { flex: none; display: grid; grid-template: 1fr 1fr / 12px 8px; gap: 2.5px; width: 22.5px; height: 20px; }
+.pal-glyph i { border-radius: 2.5px; background: #9aa0ae; }
+.pal-glyph i:first-child { grid-row: span 2; }
+.pal-field input { flex: 1; min-width: 0; padding: 2px 0; border: 0; outline: 0; background: none; color: inherit; font: 400 1.35rem var(--ui); }
+.pal-field input::placeholder { color: #9499a8; opacity: 1; }
+.pal-map { display: grid; gap: 12px; padding: 16px 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+
+.map-row { display: grid; grid-template-columns: 6.4em minmax(0, 1fr); gap: 12px; align-items: center; }
+.map-name { color: #a9aebb; font-size: 0.8125rem; line-height: 1.2; }
+.map-tiles { display: flex; gap: 12px; min-width: 0; }
+.map-tile { flex: 0 1 108px; display: grid; gap: 5px; justify-items: center; min-width: 0; color: #a9aebb; font-size: 0.75rem; text-align: center; }
+.map-tile > span { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.map-box { position: relative; width: 100%; aspect-ratio: 16 / 9.4; border-radius: 6px; outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 0.15s; }
+.map-box i { position: absolute; display: grid; place-items: center; border: 1.5px solid transparent; border-radius: 6px; background: rgba(255, 255, 255, 0.1) padding-box; }
+.map-box.free { border: 1.5px dashed rgba(255, 255, 255, 0.32); }
+.map-box .ico { width: 44%; max-width: 20px; height: auto; aspect-ratio: 1; }
+.map-tile.is-shown { color: #fff; font-weight: 700; }
+.map-tile.is-shown .map-box i { background-color: rgba(255, 255, 255, 0.22); }
+.map-tile.is-hit .map-box { outline-color: #4b8dff; }
+
+.pal-list { height: calc(6 * 54px + 16px); margin: 0; padding: 8px; overflow: hidden; list-style: none; }
+.pal-list li { display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 14px; border-radius: 12px; }
+.pal-list li.is-sel { background: #2f6df6; }
+.pal-list .ico { width: 32px; height: 32px; }
+.pal-t { display: grid; min-width: 0; line-height: 1.25; }
+.pal-t b { overflow: hidden; font-size: 1rem; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.pal-t small { overflow: hidden; color: #a9aebb; font-size: 0.8125rem; white-space: nowrap; text-overflow: ellipsis; }
+.pal-list .is-sel small, .pal-list .is-sel .pal-k { color: #fff; }
+.pal-k { margin-left: auto; color: #a9aebb; font-size: 0.875rem; letter-spacing: 0.1em; white-space: nowrap; }
+.pal-none { color: #a9aebb; }
+.pal-note { min-height: 3.4em; margin: 18px 4px 0; color: rgba(255, 255, 255, 0.92); font: 400 0.8125rem/1.6 var(--mono); }
+
+/* --- Scenes: three displays, and the key that sets them all -------------------------------------- */
+.scenes {
+  /* Less under it: the notch, which follows on the same night, brings its own space. */
+  overflow: clip; padding: var(--pad) 0 calc(var(--pad) * 0.4);
+  background: radial-gradient(62% 40% at 50% 58%, rgba(40, 80, 234, 0.3), transparent 72%), var(--night);
+}
+.scenes-copy { display: grid; gap: 26px; }
+.scene-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin-top: clamp(30px, 4.4vw, 60px); }
+.scene-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+/* A scene to choose: its keys, then its name. The one that is shown is on the icon's white. */
+.scene-chip {
+  display: inline-flex; align-items: center; gap: 12px; min-height: 50px; margin: 0; padding: 0 22px 0 13px;
+  border: 0; border-radius: 999px; background: transparent; color: inherit;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3);
+  font: 600 1rem var(--display); white-space: nowrap; cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.scene-chip:hover { background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 1.5px currentColor; }
+.scene-chip[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: none; }
+.scene-chip b { font-weight: inherit; }
+.scene-keys { display: flex; gap: 3px; font-size: 0.8125rem; }
+.scene-keys kbd { transition: transform 0.08s, background 0.14s, color 0.14s, box-shadow 0.14s; }
+.scene-chip[aria-pressed="true"] kbd { background: rgba(10, 16, 48, 0.07); box-shadow: inset 0 0 0 1px rgba(10, 16, 48, 0.24), 0 1.5px 0 rgba(10, 16, 48, 0.22); }
+.scene-chip kbd.is-down { background: var(--blue); color: #04102e; box-shadow: none; }
+/* What the scene did, in words. Two lines are kept for it, so the desk under it does not move. */
+.scene-status { flex: 1 1 24em; display: flex; align-items: center; min-height: 3.2em; color: var(--mist); font: 400 0.8125rem/1.6 var(--mono); }
+
+/* As wide as the hero's desk. Each display is drawn at its own size, then placed and scaled. */
+.scene-desk { width: min(100% - 32px, 1500px); margin: clamp(20px, 2.4vw, 34px) auto 0; }
+.scenes .screen { --mb: 26px; --dk: 36px; --wf: 12.5px; }
+.scenes .display { transform-origin: 0 0; }
+.scenes .pill { font-size: 19px; }
+.scenes .ndrop { font-size: 12.5px; }
+/* Under each display, its name and the desktop it shows, at the same size on the page whatever
+   the scale of the drawing. */
+.scenes .tag { font-size: calc(13px * var(--inv, 1.4) / var(--s, 1)); white-space: nowrap; }
+.scenes .tag b { font-weight: 400; }
+.scenes .tag span { margin-left: 0.8em; color: var(--paper); font-weight: 500; }
+
+.scene-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 clamp(24px, 3.2vw, 52px); margin: clamp(34px, 4.6vw, 64px) 0 0; }
+.scene-facts div { display: grid; gap: 8px; align-content: start; padding: 20px 0 0; border-top: 1.5px solid var(--rim); }
+.scene-facts dt { font-weight: 600; }
+.scene-facts dd { margin: 0; color: var(--mist); }
+.scene-facts kbd { margin-right: 2px; font-size: 0.78em; }
+.scene-facts code { color: var(--paper); font: 0.82em var(--mono); overflow-wrap: anywhere; }
+
+/* --- The notch, close up ------------------------------------------------------------------------ */
+.notch-sec { overflow: clip; padding-top: var(--pad); background: linear-gradient(var(--night), #04060f); }
+.notch-copy { display: grid; gap: 26px; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 29em)); gap: 12px 56px; color: var(--mist); font-size: 1.125rem; }
+.lid-crop { --ls: 1; position: relative; height: calc(430px * var(--ls)); margin-top: clamp(36px, 5vw, 68px); overflow: hidden; }
+.lid {
+  position: absolute; left: 50%; top: 0; width: 1100px; height: 480px; margin-left: -550px; padding: 14px 14px 0;
+  border-radius: 32px 32px 0 0; background: var(--black);
+  box-shadow: inset 0 0 0 2.5px #a4aab7, inset 0 0 0 4px #3a3e49;
+  transform: scale(var(--ls)); transform-origin: 50% 0;
+}
+.lid-screen { --mb: 36px; --wf: 15.5px; position: relative; height: 100%; overflow: hidden; border-radius: 16px 16px 0 0; }
+.lid-pages { position: absolute; inset: 0; display: flex; transition: transform 0.75s cubic-bezier(.32, .9, .25, 1); }
+.lid-page { position: relative; flex: 0 0 100%; height: 100%; }
+.lid .mbar { z-index: 5; padding: 0 1.4em; }
+/* The notch starts above the screen's edge, so no seam shows what is tucked behind it. */
+.lid-notch {
+  position: absolute; top: -4px; left: 50%; z-index: 40; width: 200px; height: 40px; margin-left: -100px; border-radius: 0 0 13px 13px;
+  background: radial-gradient(circle at 50% 52%, #26345a 0 3.5px, #0e1322 3.8px 6px, transparent 6.4px), var(--black);
+}
+.lid-drop {
+  position: absolute; top: 0; left: 50%; z-index: 30; width: 200px; height: 80px; margin-left: -100px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 7px; padding-bottom: 10px;
+  border-radius: 0 0 18px 18px; background: var(--black); color: #fff; font: 600 15px var(--ui);
+  transform: translateY(-46px); transition: transform 0.5s var(--spring);
+}
+.lid-drop.is-on { transform: none; }
+.lid-drop u { width: 5px; height: 5px; }
+.lid-map {
+  position: absolute; top: 0; left: 50%; z-index: 35; width: 580px; margin-left: -290px; padding: 56px 28px 24px;
+  display: grid; gap: 14px; border-radius: 0 0 28px 28px; background: var(--black); color: #fff; font-family: var(--ui);
+  visibility: hidden; clip-path: inset(0 190px calc(100% - 36px) 190px round 0 0 13px 13px);
+  transition: clip-path 0.36s var(--out), visibility 0s 0.36s;
+}
+.map-open .lid-map { visibility: visible; clip-path: inset(0 0 0 0 round 0 0 28px 28px); transition: clip-path 0.5s var(--out), visibility 0s; }
+.lid-map .map-tile { cursor: pointer; font-size: 13px; }
+.lid-map .map-name { font-size: 13.5px; }
+.lid-cursor { position: absolute; left: 0; top: 0; z-index: 70; width: 20px; height: 24px; opacity: 0; pointer-events: none; transition: transform 0.85s cubic-bezier(.4, 0, .2, 1), opacity 0.3s; }
+.lid-cursor.is-on { opacity: 1; }
+
+/* --- The keyboard, on the icon's white ----------------------------------------------------------- */
+.band-paper { padding: var(--pad) 0; background: var(--paper); color: var(--ink); }
+.band-paper :focus-visible { outline-color: var(--cobalt); }
+.band-paper h2 em { color: var(--cobalt); }
+.band-paper .lede, .band-paper p { color: #39426a; }
+.band-paper .fine { color: #4a5479; }
+.band-paper kbd { background: rgba(10, 16, 48, 0.07); box-shadow: inset 0 0 0 1px rgba(10, 16, 48, 0.24), 0 1.5px 0 rgba(10, 16, 48, 0.22); }
+.keys-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 84px); align-items: start; }
+.keys-copy { display: grid; gap: 18px; }
+.keys-copy .fine { max-width: 34em; }
+.switch {
+  justify-self: start; display: inline-flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 22px 0 13px;
+  border: 0; border-radius: 999px; background: var(--ink); color: #fff; font: 600 1rem var(--display); cursor: pointer;
+}
+.switch i { position: relative; flex: none; width: 42px; height: 26px; border-radius: 13px; background: rgba(255, 255, 255, 0.26); transition: background 0.2s; }
+.switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.3s var(--spring); }
+.switch[aria-checked="true"] i { background: var(--blue); }
+.switch[aria-checked="true"] i::after { transform: translateX(16px); }
+
+.kb {
+  container-type: inline-size; padding: 1.5%; border-radius: 16px;
+  background: linear-gradient(#e2e5ee, #c6cbd9);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 #a9afc2, 0 0 0 1px #aab0c3, 0 40px 60px -36px rgba(10, 16, 48, 0.6);
+}
+.kb-row { display: flex; gap: 5px; gap: 0.75cqw; }
+.kb-row + .kb-row { margin-top: 5px; margin-top: 0.75cqw; }
+.key {
+  position: relative; flex: 1 1 0; display: grid; place-items: center; min-width: 0; height: 36px; height: 5.7cqw;
+  border-radius: 5px; border-radius: 0.9cqw; background: linear-gradient(#24272f, #191b22); color: #e9ecf5;
+  font: 500 12px var(--ui); font-size: 1.95cqw; box-shadow: 0 2px 0 #090b12; box-shadow: 0 0.28cqw 0 #090b12, inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.08s;
+}
+.key.pair { display: grid; grid-template-rows: 1fr 1fr; gap: 0.4cqw; background: none; box-shadow: none; }
+.key.pair .key { width: 100%; height: auto; border-radius: 0.6cqw; font-size: 1.25cqw; box-shadow: none; }
+.key.is-lit { background: var(--cobalt); color: #fff; box-shadow: 0 0.28cqw 0 #1535a2, 0 0 0 0.4cqw rgba(33, 80, 234, 0.26); }
+.key.pair .key.is-lit { box-shadow: 0 0 0 0.3cqw rgba(33, 80, 234, 0.26); }
+.key.is-pressed { transform: translateY(0.22cqw); background: var(--blue); color: #04102e; }
+
+.kb-hint { margin-top: 14px; }
+@media (hover: none) { .kb-hint { display: none; } }
+.cuts { margin: 18px 0 0; padding: 0; list-style: none; columns: 2; column-gap: 28px; }
+.cuts li { break-inside: avoid; border-top: 1px solid rgba(10, 16, 48, 0.17); }
+.cuts button {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 50px; margin: 0; padding: 6px 10px;
+  border: 0; border-radius: 10px; background: none; color: inherit; font: 500 1rem var(--display); text-align: left; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.cuts button.is-on { background: var(--ink); color: #fff; }
+.cut-keys { flex: none; display: flex; align-items: center; gap: 3px; font-size: 0.8125rem; }
+.cut-keys i { font-style: normal; }
+.cuts .is-on kbd { background: rgba(255, 255, 255, 0.15); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+
+/* --- The editor --------------------------------------------------------------------------------- */
+.editor-sec { overflow: clip; padding: var(--pad) 0 0; }
+.editor-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 76px); align-items: start; }
+.editor-copy { display: grid; gap: 22px; }
+.rest { display: grid; margin: 4px 0 0; }
+.rest div { display: grid; grid-template-columns: 10.5em minmax(0, 1fr); gap: 12px; padding: 13px 0; border-top: 1px solid var(--rim); }
+.rest dt { font-weight: 600; }
+.rest dd { margin: 0; color: var(--mist); }
+.rest code { color: var(--paper); font: 0.82em var(--mono); overflow-wrap: anywhere; }
+.editor-shot { margin: 0; }
+.editor-shot img { width: 132%; max-width: none; aspect-ratio: 1600 / 820; object-fit: cover; object-position: 0 0; border-radius: 14px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 50px 100px -30px #000; }
+
+/* --- Before you install ------------------------------------------------------------------------- */
+.honest { padding: var(--pad) 0; }
+.honest-head { display: grid; gap: 20px; margin-bottom: clamp(28px, 4vw, 52px); }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 clamp(32px, 5vw, 84px); }
+.facts article { display: grid; gap: 10px; align-content: start; padding: 24px 0 30px; border-top: 1.5px solid var(--rim); }
+.facts p { max-width: 34em; color: var(--mist); }
+
+/* --- Download: the icon, at the size of a section ------------------------------------------------ */
+.get { padding: 0 12px clamp(12px, 2vw, 28px); }
+.get-slots {
+  display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 12px;
+  width: min(100%, 1392px); padding: 12px; border-radius: 46px; background: linear-gradient(#1d2749, #0d1226);
+}
+.get-slots > div { display: grid; gap: 14px; align-content: center; padding: clamp(24px, 3.4vw, 48px); border-radius: 34px; color: var(--ink); }
+.get-slots :focus-visible { outline-color: var(--ink); }
+.get-main { grid-row: span 2; gap: 20px !important; padding: clamp(28px, 5vw, 76px) !important; background: var(--blue); }
+.get-main img { width: 72px; height: 72px; }
+.get-main h2 { font-size: clamp(2.6rem, 6.4vw, 5.6rem); line-height: 0.98; }
+.get-main h2 em { color: var(--ink); }
+.get-main p { max-width: 27em; font-size: 1.125rem; line-height: 1.5; }
+.get-main .btn { background: var(--ink); color: #fff; }
+.get-main .btn:hover { background: #000; }
+.get-main .btn.ghost { background: none; color: var(--ink); box-shadow: inset 0 0 0 1.5px rgba(10, 16, 48, 0.55); }
+.get-main .btn.ghost:hover { background: rgba(10, 16, 48, 0.08); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.get-install { background: var(--paper); }
+.get-install ol { margin: 0; padding-left: 1.3em; font-size: 1.125rem; }
+.get-install li { padding: 2px 0 2px 4px; }
+.get-install li::marker { font-weight: 600; }
+.get-build { background: var(--steel); }
+.get-build pre { margin: 4px 0 0; padding: 14px 16px; overflow-x: auto; border-radius: 14px; background: var(--ink); color: var(--paper); font: 0.8125rem/1.7 var(--mono); }
+
+.foot { padding: 26px 0 44px; color: var(--mist); font: 400 0.78rem/1.6 var(--mono); }
+.foot .wrap { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+.foot span { margin-right: auto; }
+.foot p { flex-basis: 100%; }
+.foot a:hover { color: #fff; }
+
+/* Without JavaScript the drawings are not there: their empty frames and controls go too. */
+html:not(.js) .desk-foot, html:not(.js) .dive-stage, html:not(.js) .pal-side, html:not(.js) .lid-crop,
+html:not(.js) .kb, html:not(.js) .kb-hint, html:not(.js) .switch, html:not(.js) .scene-bar, html:not(.js) .scene-desk { display: none; }
+
+/* --- Narrower ----------------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  h1 { font-size: 11.6vw; }
+  .hero-top, .pal-grid, .keys-grid, .editor-grid { grid-template-columns: minmax(0, 1fr); }
+  .cols, .facts, .get-slots { grid-template-columns: minmax(0, 1fr); }
+  .get-main { grid-row: auto; }
+  .editor-shot img { width: 100%; }
+  .desk { width: calc(100% - 32px); }
+  /* The displays are piled, Main above the two others: no wider than a pile reads well. */
+  .scene-desk { max-width: 600px; }
+  .scene-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scene-facts div { padding-bottom: 22px; }
+}
+@media (max-width: 700px) {
+  /* Beside the notch there is room for the mark alone. */
+  .bar-gh span { display: none; }
+  .bar-gh { padding: 6px; }
+}
+@media (max-width: 440px) {
+  /* Not even for the mark: the hero and the foot of the page link to GitHub. */
+  .bar-gh { display: none; }
+}
+@media (max-width: 600px) {
+  :root { --nw: 112px; }
+  .brand { font-size: 0.9375rem; gap: 6px; }
+  .bar-get { padding: 4px 11px; }
+  h1 { font-size: 13.6vw; }
+  .notch-map { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-inline: 8px; }
+  .notch-map a { padding: 10px 2px 8px; font-size: 0.75rem; }
+  .desk-foot .chord span { margin-right: 0; }
+  .desk-hint { flex-basis: 100%; order: 3; }
+  .finds div, .rest div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .pal-field { padding: 15px 16px; }
+  .pal-field input { font-size: 1.0625rem; }
+  .pal-map { padding: 14px 16px; }
+  .map-row { grid-template-columns: 4.6em minmax(0, 1fr); gap: 8px; }
+  .map-tiles { gap: 8px; }
+  .pal-list li { padding: 0 10px; }
+  .cuts { columns: 1; }
+  /* The three scenes side by side, each with its keys under its name. */
+  .scene-chips { flex: 1 1 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .scene-chip { flex-direction: column-reverse; justify-content: center; gap: 7px; min-height: 68px; padding: 8px 4px; border-radius: 18px; font-size: 0.9375rem; }
+  .scene-keys { font-size: 0.6875rem; }
+  .scene-status { flex-basis: 100%; min-height: 4.8em; align-items: flex-start; }
+  .scene-facts { grid-template-columns: minmax(0, 1fr); }
+  .get-slots { border-radius: 34px; }
+  .get-slots > div { border-radius: 24px; }
+  .key { font-size: 9px; font-size: 2.3cqw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* 404.html: one slot in the middle of the night. */
+.lost { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 32px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); }
+.lost-slot { display: grid; justify-items: start; gap: 18px; width: min(100%, 620px); padding: clamp(28px, 6vw, 56px); border-radius: 28px; background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px var(--rim); }
+.lost-slot img { border-radius: 15px; }
+.lost-code { font: 500 0.8125rem var(--mono); color: var(--mist); }
+.lost h1 { font-size: clamp(1.9rem, 5.4vw, 3rem); line-height: 1.06; white-space: normal; text-wrap: balance; }
+.lost-slot > p:not(.lost-code) { color: var(--mist); }
+.lost .btn { margin-top: 8px; }

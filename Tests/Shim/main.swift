@@ -1,0 +1,491 @@
+// Adapted from Fremkit (MIT).
+// Explicit runner for the FremspaceCore tests: no runtime discovery, every test method is listed
+// here. EVERY NEW TEST METHOD MUST BE REGISTERED HERE, or it never runs; scripts/test.sh compares
+// the number of `func test` declarations with the entries below and fails on a mismatch.
+
+import Foundation
+import XCTest
+
+typealias TestMethod = (String, (XCTestCase) throws -> Void)
+
+let suites: [(String, () -> XCTestCase, [TestMethod])] = [
+    ("VersionTests", { VersionTests() }, [
+        ("testVersionIsSemver", { ($0 as! VersionTests).testVersionIsSemver() }),
+    ]),
+    ("ConfigStoreTests", { ConfigStoreTests() }, [
+        ("testSaveRefusesWhenTheFileChangedSinceRead", { try ($0 as! ConfigStoreTests).testSaveRefusesWhenTheFileChangedSinceRead() }),
+        ("testDesktopWithoutUnmatchedFloats", { try ($0 as! ConfigStoreTests).testDesktopWithoutUnmatchedFloats() }),
+        ("testDisplayWithoutIgnoredIsManaged", { try ($0 as! ConfigStoreTests).testDisplayWithoutIgnoredIsManaged() }),
+("testRoundTrip", { try ($0 as! ConfigStoreTests).testRoundTrip() }),
+        ("testSaveKeepsBackup", { try ($0 as! ConfigStoreTests).testSaveKeepsBackup() }),
+        ("testNewerVersionIsRejectedWithoutOverwrite", { try ($0 as! ConfigStoreTests).testNewerVersionIsRejectedWithoutOverwrite() }),
+        ("testCorruptFileKeepsOriginal", { try ($0 as! ConfigStoreTests).testCorruptFileKeepsOriginal() }),
+        ("testMissingFileLoadsEmpty", { try ($0 as! ConfigStoreTests).testMissingFileLoadsEmpty() }),
+    ]),
+    ("GeometryTests", { GeometryTests() }, [
+        ("testSnap", { ($0 as! GeometryTests).testSnap() }),
+        ("testEighthsOnlyOnLargeDisplays", { ($0 as! GeometryTests).testEighthsOnlyOnLargeDisplays() }),
+        ("testAxConversion", { ($0 as! GeometryTests).testAxConversion() }),
+        ("testSplitFrames", { ($0 as! GeometryTests).testSplitFrames() }),
+        ("testFocusFrame", { ($0 as! GeometryTests).testFocusFrame() }),
+        ("testUnknownDisplayIsFree", { ($0 as! GeometryTests).testUnknownDisplayIsFree() }),
+        ("testDisplayMatchIgnoresName", { ($0 as! GeometryTests).testDisplayMatchIgnoresName() }),
+    ]),
+    ("PlacementPlanTests", { PlacementPlanTests() }, [
+        ("testNewWindowGetsAMove", { ($0 as! PlacementPlanTests).testNewWindowGetsAMove() }),
+        ("testHeldUnlockedWindowIsNotMovedUnlessForced", { ($0 as! PlacementPlanTests).testHeldUnlockedWindowIsNotMovedUnlessForced() }),
+        ("testHeldLockedWindowOffFrameIsMoved", { ($0 as! PlacementPlanTests).testHeldLockedWindowOffFrameIsMoved() }),
+        ("testASlotOfTheSameNameHeldOnAnotherDesktopIsNotThisOne", { ($0 as! PlacementPlanTests).testASlotOfTheSameNameHeldOnAnotherDesktopIsNotThisOne() }),
+        ("testADesktopWhoseFocusChangedWhileNotShownIsPlacedAgain", { ($0 as! PlacementPlanTests).testADesktopWhoseFocusChangedWhileNotShownIsPlacedAgain() }),
+        ("testCannotFitLockedWindowIsLeftUnlessForced", { ($0 as! PlacementPlanTests).testCannotFitLockedWindowIsLeftUnlessForced() }),
+        ("testSkippedWindowsAreNotPlanned", { ($0 as! PlacementPlanTests).testSkippedWindowsAreNotPlanned() }),
+        ("testOnlyLimitsToOneDesktop", { ($0 as! PlacementPlanTests).testOnlyLimitsToOneDesktop() }),
+        ("testChosenSlotSurvivesTitleChange", { ($0 as! PlacementPlanTests).testChosenSlotSurvivesTitleChange() }),
+    ]),
+    ("DesktopMapTests", { DesktopMapTests() }, [
+        ("testRemovingAConfiguredDesktopDropsItsLink", { ($0 as! DesktopMapTests).testRemovingAConfiguredDesktopDropsItsLink() }),
+        ("testFirstRunLinksByPosition", { ($0 as! DesktopMapTests).testFirstRunLinksByPosition() }),
+        ("testRearrangedDesktopsFollowTheirUuid", { ($0 as! DesktopMapTests).testRearrangedDesktopsFollowTheirUuid() }),
+        ("testRemovedDesktopIsNotReplacedByItsNeighbour", { ($0 as! DesktopMapTests).testRemovedDesktopIsNotReplacedByItsNeighbour() }),
+        ("testAddedDesktopInTheMiddleIsUnconfigured", { ($0 as! DesktopMapTests).testAddedDesktopInTheMiddleIsUnconfigured() }),
+        ("testLinkMovesAUuid", { ($0 as! DesktopMapTests).testLinkMovesAUuid() }),
+    ]),
+    ("StateStoreTests", { StateStoreTests() }, [
+        ("testOldStateWithoutRememberedLoads", { try ($0 as! StateStoreTests).testOldStateWithoutRememberedLoads() }),
+        ("testRoundTripAndMissingFile", { try ($0 as! StateStoreTests).testRoundTripAndMissingFile() }),
+        ("testCorruptFileLoadsEmptyAndIsKept", { try ($0 as! StateStoreTests).testCorruptFileLoadsEmptyAndIsKept() }),
+        ("testFocusedSlotsAreKeptAndOlderStatesHaveNone", { try ($0 as! StateStoreTests).testFocusedSlotsAreKeptAndOlderStatesHaveNone() }),
+        ("testDrawerMembersAreKeptAndOlderStatesHaveNone", { try ($0 as! StateStoreTests).testDrawerMembersAreKeptAndOlderStatesHaveNone() }),
+        ("testASavedWindowIsAliveOnlyInTheSameProcess", { ($0 as! StateStoreTests).testASavedWindowIsAliveOnlyInTheSameProcess() }),
+        ("testADrawerMemberIsFoundAgainOnlyInTheSameApp", { ($0 as! StateStoreTests).testADrawerMemberIsFoundAgainOnlyInTheSameApp() }),
+        ("testWindowsSavedBeforeTheSessionAreForgotten", { ($0 as! StateStoreTests).testWindowsSavedBeforeTheSessionAreForgotten() }),
+        ("testTheStateFileSaysWhenItWasWritten", { try ($0 as! StateStoreTests).testTheStateFileSaysWhenItWasWritten() }),
+    ]),
+    ("MoverHealthTests", { MoverHealthTests() }, [
+        ("testTwoFailedSendsInARowMakeItUnavailable", { ($0 as! MoverHealthTests).testTwoFailedSendsInARowMakeItUnavailable() }),
+        ("testASuccessResetsTheCount", { ($0 as! MoverHealthTests).testASuccessResetsTheCount() }),
+        ("testUnavailableStaysUntilASuccess", { ($0 as! MoverHealthTests).testUnavailableStaysUntilASuccess() }),
+        ("testReapplyingTheLayoutsTriesAgain", { ($0 as! MoverHealthTests).testReapplyingTheLayoutsTriesAgain() }),
+        ("testAnOperationThatIsNotOnThisMacOSIsNeverAvailable", { ($0 as! MoverHealthTests).testAnOperationThatIsNotOnThisMacOSIsNeverAvailable() }),
+    ]),
+    ("WindowIdentityTests", { WindowIdentityTests() }, [
+        ("testProfileFromBraveTitle", { ($0 as! WindowIdentityTests).testProfileFromBraveTitle() }),
+        ("testTabTitleNoiseIsRemoved", { ($0 as! WindowIdentityTests).testTabTitleNoiseIsRemoved() }),
+        ("testSameProfileWindowsKeepTheirPlaceAfterRelaunch", { ($0 as! WindowIdentityTests).testSameProfileWindowsKeepTheirPlaceAfterRelaunch() }),
+        ("testDocumentWins", { ($0 as! WindowIdentityTests).testDocumentWins() }),
+        ("testDifferentProfileNeverMatches", { ($0 as! WindowIdentityTests).testDifferentProfileNeverMatches() }),
+    ]),
+    ("RememberedTests", { RememberedTests() }, [
+        ("testUnrecognisedWindowOfARememberedAppIsNotRecorded", { ($0 as! RememberedTests).testUnrecognisedWindowOfARememberedAppIsNotRecorded() }),
+        ("testIdReusedAfterBootKeepsTheOlderEntry", { ($0 as! RememberedTests).testIdReusedAfterBootKeepsTheOlderEntry() }),
+        ("testRecordKeepsTheEntryOfAnotherConfiguration", { ($0 as! RememberedTests).testRecordKeepsTheEntryOfAnotherConfiguration() }),
+        ("testRemovingADesktopDropsItsEntriesAndShiftsTheNext", { ($0 as! RememberedTests).testRemovingADesktopDropsItsEntriesAndShiftsTheNext() }),
+        ("testMovingADesktopTakesItsEntriesAlong", { ($0 as! RememberedTests).testMovingADesktopTakesItsEntriesAlong() }),
+        ("testAdoptRekeysAnEntry", { ($0 as! RememberedTests).testAdoptRekeysAnEntry() }),
+        ("testRecordReplacesSameWindow", { ($0 as! RememberedTests).testRecordReplacesSameWindow() }),
+        ("testLiveIdWinsOverIdentity", { ($0 as! RememberedTests).testLiveIdWinsOverIdentity() }),
+        ("testIdentityMatchesAfterRelaunch", { ($0 as! RememberedTests).testIdentityMatchesAfterRelaunch() }),
+        ("testIdsFromBeforeBootAreNotTrusted", { ($0 as! RememberedTests).testIdsFromBeforeBootAreNotTrusted() }),
+        ("testOtherConfigurationIsIgnored", { ($0 as! RememberedTests).testOtherConfigurationIsIgnored() }),
+        ("testPruneDropsOldest", { ($0 as! RememberedTests).testPruneDropsOldest() }),
+    ]),
+    ("AppcastTests", { AppcastTests() }, [
+        ("testChangelogSectionIsTheBodyUnderItsVersion", { ($0 as! AppcastTests).testChangelogSectionIsTheBodyUnderItsVersion() }),
+        ("testReleaseNotesBecomeLittleHTML", { ($0 as! AppcastTests).testReleaseNotesBecomeLittleHTML() }),
+        ("testAppcastCarriesTheVersionTheArchiveAndItsSignature", { ($0 as! AppcastTests).testAppcastCarriesTheVersionTheArchiveAndItsSignature() }),
+    ]),
+    ("DesktopRoutingTests", { DesktopRoutingTests() }, [
+        ("testWindowThatNoLongerMatchesItsSlotLeaves", { ($0 as! DesktopRoutingTests).testWindowThatNoLongerMatchesItsSlotLeaves() }),
+        ("testFixedSizeWindowOfAnAppWithASlotGoesToThatAppsDesktop", { ($0 as! DesktopRoutingTests).testFixedSizeWindowOfAnAppWithASlotGoesToThatAppsDesktop() }),
+        ("testWindowOnAnIgnoredDisplayGoesToItsDesktop", { ($0 as! DesktopRoutingTests).testWindowOnAnIgnoredDisplayGoesToItsDesktop() }),
+        ("testSlackAppearingOnMailGoesToSlack", { ($0 as! DesktopRoutingTests).testSlackAppearingOnMailGoesToSlack() }),
+        ("testWithoutASlotAWindowLeavesALayoutDesktopForAFreeOne", { ($0 as! DesktopRoutingTests).testWithoutASlotAWindowLeavesALayoutDesktopForAFreeOne() }),
+        ("testNoFloatingDoesNotKeepARememberedWindowOnALayoutDesktop", { ($0 as! DesktopRoutingTests).testNoFloatingDoesNotKeepARememberedWindowOnALayoutDesktop() }),
+        ("testNoFloatingWithoutAFreeDesktopMovesNothing", { ($0 as! DesktopRoutingTests).testNoFloatingWithoutAFreeDesktopMovesNothing() }),
+        ("testNoFloatingSendsAwayAWindowDroppedByHandOnALayoutDesktop", { ($0 as! DesktopRoutingTests).testNoFloatingSendsAwayAWindowDroppedByHandOnALayoutDesktop() }),
+        ("testNoFloatingAlsoMovesFixedSizeWindowsButNotDialogs", { ($0 as! DesktopRoutingTests).testNoFloatingAlsoMovesFixedSizeWindowsButNotDialogs() }),
+        ("testNoFloatingKeepsEveryWindowOfAnAppOfTheLayout", { ($0 as! DesktopRoutingTests).testNoFloatingKeepsEveryWindowOfAnAppOfTheLayout() }),
+        ("testNoFloatingIsAGeneralSettingAndOlderFilesHaveItOff", { try! ($0 as! DesktopRoutingTests).testNoFloatingIsAGeneralSettingAndOlderFilesHaveItOff() }),
+        ("testWindowOnFreeDesktopStays", { ($0 as! DesktopRoutingTests).testWindowOnFreeDesktopStays() }),
+        ("testBraveOnWebStaysAlthoughItMatchesCodeToo", { ($0 as! DesktopRoutingTests).testBraveOnWebStaysAlthoughItMatchesCodeToo() }),
+        ("testUnmatchedAppStays", { ($0 as! DesktopRoutingTests).testUnmatchedAppStays() }),
+        ("testHandMoveOfLockedWindowGoesBack", { ($0 as! DesktopRoutingTests).testHandMoveOfLockedWindowGoesBack() }),
+        ("testHandMoveOfUnlockedWindowStays", { ($0 as! DesktopRoutingTests).testHandMoveOfUnlockedWindowStays() }),
+        ("testCommandWinsOverLock", { ($0 as! DesktopRoutingTests).testCommandWinsOverLock() }),
+        ("testMissingRememberedDesktopFallsBackOrStays", { ($0 as! DesktopRoutingTests).testMissingRememberedDesktopFallsBackOrStays() }),
+        ("testLoginRestoresFreeDesktopWindows", { ($0 as! DesktopRoutingTests).testLoginRestoresFreeDesktopWindows() }),
+    ]),
+    ("LoginRestoreTests", { LoginRestoreTests() }, [
+        ("testLoginStartWithinThreeMinutes", { ($0 as! LoginRestoreTests).testLoginStartWithinThreeMinutes() }),
+        ("testRelaunchLaterIsNotLogin", { ($0 as! LoginRestoreTests).testRelaunchLaterIsNotLogin() }),
+        ("testAppsToLaunchSkipsRunningIgnoredAndOptedOut", { ($0 as! LoginRestoreTests).testAppsToLaunchSkipsRunningIgnoredAndOptedOut() }),
+        ("testBraveListedOnce", { ($0 as! LoginRestoreTests).testBraveListedOnce() }),
+        ("testOverdueAfterThirtySeconds", { ($0 as! LoginRestoreTests).testOverdueAfterThirtySeconds() }),
+        ("testWindowSeenIsNotOverdue", { ($0 as! LoginRestoreTests).testWindowSeenIsNotOverdue() }),
+    ]),
+    ("QuickResizeTests", { QuickResizeTests() }, [
+        ("testHalvesOfAnOddSizedDisplayStayInside", { ($0 as! QuickResizeTests).testHalvesOfAnOddSizedDisplayStayInside() }),
+("testHalves", { ($0 as! QuickResizeTests).testHalves() }),
+        ("testThirdsOfAWideDisplay", { ($0 as! QuickResizeTests).testThirdsOfAWideDisplay() }),
+        ("testCenterKeepsSizeAndClamps", { ($0 as! QuickResizeTests).testCenterKeepsSizeAndClamps() }),
+        ("testMaximize", { ($0 as! QuickResizeTests).testMaximize() }),
+    ]),
+    ("MenuGlyphTests", { MenuGlyphTests() }, [
+        ("testTheGlyphDrawsTheLayoutAndTellsTheSlotInFront", { ($0 as! MenuGlyphTests).testTheGlyphDrawsTheLayoutAndTellsTheSlotInFront() }),
+        ("testASlotInFocusFillsTheGlyph", { ($0 as! MenuGlyphTests).testASlotInFocusFillsTheGlyph() }),
+        ("testOtherStatesHaveTheirOwnGlyph", { ($0 as! MenuGlyphTests).testOtherStatesHaveTheirOwnGlyph() }),
+    ]),
+    ("CallsTests", { CallsTests() }, [
+        ("testCallsGoFullScreenOnlyForTheAppsTurnedOn", { ($0 as! CallsTests).testCallsGoFullScreenOnlyForTheAppsTurnedOn() }),
+        ("testAppsWithoutAKnownCallWindowNeverGoFullScreen", { ($0 as! CallsTests).testAppsWithoutAKnownCallWindowNeverGoFullScreen() }),
+        ("testTheGeneralListRoundTripsAndTheSlotOptionOfOneDayMovesToIt", { try ($0 as! CallsTests).testTheGeneralListRoundTripsAndTheSlotOptionOfOneDayMovesToIt() }),
+        ("testATitleTellsAZoomMeetingFromZoomsOtherWindows", { try ($0 as! CallsTests).testATitleTellsAZoomMeetingFromZoomsOtherWindows() }),
+    ]),
+    ("PaletteTests", { PaletteTests() }, [
+        ("testAWordMatchesBestAtTheStartThenAWordThenInitialsThenTheMiddle", { ($0 as! PaletteTests).testAWordMatchesBestAtTheStartThenAWordThenInitialsThenTheMiddle() }),
+        ("testAccentsAndCaseDoNotCount", { ($0 as! PaletteTests).testAccentsAndCaseDoNotCount() }),
+        ("testAnAppAnswersToItsFileNameToo", { ($0 as! PaletteTests).testAnAppAnswersToItsFileNameToo() }),
+        ("testEveryWordOfTheQueryHasToMatch", { ($0 as! PaletteTests).testEveryWordOfTheQueryHasToMatch() }),
+        ("testWithoutAQueryOnlyTheWindowsInTheOrderGiven", { ($0 as! PaletteTests).testWithoutAQueryOnlyTheWindowsInTheOrderGiven() }),
+        ("testTheBestMatchComesFirstAndAWindowBeforeAnAppOnATie", { ($0 as! PaletteTests).testTheBestMatchComesFirstAndAWindowBeforeAnAppOnATie() }),
+        ("testWhatIsOpenedOftenComesFirst", { ($0 as! PaletteTests).testWhatIsOpenedOftenComesFirst() }),
+        ("testTheLimitCutsTheList", { ($0 as! PaletteTests).testTheLimitCutsTheList() }),
+    ]),
+    ("AttentionTests", { AttentionTests() }, [
+        ("testNothingToSayWhenEverythingRuns", { ($0 as! AttentionTests).testNothingToSayWhenEverythingRuns() }),
+        ("testWithoutAccessibilityOnlyThatIsSaidAboutNotRunning", { ($0 as! AttentionTests).testWithoutAccessibilityOnlyThatIsSaidAboutNotRunning() }),
+        ("testPausedIsSaidOnceWithTheWayBack", { ($0 as! AttentionTests).testPausedIsSaidOnceWithTheWayBack() }),
+        ("testNoConfigurationForTheseDisplaysOffersToMakeOne", { ($0 as! AttentionTests).testNoConfigurationForTheseDisplaysOffersToMakeOne() }),
+        ("testADisplayShortOfDesktopsOffersToAddThem", { ($0 as! AttentionTests).testADisplayShortOfDesktopsOffersToAddThem() }),
+        ("testNoFloatingWithoutAFreeDesktopOffersToAddOne", { ($0 as! AttentionTests).testNoFloatingWithoutAFreeDesktopOffersToAddOne() }),
+        ("testTakenShortcutsAndAHyperKeyThatIsNotInPlace", { ($0 as! AttentionTests).testTakenShortcutsAndAHyperKeyThatIsNotInPlace() }),
+        ("testAnAppThatIsNotInstalledIsANoteOnceWithItsFirstSlot", { ($0 as! AttentionTests).testAnAppThatIsNotInstalledIsANoteOnceWithItsFirstSlot() }),
+        ("testAMacOSWithoutTheMoveIsSaidAsSuchNotAsRefusedMoves", { ($0 as! AttentionTests).testAMacOSWithoutTheMoveIsSaidAsSuchNotAsRefusedMoves() }),
+        ("testTheMostSeriousComesFirst", { ($0 as! AttentionTests).testTheMostSeriousComesFirst() }),
+    ]),
+    ("NotchTests", { NotchTests() }, [
+        ("testOnlyADisplayWhoseDesktopChangedIsNamed", { ($0 as! NotchTests).testOnlyADisplayWhoseDesktopChangedIsNamed() }),
+        ("testADisplayThatWasNotThereBeforeSaysNothing", { ($0 as! NotchTests).testADisplayThatWasNotThereBeforeSaysNothing() }),
+        ("testTheBannerNamesTheDesktopOrNumbersIt", { ($0 as! NotchTests).testTheBannerNamesTheDesktopOrNumbersIt() }),
+        ("testTheNotchIsBetweenTheTwoSidesOfTheMenuBar", { ($0 as! NotchTests).testTheNotchIsBetweenTheTwoSidesOfTheMenuBar() }),
+        ("testWhatHangsFromTheNotchStartsAtTheTopAndShowsItsContentUnderIt", { ($0 as! NotchTests).testWhatHangsFromTheNotchStartsAtTheTopAndShowsItsContentUnderIt() }),
+        ("testWithoutANotchItIsCentredUnderTheMenuBar", { ($0 as! NotchTests).testWithoutANotchItIsCentredUnderTheMenuBar() }),
+        ("testItStaysInsideTheScreen", { ($0 as! NotchTests).testItStaysInsideTheScreen() }),
+        ("testTheTwoSettingsAreOnUnlessSwitchedOffAndOnlyThenWritten", { try ($0 as! NotchTests).testTheTwoSettingsAreOnUnlessSwitchedOffAndOnlyThenWritten() }),
+    ]),
+    ("PreviewsTests", { PreviewsTests() }, [
+        ("testAWindowIsCapturedOnceWhileItsPictureIsFresh", { ($0 as! PreviewsTests).testAWindowIsCapturedOnceWhileItsPictureIsFresh() }),
+        ("testTheWindowsThatAreGoneAreForgotten", { ($0 as! PreviewsTests).testTheWindowsThatAreGoneAreForgotten() }),
+        ("testAPictureKeepsTheWindowsProportionsAndIsNeverEnlarged", { ($0 as! PreviewsTests).testAPictureKeepsTheWindowsProportionsAndIsNeverEnlarged() }),
+        ("testOnlyTheSlotsLeftAsSavedShowAPictureInTheEditor", { ($0 as! PreviewsTests).testOnlyTheSlotsLeftAsSavedShowAPictureInTheEditor() }),
+        ("testADesktopThatMovedOrIsNewShowsNoPicture", { ($0 as! PreviewsTests).testADesktopThatMovedOrIsNewShowsNoPicture() }),
+        ("testThePreviewsAreOffUnlessSwitchedOnAndOnlyThenWritten", { try ($0 as! PreviewsTests).testThePreviewsAreOffUnlessSwitchedOnAndOnlyThenWritten() }),
+        ("testPreviewsWithoutScreenRecordingAreSaidWithTheWayToAllowThem", { ($0 as! PreviewsTests).testPreviewsWithoutScreenRecordingAreSaidWithTheWayToAllowThem() }),
+        ("testTheWindowOnScreenStandsForItsSlotBeforeAMinimisedOneInFrontOfIt", { ($0 as! PreviewsTests).testTheWindowOnScreenStandsForItsSlotBeforeAMinimisedOneInFrontOfIt() }),
+        ("testOnADesktopThatIsNotShownTheFirstWindowThatIsNotMinimisedStandsForItsSlot", { ($0 as! PreviewsTests).testOnADesktopThatIsNotShownTheFirstWindowThatIsNotMinimisedStandsForItsSlot() }),
+    ]),
+    ("ReorderTests", { ReorderTests() }, [
+        ("testATabThatHasNotMovedStaysWhereItIs", { ($0 as! ReorderTests).testATabThatHasNotMovedStaysWhereItIs() }),
+        ("testANeighbourGivesWayWhenTheLeadingEdgeOfTheDraggedTabPassesItsMiddle", { ($0 as! ReorderTests).testANeighbourGivesWayWhenTheLeadingEdgeOfTheDraggedTabPassesItsMiddle() }),
+        ("testAWideTabKeptInsideTheRowStillReachesBothEnds", { ($0 as! ReorderTests).testAWideTabKeptInsideTheRowStillReachesBothEnds() }),
+        ("testDroppedInItsNewPlaceTheTabIsStillThere", { ($0 as! ReorderTests).testDroppedInItsNewPlaceTheTabIsStillThere() }),
+        ("testATabThatIsNotInTheRowHasNoPreview", { ($0 as! ReorderTests).testATabThatIsNotInTheRowHasNoPreview() }),
+        ("testADisplayIsCalledByTheOwnersNameWhenThereIsOne", { ($0 as! ReorderTests).testADisplayIsCalledByTheOwnersNameWhenThereIsOne() }),
+        ("testTheOwnersNameIsWrittenOnlyWhenThereIsOne", { try ($0 as! ReorderTests).testTheOwnersNameIsWrittenOnlyWhenThereIsOne() }),
+        ("testAShortDisplayIsNamedAsTheOwnerCallsIt", { ($0 as! ReorderTests).testAShortDisplayIsNamedAsTheOwnerCallsIt() }),
+    ]),
+    ("MapMoveTests", { MapMoveTests() }, [
+        ("testLeftAndRightStayInTheRowAndStopAtItsEnds", { ($0 as! MapMoveTests).testLeftAndRightStayInTheRowAndStopAtItsEnds() }),
+        ("testUpAndDownKeepThePositionOrTakeTheLastDesktopOfAShorterRow", { ($0 as! MapMoveTests).testUpAndDownKeepThePositionOrTakeTheLastDesktopOfAShorterRow() }),
+        ("testUpFromTheFirstRowAndDownFromTheLastLeaveTheMap", { ($0 as! MapMoveTests).testUpFromTheFirstRowAndDownFromTheLastLeaveTheMap() }),
+        ("testARowWithoutDesktopIsSteppedOver", { ($0 as! MapMoveTests).testARowWithoutDesktopIsSteppedOver() }),
+        ("testAPlaceThatIsNotOnTheMapDoesNotMove", { ($0 as! MapMoveTests).testAPlaceThatIsNotOnTheMapDoesNotMove() }),
+    ]),
+    ("SplitTests", { SplitTests() }, [
+        ("testTheTwoHalvesFillTheFrameWithTheGapBetweenThem", { ($0 as! SplitTests).testTheTwoHalvesFillTheFrameWithTheGapBetweenThem() }),
+        ("testTwoWindowsSplitInASlotTakeHalfOfItEach", { ($0 as! SplitTests).testTwoWindowsSplitInASlotTakeHalfOfItEach() }),
+        ("testAThirdWindowOfTheSlotKeepsItWhole", { ($0 as! SplitTests).testAThirdWindowOfTheSlotKeepsItWhole() }),
+        ("testAWindowWhosePartnerIsGoneOrWhoseSlotChangedHasItsSlotWhole", { ($0 as! SplitTests).testAWindowWhosePartnerIsGoneOrWhoseSlotChangedHasItsSlotWhole() }),
+        ("testAPairIsFoundAgainAfterARestartWhileBothWindowsLive", { try ($0 as! SplitTests).testAPairIsFoundAgainAfterARestartWhileBothWindowsLive() }),
+        ("testAStateFileWithoutPairsReadsAsNone", { try ($0 as! SplitTests).testAStateFileWithoutPairsReadsAsNone() }),
+        ("testABrowsersNewWindowIsTheItemOnCommandN", { ($0 as! SplitTests).testABrowsersNewWindowIsTheItemOnCommandN() }),
+        ("testAnEditorsNewWindowIsNotItsNewFile", { ($0 as! SplitTests).testAnEditorsNewWindowIsNotItsNewFile() }),
+        ("testWithoutAWordForWindowCommandNAloneIsTaken", { ($0 as! SplitTests).testWithoutAWordForWindowCommandNAloneIsTaken() }),
+    ]),
+    ("LinkTests", { LinkTests() }, [
+        ("testALinkRunsACommandOrShowsADesktopOrAScene", { ($0 as! LinkTests).testALinkRunsACommandOrShowsADesktopOrAScene() }),
+        ("testALinkRunsWhatShowsGoesToOrResizes", { ($0 as! LinkTests).testALinkRunsWhatShowsGoesToOrResizes() }),
+        ("testALinkNeverWritesTheConfigurationPausesParksAWindowOrPressesAMenu", { ($0 as! LinkTests).testALinkNeverWritesTheConfigurationPausesParksAWindowOrPressesAMenu() }),
+        ("testAnythingElseIsNotALink", { ($0 as! LinkTests).testAnythingElseIsNotALink() }),
+    ]),
+    ("PrivateCallTests", { PrivateCallTests() }, [
+        ("testWithEveryCallFremspaceRuns", { ($0 as! PrivateCallTests).testWithEveryCallFremspaceRuns() }),
+        ("testWithoutACallThatReadsDesktopsOrWindowsNothingIsApplied", { ($0 as! PrivateCallTests).testWithoutACallThatReadsDesktopsOrWindowsNothingIsApplied() }),
+        ("testWithoutAnotherCallFremspaceStillRunsAndDoesLess", { ($0 as! PrivateCallTests).testWithoutAnotherCallFremspaceStillRunsAndDoesLess() }),
+        ("testAMissingCallIsSaidOnTheStatusPage", { ($0 as! PrivateCallTests).testAMissingCallIsSaidOnTheStatusPage() }),
+    ]),
+    ("HyperTests", { HyperTests() }, [
+        ("testHyperPlusAKeyRunsTheCommandOnControlOptionCommand", { ($0 as! HyperTests).testHyperPlusAKeyRunsTheCommandOnControlOptionCommand() }),
+        ("testAnyOtherKeyGoesOnWithTheModifiers", { ($0 as! HyperTests).testAnyOtherKeyGoesOnWithTheModifiers() }),
+        ("testTurningHyperOnAddsItsMappingAndKeepsTheOthers", { ($0 as! HyperTests).testTurningHyperOnAddsItsMappingAndKeepsTheOthers() }),
+        ("testCapsLockMappedToSomethingElseGivesWayAndComesBack", { ($0 as! HyperTests).testCapsLockMappedToSomethingElseGivesWayAndComesBack() }),
+        ("testTurningHyperOffRemovesOnlyAMappingFremspaceSet", { ($0 as! HyperTests).testTurningHyperOffRemovesOnlyAMappingFremspaceSet() }),
+        ("testAMappingThatWasThereBeforeIsNotFremspacesToRemove", { ($0 as! HyperTests).testAMappingThatWasThereBeforeIsNotFremspacesToRemove() }),
+        ("testARecordFromASessionThatEndedPutsNothingBack", { ($0 as! HyperTests).testARecordFromASessionThatEndedPutsNothingBack() }),
+        ("testTheRecordIsKeptInTheStateAndOlderStatesHaveNone", { try ($0 as! HyperTests).testTheRecordIsKeptInTheStateAndOlderStatesHaveNone() }),
+    ]),
+    ("TravelTests", { TravelTests() }, [
+        ("testEverySlotOfTheOtherDisplaysBecomesADesktopOfTheKeptOne", { try ($0 as! TravelTests).testEverySlotOfTheOtherDisplaysBecomesADesktopOfTheKeptOne() }),
+        ("testTheKeptDisplayKeepsItsDesktopsAndDrawersButSendsNothingAway", { try ($0 as! TravelTests).testTheKeptDisplayKeepsItsDesktopsAndDrawersButSendsNothingAway() }),
+        ("testAFreeDesktopIsNotAddedTwiceAndLabelsStayApart", { try ($0 as! TravelTests).testAFreeDesktopIsNotAddedTwiceAndLabelsStayApart() }),
+        ("testAnIgnoredOrUnknownDisplayGivesNothing", { ($0 as! TravelTests).testAnIgnoredOrUnknownDisplayGivesNothing() }),
+    ]),
+    ("EditorRulesTests", { EditorRulesTests() }, [
+        ("testACleanFractionIsWrittenInFullSizeDigits", { ($0 as! EditorRulesTests).testACleanFractionIsWrittenInFullSizeDigits() }),
+        ("testASlotAsHighAsTheDisplayGivesItsWidthAlone", { ($0 as! EditorRulesTests).testASlotAsHighAsTheDisplayGivesItsWidthAlone() }),
+        ("testASizeKeepsOneNotation", { ($0 as! EditorRulesTests).testASizeKeepsOneNotation() }),
+        ("testASizeInWordsSaysWidthAndHeight", { ($0 as! EditorRulesTests).testASizeInWordsSaysWidthAndHeight() }),
+        ("testALargeTileShowsEverything", { ($0 as! EditorRulesTests).testALargeTileShowsEverything() }),
+        ("testAnOrdinarySlotHasNoStateRow", { ($0 as! EditorRulesTests).testAnOrdinarySlotHasNoStateRow() }),
+        ("testANarrowTileKeepsTheSymbolsAndDropsTheirWords", { ($0 as! EditorRulesTests).testANarrowTileKeepsTheSymbolsAndDropsTheirWords() }),
+        ("testTheIconNeverReachesTheTextAboveItNorTheStatesUnderIt", { ($0 as! EditorRulesTests).testTheIconNeverReachesTheTextAboveItNorTheStatesUnderIt() }),
+        ("testSeveralIconsShareTheWidth", { ($0 as! EditorRulesTests).testSeveralIconsShareTheWidth() }),
+        ("testAShortTileIsItsTitleAlone", { ($0 as! EditorRulesTests).testAShortTileIsItsTitleAlone() }),
+        ("testANewConfigurationHasADesktopPerDesktopOfTheDisplay", { ($0 as! EditorRulesTests).testANewConfigurationHasADesktopPerDesktopOfTheDisplay() }),
+    ]),
+    ("SceneTests", { SceneTests() }, [
+        ("testASceneNamesOneDesktopPerDisplay", { ($0 as! SceneTests).testASceneNamesOneDesktopPerDisplay() }),
+        ("testScenesAreWrittenOnlyWhenThereAreSome", { try ($0 as! SceneTests).testScenesAreWrittenOnlyWhenThereAreSome() }),
+        ("testRemovingADesktopShiftsTheLaterOnesAndDropsItFromItsScenes", { ($0 as! SceneTests).testRemovingADesktopShiftsTheLaterOnesAndDropsItFromItsScenes() }),
+        ("testMovingADesktopKeepsTheScenesOnTheSameDesktops", { ($0 as! SceneTests).testMovingADesktopKeepsTheScenesOnTheSameDesktops() }),
+        ("testASceneShowsWhatIsThereAndNotShownTheKeyboardDisplayLast", { ($0 as! SceneTests).testASceneShowsWhatIsThereAndNotShownTheKeyboardDisplayLast() }),
+        ("testWhatASceneDoesBeyondTheDesktopsIsWrittenOnlyWhenThereIsSome", { try ($0 as! SceneTests).testWhatASceneDoesBeyondTheDesktopsIsWrittenOnlyWhenThereIsSome() }),
+        ("testTheFocusOfASceneGoesWithTheDesktopItWasOn", { ($0 as! SceneTests).testTheFocusOfASceneGoesWithTheDesktopItWasOn() }),
+        ("testASceneGivesFocusToASlotThatFocusEnlargesUnlessItHasItAlready", { ($0 as! SceneTests).testASceneGivesFocusToASlotThatFocusEnlargesUnlessItHasItAlready() }),
+        ("testASceneMovesOnlyTheDrawersThatAreTheOtherWay", { ($0 as! SceneTests).testASceneMovesOnlyTheDrawersThatAreTheOtherWay() }),
+        ("testLeavingASceneGivesBackWhatItChangedAndThatIsStillSo", { ($0 as! SceneTests).testLeavingASceneGivesBackWhatItChangedAndThatIsStillSo() }),
+        ("testAskingForASceneAgainWhileItIsShownLeavesIt", { ($0 as! SceneTests).testAskingForASceneAgainWhileItIsShownLeavesIt() }),
+        ("testASceneShownAgainKeepsWhatThingsWereLikeBeforeIt", { ($0 as! SceneTests).testASceneShownAgainKeepsWhatThingsWereLikeBeforeIt() }),
+        ("testADrawerASceneOpenedClosesWhenItsDisplayGoesToAnotherDesktop", { ($0 as! SceneTests).testADrawerASceneOpenedClosesWhenItsDisplayGoesToAnotherDesktop() }),
+        ("testLeavingASceneGoesBackToTheDesktopsItsDisplaysShowedBefore", { ($0 as! SceneTests).testLeavingASceneGoesBackToTheDesktopsItsDisplaysShowedBefore() }),
+        ("testASceneOpensItsAppsThatAreNotRunningEachOnce", { ($0 as! SceneTests).testASceneOpensItsAppsThatAreNotRunningEachOnce() }),
+    ]),
+    ("ShareTests", { ShareTests() }, [
+        ("testAnExportSaysNothingOfTheDisplaysNorOfTheFiltersUnlessAsked", { try ($0 as! ShareTests).testAnExportSaysNothingOfTheDisplaysNorOfTheFiltersUnlessAsked() }),
+        ("testTheScenesOfAnExportNameTheDisplaysByPosition", { ($0 as! ShareTests).testTheScenesOfAnExportNameTheDisplaysByPosition() }),
+        ("testAFileIsReadBackAsItWasWritten", { try ($0 as! ShareTests).testAFileIsReadBackAsItWasWritten() }),
+        ("testAnotherKindOfFileOrANewerOneIsRefused", { ($0 as! ShareTests).testAnotherKindOfFileOrANewerOneIsRefused() }),
+        ("testAFileWithSomethingThatCannotBeIsRefused", { ($0 as! ShareTests).testAFileWithSomethingThatCannotBeIsRefused() }),
+        ("testNamesAreCutToOneLineAndAScenePartThatPointsNowhereIsDropped", { try ($0 as! ShareTests).testNamesAreCutToOneLineAndAScenePartThatPointsNowhereIsDropped() }),
+        ("testAnImportAddsTheDesktopsAfterTheOwnersAndTheScenesFollow", { ($0 as! ShareTests).testAnImportAddsTheDesktopsAfterTheOwnersAndTheScenesFollow() }),
+        ("testADisplayOfTheFileLeftOutTakesItsPartOfTheScenes", { ($0 as! ShareTests).testADisplayOfTheFileLeftOutTakesItsPartOfTheScenes() }),
+    ]),
+    ("StackTests", { StackTests() }, [
+        ("testGoesThroughEveryWindowAndWrapsAround", { ($0 as! StackTests).testGoesThroughEveryWindowAndWrapsAround() }),
+        ("testBackwardsIsTheOtherWay", { ($0 as! StackTests).testBackwardsIsTheOtherWay() }),
+        ("testNothingToGoToAloneOrOutsideTheStack", { ($0 as! StackTests).testNothingToGoToAloneOrOutsideTheStack() }),
+    ]),
+    ("ShortcutsTests", { ShortcutsTests() }, [
+        ("testModifiersCompareWhateverTheirOrder", { ($0 as! ShortcutsTests).testModifiersCompareWhateverTheirOrder() }),
+        ("testAShortcutNeedsMoreThanShift", { ($0 as! ShortcutsTests).testAShortcutNeedsMoreThanShift() }),
+        ("testConflictNamesTheOtherCommand", { ($0 as! ShortcutsTests).testConflictNamesTheOtherCommand() }),
+        ("testShortcutsRoundTripAndOlderFilesHaveNone", { try! ($0 as! ShortcutsTests).testShortcutsRoundTripAndOlderFilesHaveNone() }),
+    ]),
+    ("ConfigCommandsTests", { ConfigCommandsTests() }, [
+        ("testLockOnFreeDesktopCreatesALayout", { ($0 as! ConfigCommandsTests).testLockOnFreeDesktopCreatesALayout() }),
+        ("testLockAddsALockedSlotWithProfile", { ($0 as! ConfigCommandsTests).testLockAddsALockedSlotWithProfile() }),
+        ("testOverlapJoinsTheSlotOverlappedMost", { ($0 as! ConfigCommandsTests).testOverlapJoinsTheSlotOverlappedMost() }),
+        ("testJoiningTwiceAddsNoDuplicateRule", { ($0 as! ConfigCommandsTests).testJoiningTwiceAddsNoDuplicateRule() }),
+        ("testOneRuleIsWrittenAsRule", { try ($0 as! ConfigCommandsTests).testOneRuleIsWrittenAsRule() }),
+        ("testRulesRoundTrip", { try ($0 as! ConfigCommandsTests).testRulesRoundTrip() }),
+        ("testMatchesAnyRule", { ($0 as! ConfigCommandsTests).testMatchesAnyRule() }),
+        ("testToggleFocusable", { ($0 as! ConfigCommandsTests).testToggleFocusable() }),
+    ]),
+    ("RecoveryTests", { RecoveryTests() }, [
+        ("testMostlyVisibleWindowIsLeft", { ($0 as! RecoveryTests).testMostlyVisibleWindowIsLeft() }),
+        ("testParkedWindowComesBackInside", { ($0 as! RecoveryTests).testParkedWindowComesBackInside() }),
+        ("testHugeWindowIsClamped", { ($0 as! RecoveryTests).testHugeWindowIsClamped() }),
+    ]),
+    ("AssignerTests", { AssignerTests() }, [
+        ("testFixedSizeWindowIsNotManageable", { ($0 as! AssignerTests).testFixedSizeWindowIsNotManageable() }),
+        ("testChosenSlotSurvivesTitleChange", { ($0 as! AssignerTests).testChosenSlotSurvivesTitleChange() }),
+        ("testBrowserPopupIsNotManageable", { ($0 as! AssignerTests).testBrowserPopupIsNotManageable() }),
+        ("testFirstMatchingSlotWins", { ($0 as! AssignerTests).testFirstMatchingSlotWins() }),
+        ("testMemoryWinsOverOrder", { ($0 as! AssignerTests).testMemoryWinsOverOrder() }),
+        ("testMemoryForMissingSlotFallsBack", { ($0 as! AssignerTests).testMemoryForMissingSlotFallsBack() }),
+        ("testProfileMustMatch", { ($0 as! AssignerTests).testProfileMustMatch() }),
+        ("testSeveralWindowsStackInOneSlot", { ($0 as! AssignerTests).testSeveralWindowsStackInOneSlot() }),
+        ("testSkipsMinimizedAndFullScreen", { ($0 as! AssignerTests).testSkipsMinimizedAndFullScreen() }),
+        ("testTitleContainsIsCaseInsensitive", { ($0 as! AssignerTests).testTitleContainsIsCaseInsensitive() }),
+    ]),
+    ("LockGuardTests", { LockGuardTests() }, [
+        ("testReleasedWindowIsLeftAloneUntilEndReleases", { ($0 as! LockGuardTests).testReleasedWindowIsLeftAloneUntilEndReleases() }),
+        ("testEndReleasesGivesWindowsBack", { ($0 as! LockGuardTests).testEndReleasesGivesWindowsBack() }),
+        ("testWithinToleranceDoesNothing", { ($0 as! LockGuardTests).testWithinToleranceDoesNothing() }),
+        ("testRestoresWhenMovedOut", { ($0 as! LockGuardTests).testRestoresWhenMovedOut() }),
+        ("testWaitsWhileMouseIsDown", { ($0 as! LockGuardTests).testWaitsWhileMouseIsDown() }),
+        ("testGivesUpAfterThreeRestoresInFiveSeconds", { ($0 as! LockGuardTests).testGivesUpAfterThreeRestoresInFiveSeconds() }),
+        ("testCounterResetsAfterWindow", { ($0 as! LockGuardTests).testCounterResetsAfterWindow() }),
+        ("testForgetEndsRelease", { ($0 as! LockGuardTests).testForgetEndsRelease() }),
+    ]),
+    ("FocusStateTests", { FocusStateTests() }, [
+        ("testFocusTogglesPerSpace", { ($0 as! FocusStateTests).testFocusTogglesPerSpace() }),
+        ("testAFocusFoundAgainIsSetWithoutToggling", { ($0 as! FocusStateTests).testAFocusFoundAgainIsSetWithoutToggling() }),
+        ("testFocusSwitchesToAnotherSlot", { ($0 as! FocusStateTests).testFocusSwitchesToAnotherSlot() }),
+        ("testFocusFollowsItsConfiguredDesktopWhenTheDesktopsAreReordered", { ($0 as! FocusStateTests).testFocusFollowsItsConfiguredDesktopWhenTheDesktopsAreReordered() }),
+        ("testFocusOfAnotherConfigurationOfAMissingDesktopOrOfASlotThatIsGoneIsNotGiven", { ($0 as! FocusStateTests).testFocusOfAnotherConfigurationOfAMissingDesktopOrOfASlotThatIsGoneIsNotGiven() }),
+        ("testTheFocusOfADesktopThatIsNotThereAndOfOtherConfigurationsIsKept", { ($0 as! FocusStateTests).testTheFocusOfADesktopThatIsNotThereAndOfOtherConfigurationsIsKept() }),
+        ("testTargetIsTheFrontmostFocusableSlot", { ($0 as! FocusStateTests).testTargetIsTheFrontmostFocusableSlot() }),
+        ("testTargetFallsBackToTheDefaultFocusSlot", { ($0 as! FocusStateTests).testTargetFallsBackToTheDefaultFocusSlot() }),
+        ("testNoTargetWithoutFocusSlots", { ($0 as! FocusStateTests).testNoTargetWithoutFocusSlots() }),
+        ("testSeveralSlotsCanBeEnlargedEachFromItsOwnWindow", { ($0 as! FocusStateTests).testSeveralSlotsCanBeEnlargedEachFromItsOwnWindow() }),
+        ("testFromAWindowThatIsInNoneOfThemTheOneFurthestLeftIsEnlarged", { ($0 as! FocusStateTests).testFromAWindowThatIsInNoneOfThemTheOneFurthestLeftIsEnlarged() }),
+        ("testTheFocusSlotOfAnOlderFileIsOneOfThem", { ($0 as! FocusStateTests).testTheFocusSlotOfAnOlderFileIsOneOfThem() }),
+        ("testSwitchingFocusForASlotLeavesTheOthersAsTheyWere", { ($0 as! FocusStateTests).testSwitchingFocusForASlotLeavesTheOthersAsTheyWere() }),
+        ("testFocusableDefaultsToFalseWhenDecoding", { try ($0 as! FocusStateTests).testFocusableDefaultsToFalseWhenDecoding() }),
+    ]),
+    ("PlacementOrderTests", { PlacementOrderTests() }, [
+        ("testShrinkingWindowsGoBackToFront", { ($0 as! PlacementOrderTests).testShrinkingWindowsGoBackToFront() }),
+        ("testGrowingWindowsGoFrontToBack", { ($0 as! PlacementOrderTests).testGrowingWindowsGoFrontToBack() }),
+        ("testGrowingBeforeShrinkingAndUnknownLast", { ($0 as! PlacementOrderTests).testGrowingBeforeShrinkingAndUnknownLast() }),
+        ("testSmallerWindowDoesNotRefuseItsSlot", { ($0 as! PlacementOrderTests).testSmallerWindowDoesNotRefuseItsSlot() }),
+        ("testLargerWindowRefusesItsSlot", { ($0 as! PlacementOrderTests).testLargerWindowRefusesItsSlot() }),
+        ("testFitVerdict", { ($0 as! PlacementOrderTests).testFitVerdict() }),
+        ("testOnlyAMoveCanDropIntoAnotherSlot", { ($0 as! PlacementOrderTests).testOnlyAMoveCanDropIntoAnotherSlot() }),
+    ]),
+    ("EnforceTests", { EnforceTests() }, [
+        ("testEnforcesOnlyWhileRunning", { ($0 as! EnforceTests).testEnforcesOnlyWhileRunning() }),
+        ("testWindowThatLeftItsSpaceIsNotEnforced", { ($0 as! EnforceTests).testWindowThatLeftItsSpaceIsNotEnforced() }),
+        ("testOnlyADragChoosesAnotherSlotOrResizesTheLayout", { ($0 as! EnforceTests).testOnlyADragChoosesAnotherSlotOrResizesTheLayout() }),
+        ("testARefusedMoveIsTriedAgainTwiceThenTheWindowIsLeft", { ($0 as! EnforceTests).testARefusedMoveIsTriedAgainTwiceThenTheWindowIsLeft() }),
+        ("testFitActionRetriesThenStopsFighting", { ($0 as! EnforceTests).testFitActionRetriesThenStopsFighting() }),
+    ]),
+    ("DrawerModelTests", { DrawerModelTests() }, [
+        ("testDesktopWithoutDrawerStillDecodes", { try ($0 as! DrawerModelTests).testDesktopWithoutDrawerStillDecodes() }),
+        ("testDrawerRoundTrips", { try ($0 as! DrawerModelTests).testDrawerRoundTrips() }),
+        ("testSingleDrawerOfTheFirstFormatStillDecodes", { try ($0 as! DrawerModelTests).testSingleDrawerOfTheFirstFormatStillDecodes() }),
+        ("testOneDrawerPerEdge", { ($0 as! DrawerModelTests).testOneDrawerPerEdge() }),
+        ("testDrawerSlotAppsRoundTripAndOlderSlotsHaveNone", { try ($0 as! DrawerModelTests).testDrawerSlotAppsRoundTripAndOlderSlotsHaveNone() }),
+        ("testWindowsGoToTheDrawerSlotOfTheirApp", { ($0 as! DrawerModelTests).testWindowsGoToTheDrawerSlotOfTheirApp() }),
+        ("testDrawersOfTheDesktopsBecomeThoseOfTheDisplay", { try ($0 as! DrawerModelTests).testDrawersOfTheDesktopsBecomeThoseOfTheDisplay() }),
+        ("testDrawersOfTheDisplayWinOverThoseLeftOnDesktops", { try ($0 as! DrawerModelTests).testDrawersOfTheDisplayWinOverThoseLeftOnDesktops() }),
+    ]),
+    ("DrawerGeometryTests", { DrawerGeometryTests() }, [
+        ("testDrawerZoneAndFrames", { ($0 as! DrawerGeometryTests).testDrawerZoneAndFrames() }),
+        ("testOwnersDeskFreeSides", { ($0 as! DrawerGeometryTests).testOwnersDeskFreeSides() }),
+        ("testTwoDrawersShareOneSetOfSlotKeys", { ($0 as! DrawerGeometryTests).testTwoDrawersShareOneSetOfSlotKeys() }),
+        ("testParkSideFollowsTheFallbackOrder", { ($0 as! DrawerGeometryTests).testParkSideFollowsTheFallbackOrder() }),
+        ("testParkedFrameLeavesTheStrip", { ($0 as! DrawerGeometryTests).testParkedFrameLeavesTheStrip() }),
+        ("testCompactParkedFrameSitsInTheDrawerCorner", { ($0 as! DrawerGeometryTests).testCompactParkedFrameSitsInTheDrawerCorner() }),
+        ("testAWindowHidesUnderTheDisplayThatIsAgainstPartOfTheSide", { ($0 as! DrawerGeometryTests).testAWindowHidesUnderTheDisplayThatIsAgainstPartOfTheSide() }),
+        ("testARightDrawerHidesThroughTheOtherSideWhenItsOwnIsTaken", { ($0 as! DrawerGeometryTests).testARightDrawerHidesThroughTheOtherSideWhenItsOwnIsTaken() }),
+        ("testAFreeSideHidesTheWindowWhereItIs", { ($0 as! DrawerGeometryTests).testAFreeSideHidesTheWindowWhereItIs() }),
+        ("testNoSideHidesAWindowBetweenTwoDisplaysOfTheSameHeight", { ($0 as! DrawerGeometryTests).testNoSideHidesAWindowBetweenTwoDisplaysOfTheSameHeight() }),
+    ]),
+    ("DrawerStateTests", { DrawerStateTests() }, [
+        ("testSendStacksFrontFirst", { ($0 as! DrawerStateTests).testSendStacksFrontFirst() }),
+        ("testMovingTheOnlyMemberKeepsTheDrawerOpen", { ($0 as! DrawerStateTests).testMovingTheOnlyMemberKeepsTheDrawerOpen() }),
+("testNeighbourSlotTieGoesToTheUpperSlot", { ($0 as! DrawerStateTests).testNeighbourSlotTieGoesToTheUpperSlot() }),
+("testSendingAMemberAgainMovesIt", { ($0 as! DrawerStateTests).testSendingAMemberAgainMovesIt() }),
+        ("testEachDrawerOfADisplayOpensOnItsOwn", { ($0 as! DrawerStateTests).testEachDrawerOfADisplayOpensOnItsOwn() }),
+        ("testRemoveLastMemberDropsTheDrawer", { ($0 as! DrawerStateTests).testRemoveLastMemberDropsTheDrawer() }),
+        ("testAllMembersForRestore", { ($0 as! DrawerStateTests).testAllMembersForRestore() }),
+        ("testActivatingAMemberOpensItsDrawer", { ($0 as! DrawerStateTests).testActivatingAMemberOpensItsDrawer() }),
+        ("testActivationReactions", { ($0 as! DrawerStateTests).testActivationReactions() }),
+        ("testSlotAtPoint", { ($0 as! DrawerStateTests).testSlotAtPoint() }),
+        ("testNeighbourSlot", { ($0 as! DrawerStateTests).testNeighbourSlot() }),
+        ("testNeighbourSlotUpAndDown", { ($0 as! DrawerStateTests).testNeighbourSlotUpAndDown() }),
+        ("testAnArrowGoesToTheSlotBesideNotToANearerOneInAnotherDirection", { ($0 as! DrawerStateTests).testAnArrowGoesToTheSlotBesideNotToANearerOneInAnotherDirection() }),
+        ("testASlotThatFacesNoneStillReachesTheNearestOnThatSide", { ($0 as! DrawerStateTests).testASlotThatFacesNoneStillReachesTheNearestOnThatSide() }),
+        ("testVisibleRegionsSkipLayoutSlotsUnderAnOpenDrawer", { ($0 as! DrawerStateTests).testVisibleRegionsSkipLayoutSlotsUnderAnOpenDrawer() }),
+    ]),
+    ("DrawerMaintenanceTests", { DrawerMaintenanceTests() }, [
+        ("testParkedFileRoundTrip", { try ($0 as! DrawerMaintenanceTests).testParkedFileRoundTrip() }),
+        ("testRecoveryRestoresOnlyLiveWindowsOfTheSameProcess", { ($0 as! DrawerMaintenanceTests).testRecoveryRestoresOnlyLiveWindowsOfTheSameProcess() }),
+        ("testRecoveryLeavesAWindowThatIsNowAnotherApps", { ($0 as! DrawerMaintenanceTests).testRecoveryLeavesAWindowThatIsNowAnotherApps() }),
+        ("testOnlyAClosedWindowIsGone", { ($0 as! DrawerMaintenanceTests).testOnlyAClosedWindowIsGone() }),
+        ("testAnEmptyWindowListFromAnAppThatStillShowsWindowsIsNoAnswer", { ($0 as! DrawerMaintenanceTests).testAnEmptyWindowListFromAnAppThatStillShowsWindowsIsNoAnswer() }),
+        ("testMembersOfARemovedOrRenamedDrawerSlotAreStale", { ($0 as! DrawerMaintenanceTests).testMembersOfARemovedOrRenamedDrawerSlotAreStale() }),
+        ("testMembersFollowTheDesktopTheirDisplayShows", { ($0 as! DrawerMaintenanceTests).testMembersFollowTheDesktopTheirDisplayShows() }),
+        ("testMembersOfADisconnectedDisplayAreKept", { ($0 as! DrawerMaintenanceTests).testMembersOfADisconnectedDisplayAreKept() }),
+        ("testActivatingAStackedMemberBringsItToFront", { ($0 as! DrawerMaintenanceTests).testActivatingAStackedMemberBringsItToFront() }),
+        ("testAMemberThatCouldNotBeBroughtBackStaysInTheParkedFile", { ($0 as! DrawerMaintenanceTests).testAMemberThatCouldNotBeBroughtBackStaysInTheParkedFile() }),
+    ]),
+    ("CaptureTests", { CaptureTests() }, [
+        ("testCaptureRoundsToCleanFractions", { ($0 as! CaptureTests).testCaptureRoundsToCleanFractions() }),
+        ("testCaptureStacksSameAppSameRect", { ($0 as! CaptureTests).testCaptureStacksSameAppSameRect() }),
+        ("testCaptureSkipsUnmanageableAndNeverOverlaps", { ($0 as! CaptureTests).testCaptureSkipsUnmanageableAndNeverOverlaps() }),
+    ]),
+    ("LayoutEditingTests", { LayoutEditingTests() }, [
+        ("testDraggingAnInnerEdgeMovesItsDividerAndTheSlotsBehindIt", { ($0 as! LayoutEditingTests).testDraggingAnInnerEdgeMovesItsDividerAndTheSlotsBehindIt() }),
+        ("testTheEdgeBetweenTwoStackedSlotsMovesOnlyThem", { ($0 as! LayoutEditingTests).testTheEdgeBetweenTwoStackedSlotsMovesOnlyThem() }),
+        ("testAMoveAnOuterEdgeOrATinyResizeChangeNothing", { ($0 as! LayoutEditingTests).testAMoveAnOuterEdgeOrATinyResizeChangeNothing() }),
+        ("testSwappingExchangesThePlacesAndNothingElse", { ($0 as! LayoutEditingTests).testSwappingExchangesThePlacesAndNothingElse() }),
+        ("testSplitAndRemoveRoundTrip", { ($0 as! LayoutEditingTests).testSplitAndRemoveRoundTrip() }),
+        ("testDividersOfTheCodeLayout", { ($0 as! LayoutEditingTests).testDividersOfTheCodeLayout() }),
+        ("testMoveSnapsToEighthsOnLargeDisplays", { ($0 as! LayoutEditingTests).testMoveSnapsToEighthsOnLargeDisplays() }),
+        ("testDividerClampsAtTheSmallestStop", { ($0 as! LayoutEditingTests).testDividerClampsAtTheSmallestStop() }),
+        ("testIsValidReportsOverlaps", { ($0 as! LayoutEditingTests).testIsValidReportsOverlaps() }),
+        ("testSplitRefusedWhenHalvesWouldBeBelowTheSmallestStop", { ($0 as! LayoutEditingTests).testSplitRefusedWhenHalvesWouldBeBelowTheSmallestStop() }),
+        ("testMoveNeverMakesSlotsOverlapAcrossRows", { ($0 as! LayoutEditingTests).testMoveNeverMakesSlotsOverlapAcrossRows() }),
+    ]),
+    ("RequirementsTests", { RequirementsTests() }, [
+        ("testMissingDesktopsPerDisplay", { ($0 as! RequirementsTests).testMissingDesktopsPerDisplay() }),
+        ("testRearrangingSpacesIsWarned", { ($0 as! RequirementsTests).testRearrangingSpacesIsWarned() }),
+        ("testMinimumSizesKeepTheLargest", { ($0 as! RequirementsTests).testMinimumSizesKeepTheLargest() }),
+        ("testTooSmallFlagsOutlookOnAQuarter", { ($0 as! RequirementsTests).testTooSmallFlagsOutlookOnAQuarter() }),
+        ("testOnlyTheRefusedDimensionIsLearned", { ($0 as! RequirementsTests).testOnlyTheRefusedDimensionIsLearned() }),
+    ]),
+    ("ManagedSpacesTests", { ManagedSpacesTests() }, [
+        ("testReadsDesktopUUIDs", { ($0 as! ManagedSpacesTests).testReadsDesktopUUIDs() }),
+        ("testDesktopIndexSkipsFullScreenSpaces", { ($0 as! ManagedSpacesTests).testDesktopIndexSkipsFullScreenSpaces() }),
+        ("testCurrentDesktopPerDisplay", { ($0 as! ManagedSpacesTests).testCurrentDesktopPerDisplay() }),
+        ("testGarbageReadsAsEmpty", { ($0 as! ManagedSpacesTests).testGarbageReadsAsEmpty() }),
+    ]),
+    ("EngineRulesTests", { EngineRulesTests() }, [
+        ("testPicksConfigurationWithMostMatchingDisplays", { ($0 as! EngineRulesTests).testPicksConfigurationWithMostMatchingDisplays() }),
+        ("testNoConfigurationWhenADisplayIsMissing", { ($0 as! EngineRulesTests).testNoConfigurationWhenADisplayIsMissing() }),
+        ("testTieGoesToFirstConfiguration", { ($0 as! EngineRulesTests).testTieGoesToFirstConfiguration() }),
+        ("testAnIgnoredDisplayIsOptional", { ($0 as! EngineRulesTests).testAnIgnoredDisplayIsOptional() }),
+        ("testNearestSlotByCentre", { ($0 as! EngineRulesTests).testNearestSlotByCentre() }),
+        ("testDuplicateIdentityOfAConfiguredDisplayIsAmbiguous", { ($0 as! EngineRulesTests).testDuplicateIdentityOfAConfiguredDisplayIsAmbiguous() }),
+    ]),
+]
+
+var passed = 0
+var failed = 0
+
+for (suiteName, make, methods) in suites {
+    for (methodName, run) in methods {
+        let name = "\(suiteName).\(methodName)"
+        _ = TestReport.shared.drain()
+        let instance = make()
+        var thrown: Error?
+        do {
+            try instance.setUpWithError()
+            instance.setUp()
+            try run(instance)
+            instance.tearDown()
+            try instance.tearDownWithError()
+        } catch {
+            thrown = error
+        }
+        var failures = TestReport.shared.drain()
+        if let thrown, failures.isEmpty {
+            failures.append(TestFailure(message: "threw \(thrown)", file: "<runner>", line: 0))
+        }
+        if failures.isEmpty {
+            passed += 1
+            print("PASS \(name)")
+        } else {
+            failed += 1
+            for failure in failures {
+                print("FAIL \(name): \(failure.message) @\(failure.file):\(failure.line)")
+            }
+        }
+    }
+}
+
+let total = passed + failed
+print("\(total) test\(total == 1 ? "" : "s"), \(failed) failure\(failed == 1 ? "" : "s")")
+exit(failed == 0 ? 0 : 1)

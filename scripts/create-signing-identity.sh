@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Adapted from Fremkit (MIT).
+# Create the self-signed code-signing identity Fremspace is built with.
+#
+# Why: an ad-hoc signature (`codesign --sign -`) changes with every build, and macOS ties its
+# Accessibility grant to the signature. Without a stable identity, every
+# rebuild drops the permissions you granted the previous one. A self-signed
+# certificate in your login keychain fixes the identity once and for all.
+#
+# The certificate is local, self-signed and trusted for code signing only. It is not an Apple
+# Developer ID and cannot be used to distribute anything.
+#
+# Idempotent: it does nothing when `security find-identity -v -p codesigning` already lists it.
+set -euo pipefail
+
+IDENTITY="${FREMSPACE_SIGN_IDENTITY:-Fremspace Dev}"
+KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
+
+if security find-identity -v -p codesigning 2>/dev/null | grep -q "\"$IDENTITY\""; then
+    echo "Identity \"$IDENTITY\" already exists in the login keychain; nothing to do."
+    exit 0
+fi
+
+if [ ! -f "$KEYCHAIN" ]; then
+    echo "error: login keychain not found at $KEYCHAIN" >&2
+    exit 1
+fi
+
+echo "Creating the self-signed code-signing identity \"$IDENTITY\"."
+echo "macOS will ask for your login password once or twice: importing the key into the login"
+echo "keychain, and marking the certificate as trusted for code signing."
+echo
+
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+
+cat > "$WORK/openssl.cnf" <<'CONF'
+[ req ]
+distinguished_name = dn
+prompt             = no
+x509_extensions    = codesign
+
+[ dn ]
+CN = FREMSPACE_IDENTITY_CN
+
+[ codesign ]
+basicConstraints       = critical,CA:false
+keyUsage               = critical,digitalSignature
+extendedKeyUsage       = critical,codeSigning
+subjectKeyIdentifier   = hash
+CONF
+# The CN is substituted rather than interpolated so an identity name with shell metacharacters
+# cannot leak into the heredoc.
+PATTERN='FREMSPACE_IDENTITY_CN'
+python3 - "$WORK/openssl.cnf" "$PATTERN" "$IDENTITY" <<'PY'
+import sys
+path, pattern, name = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(path, encoding="utf-8") as handle:
+    text = handle.read()
+with open(path, "w", encoding="utf-8") as handle:
+    handle.write(text.replace(pattern, name))
+PY
+
+# macOS ships LibreSSL at /usr/bin/openssl, and the Security framework reads the bundle it
+# writes. An OpenSSL 3 in the PATH (Homebrew's, which comes first on most Macs with one) packages
+# it with algorithms `security import` refuses, and the import fails on the MAC check with a
+# message about a wrong password. `-legacy` is meant to cover that, but only works on a build
+# that ships the legacy provider, which Homebrew's does not.
+OPENSSL=openssl
+[ -x /usr/bin/openssl ] && OPENSSL=/usr/bin/openssl
+
+# A throwaway password rather than none: an empty one fails the same MAC check on current macOS,
+# whatever wrote the bundle. It lives as long as this script and goes no further.
+P12_PASSWORD="fremspace-$RANDOM$RANDOM$RANDOM"
+
+echo "==> generating the key and certificate (10 years)"
+"$OPENSSL" req -x509 -newkey rsa:2048 -nodes -sha256 -days 3650 \
+    -config "$WORK/openssl.cnf" \
+    -keyout "$WORK/key.pem" -out "$WORK/cert.pem" >/dev/null 2>&1
+
+echo "==> packaging them as PKCS#12"
+"$OPENSSL" pkcs12 -export \
+    -inkey "$WORK/key.pem" -in "$WORK/cert.pem" \
+    -name "$IDENTITY" -passout "pass:$P12_PASSWORD" -out "$WORK/identity.p12" >/dev/null 2>&1
+
+echo "==> importing into the login keychain"
+# The PKCS#12's friendly name (`-name` above) becomes the private key's label, which is how the
+# partition-list step below finds this key and no other.
+# `-x` marks the private key non-extractable: it can sign, but it cannot be exported back out of
+# the keychain. Only codesign is allowed to use it — `security` itself was on that list, which
+# let any script dump the key with `security export`.
+security import "$WORK/identity.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -x \
+    -T /usr/bin/codesign >/dev/null
+
+echo "==> trusting it for code signing"
+# User-level trust only (no -d): nothing is added to the system trust store.
+security add-trusted-cert -p codeSign -k "$KEYCHAIN" "$WORK/cert.pem"
+
+# Without this, codesign asks for the login password on every single build. It needs the keychain
+# password, which is prompted for interactively rather than passed as an empty `-k ""` — that only
+# ever worked on a keychain with no password, and silently failed on every other Mac.
+#
+# Only the key just imported: `-l` matches the label the PKCS#12 gave it (the identity's name)
+# and `-t private` keeps it to private keys. Without them, `-s` alone matches *every* signing key
+# in the login keychain — other Developer IDs, VPN, S/MIME and client certificates — and would
+# rewrite all their partition lists. The command prints one record per key it changed; anything
+# but exactly one is reported.
+# stderr is not redirected — a password prompt or a real error has to be visible.
+if CHANGED=$(security set-key-partition-list -S apple-tool:,apple:,codesign: -s -t private \
+        -l "$IDENTITY" "$KEYCHAIN"); then
+    COUNT=$(printf '%s\n' "$CHANGED" | grep -c '^keychain: ' || true)
+    if [ "$COUNT" != "1" ]; then
+        echo "warning: expected to pre-authorise exactly one key labelled \"$IDENTITY\", changed $COUNT." >&2
+        echo "         Check Keychain Access for other keys with that name." >&2
+    fi
+else
+    echo "note: could not pre-authorise codesign; macOS may ask for your password on each build."
+fi
+
+if security find-identity -v -p codesigning 2>/dev/null | grep -q "\"$IDENTITY\""; then
+    echo
+    echo "Done. \"$IDENTITY\" is now a code-signing identity in your login keychain."
+    echo "scripts/build.sh picks it up automatically."
+    echo "Grant Fremspace Accessibility once more after the next build; it then survives rebuilds."
+else
+    echo "error: the identity was not found after import; see the messages above." >&2
+    exit 1
+fi

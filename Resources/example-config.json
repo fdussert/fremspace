@@ -1,0 +1,361 @@
+{
+  "configurations": [
+    {
+      "displays": [
+        {
+          "identity": {
+            "model": 41054,
+            "name": "Built-in Retina Display",
+            "serial": 1001,
+            "vendor": 1552
+          },
+          "ignored": false,
+          "spaces": [
+            {
+              "label": "Music",
+              "layout": {
+                "slots": [
+                  {
+                    "id": "spotify",
+                    "launchAtLogin": true,
+                    "locked": false,
+                    "rect": {
+                      "h": 1,
+                      "w": 1,
+                      "x": 0,
+                      "y": 0
+                    },
+                    "rule": {
+                      "bundleID": "com.spotify.client"
+                    }
+                  }
+                ]
+              },
+              "unmatched": {
+                "float": {}
+              }
+            },
+            {
+              "label": "Slack",
+              "layout": {
+                "slots": [
+                  {
+                    "id": "slack",
+                    "launchAtLogin": true,
+                    "locked": true,
+                    "rect": {
+                      "h": 1,
+                      "w": 1,
+                      "x": 0,
+                      "y": 0
+                    },
+                    "rule": {
+                      "bundleID": "com.tinyspeck.slackmacgap"
+                    }
+                  }
+                ]
+              },
+              "unmatched": {
+                "float": {}
+              }
+            },
+            {
+              "label": "Mail",
+              "layout": {
+                "slots": [
+                  {
+                    "id": "mail",
+                    "launchAtLogin": true,
+                    "locked": true,
+                    "rect": {
+                      "h": 1,
+                      "w": 1,
+                      "x": 0,
+                      "y": 0
+                    },
+                    "rule": {
+                      "bundleID": "com.microsoft.Outlook"
+                    }
+                  }
+                ]
+              },
+              "unmatched": {
+                "float": {}
+              }
+            },
+            {
+              "label": "Teams",
+              "layout": {
+                "slots": [
+                  {
+                    "id": "teams",
+                    "launchAtLogin": true,
+                    "locked": true,
+                    "rect": {
+                      "h": 1,
+                      "w": 1,
+                      "x": 0,
+                      "y": 0
+                    },
+                    "rule": {
+                      "bundleID": "com.microsoft.teams2"
+                    }
+                  }
+                ]
+              },
+              "unmatched": {
+                "float": {}
+              }
+            }
+          ]
+        },
+        {
+          "identity": {
+            "model": 53511,
+            "name": "DELL S3221QSA (1)",
+            "serial": 1002,
+            "vendor": 4268
+          },
+          "ignored": false,
+          "spaces": [
+            {
+              "drawers": [
+                {
+                  "edge": "left",
+                  "layout": {
+                    "slots": [
+                      {
+                        "id": "top",
+                        "rect": {
+                          "h": 0.5,
+                          "w": 1,
+                          "x": 0,
+                          "y": 0
+                        }
+                      },
+                      {
+                        "id": "bottom",
+                        "rect": {
+                          "h": 0.5,
+                          "w": 1,
+                          "x": 0,
+                          "y": 0.5
+                        }
+                      }
+                    ]
+                  },
+                  "size": 0.375
+                }
+              ],
+              "focusSlot": "ide",
+              "label": "Code",
+              "layout": {
+                "slots": [
+                  {
+                    "id": "ide",
+                    "launchAtLogin": true,
+                    "locked": true,
+                    "rect": {
+                      "h": 1,
+                      "w": 0.6,
+                      "x": 0,
+                      "y": 0
+                    },
+                    "rule": {
+                      "bundleID": "com.microsoft.VSCode"
+                    }
+                  },
+                  {
+                    "focusable": true,
+                    "id": "web",
+                    "launchAtLogin": true,
+                    "locked": true,
+                    "rect": {
+                      "h": 1,
+                      "w": 0.4,
+                      "x": 0.6,
+                      "y": 0
+                    },
+                    "rule": {
+                      "bundleID": "com.brave.Browser"
+                    }
+                  }
+                ]
+              },
+              "unmatched": {
+                "float": {}
+              }
+            },
+            {
+              "drawers": [
+                {
+                  "edge": "left",
+                  "layout": {
+                    "slots": [
+                      {
+                        "id": "top",
+                        "rect": {
+                          "h": 0.5,
+                          "w": 1,
+                          "x": 0,
+                          "y": 0
+                        }
+                      },
+                      {
+                        "id": "bottom",
+                        "rect": {
+                          "h": 0.5,
+                          "w": 1,
+                          "x": 0,
+                          "y": 0.5
+                        }
+                      }
+                    ]
+                  },
+                  "size": 0.375
+                }
+              ],
+              "focusSlot": "web",
+              "label": "Web",
+              "layout": {
+                "slots": [
+                  {
+                    "id": "web",
+                    "launchAtLogin": true,
+                    "locked": true,
+                    "rect": {
+                      "h": 1,
+                      "w": 1,
+                      "x": 0,
+                      "y": 0
+                    },
+                    "rule": {
+                      "bundleID": "com.brave.Browser"
+                    }
+                  }
+                ]
+              },
+              "unmatched": {
+                "float": {}
+              }
+            },
+            {
+              "label": "Le reste",
+              "unmatched": {
+                "float": {}
+              }
+            }
+          ]
+        },
+        {
+          "identity": {
+            "model": 53511,
+            "name": "DELL S3221QSA (2)",
+            "serial": 1003,
+            "vendor": 4268
+          },
+          "ignored": false,
+          "spaces": [
+            {
+              "drawers": [
+                {
+                  "edge": "left",
+                  "layout": {
+                    "slots": [
+                      {
+                        "id": "top",
+                        "rect": {
+                          "h": 0.5,
+                          "w": 1,
+                          "x": 0,
+                          "y": 0
+                        }
+                      },
+                      {
+                        "id": "bottom",
+                        "rect": {
+                          "h": 0.5,
+                          "w": 1,
+                          "x": 0,
+                          "y": 0.5
+                        }
+                      }
+                    ]
+                  },
+                  "size": 0.375
+                },
+                {
+                  "edge": "right",
+                  "layout": {
+                    "slots": [
+                      {
+                        "id": "all",
+                        "rect": {
+                          "h": 1,
+                          "w": 1,
+                          "x": 0,
+                          "y": 0
+                        }
+                      }
+                    ]
+                  },
+                  "size": 0.25
+                }
+              ],
+              "focusSlot": "web",
+              "label": "Browse",
+              "layout": {
+                "slots": [
+                  {
+                    "id": "notes",
+                    "launchAtLogin": true,
+                    "locked": true,
+                    "rect": {
+                      "h": 1,
+                      "w": 0.375,
+                      "x": 0,
+                      "y": 0
+                    },
+                    "rule": {
+                      "bundleID": "com.sublimetext.4"
+                    }
+                  },
+                  {
+                    "id": "web",
+                    "launchAtLogin": true,
+                    "locked": true,
+                    "rect": {
+                      "h": 1,
+                      "w": 0.625,
+                      "x": 0.375,
+                      "y": 0
+                    },
+                    "rule": {
+                      "bundleID": "com.brave.Browser"
+                    }
+                  }
+                ]
+              },
+              "unmatched": {
+                "float": {}
+              }
+            }
+          ]
+        },
+        {
+          "identity": {
+            "model": 60672,
+            "name": "XENEON EDGE",
+            "serial": 16843009,
+            "vendor": 3672
+          },
+          "ignored": true,
+          "spaces": []
+        }
+      ],
+      "id": "6F1C2D3E-4A5B-4C6D-8E7F-90A1B2C3D4E5",
+      "name": "Home desk"
+    }
+  ],
+  "version": 1
+}

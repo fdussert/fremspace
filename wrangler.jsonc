@@ -1,0 +1,11 @@
+// How Cloudflare serves the site: the files of site/ as they are, with no code of ours running.
+// Cloudflare runs `npx wrangler deploy` on every push to main, and wrangler reads this file.
+// site/_headers holds the headers it sends; an unknown address gets site/404.html.
+{
+	"name": "fremspace",
+	"compatibility_date": "2026-11-12",
+	"assets": {
+		"directory": "./site",
+		"not_found_handling": "404-page"
+	}
+}

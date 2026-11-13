@@ -1,0 +1,7 @@
+.build/
+dist/
+.DS_Store
+.superpowers/
+# The maintainer's working notes (designs, plans, trial logs): kept out of the repository.
+docs/superpowers/
+docs/trial-notes.md

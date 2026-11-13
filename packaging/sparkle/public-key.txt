@@ -1,0 +1,6 @@
+# Sparkle's public EdDSA key for Fremspace.app, written into Info.plist as SUPublicEDKey by
+# scripts/build.sh. It is public: it only lets the app check that an update was signed by the
+# private key, which lives in the release owner's login keychain and nowhere else.
+# It is the key of the owner's other app, Fremkit: one key to keep. docs/releasing.md says how to
+# give Fremspace its own, which is only possible before the first release.
+6kw68iswxMDe30notBFNa/+WEOJN3PX613akcUi6OFc=

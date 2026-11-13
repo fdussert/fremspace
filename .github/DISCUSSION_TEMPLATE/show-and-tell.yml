@@ -1,0 +1,34 @@
+title: "My desk: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Show how your desk is laid out: it gives others ideas, and tells us what to build next.
+        Before posting a screenshot, check that no window shows anything private (mail, messages,
+        a calendar, a customer's name in a title bar).
+  - type: textarea
+    id: pictures
+    attributes:
+      label: Photos or screenshots
+      description: Drag images here. A photo of the desk, a screenshot of the editor or of the palette's map, or both.
+    validations:
+      required: true
+  - type: textarea
+    id: displays
+    attributes:
+      label: Displays and desktops
+      description: How many displays, what each desktop is for, which apps live where. Scenes, drawers, stacks?
+  - type: textarea
+    id: layout
+    attributes:
+      label: Layout file (optional)
+      description: |
+        Attach your `.fremspace-layout.json` (editor: Share → Export) so others can add your desktops
+        to theirs. It never holds your displays' models or serial numbers, your shortcuts or what
+        Fremspace remembers, and browser profiles and window title filters are left out unless you
+        tick them; the page shows what is in the file first.
+  - type: textarea
+    id: wish
+    attributes:
+      label: What is missing
+      description: Something Fremspace does not do that would make this desk better.

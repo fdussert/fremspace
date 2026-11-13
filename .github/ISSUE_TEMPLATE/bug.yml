@@ -1,0 +1,71 @@
+name: Bug
+description: A window goes to the wrong place, a shortcut does nothing, the editor misbehaves.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Open the editor's **Status** page first: it lists what Fremspace
+        knows is wrong (a missing permission, a display short of desktops, a shortcut another app holds).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you saw instead. A screenshot helps.
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How Fremspace is installed
+      options:
+        - The app (DMG)
+        - Built from source (scripts/build.sh)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Fremspace version
+      description: In the editor, Status, under "What runs".
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac
+      placeholder: "macOS 15.4, MacBook Pro M3, two external displays"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - Windows going to their slot or desktop
+        - Focus, stacks or drawers
+        - Restore after login
+        - The palette or the notch
+        - Shortcuts or the Hyper key
+        - The editor
+        - It broke after a macOS update
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Diagnostics
+      description: |
+        Use **Copy diagnostics** (editor: Maintenance, or the menu bar icon) and paste the result
+        here. It lists your displays, your desktops and the titles of your windows: read it and
+        remove what you do not want to share before posting.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: Fremspace has the Accessibility permission (System Settings, Privacy & Security).
+        - label: I searched the existing issues.
