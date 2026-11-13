@@ -259,9 +259,13 @@ final class Engine {
                       fronts[placement.slotID] == nil else { continue }
                 fronts[placement.slotID] = (placement, index)
             }
+            // With a slot in Focus, only its window: it covers the display, the tabs with it, and
+            // a window of another slot raised over a tab came in front of it (owner, 2026-11-13:
+            // at every start Brave, beside the right drawer's tab, covered the window in Focus).
+            let focused = self.focus.slot(space)
             // Only a window that a tab is above: one already over its tabs is not touched (raising
             // the window the owner types in at every start took the keyboard out of its field).
-            for front in fronts.values where tabs.contains(where: { tab in
+            for (slotID, front) in fronts where (focused == nil || slotID == focused) && tabs.contains(where: { tab in
                 tab.frame.intersects(front.placement.frame) && (depth[tab.id] ?? Int.max) < front.depth
             }) {
                 self.windows.raise(front.placement.element)
