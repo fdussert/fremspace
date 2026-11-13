@@ -310,4 +310,22 @@ final class DesktopRoutingTests: XCTestCase {
         XCTAssertEqual(route(brave, on: d(left, 0), .reapply, remembered: d(left, 0), deliberate: true, configuration: changed),
                        .stay)
     }
+
+    func testAWindowOnTheFreeDesktopGoesToTheSlotItsAppWasJustGiven() {
+        func given(_ app: String, on here: ConfiguredDesktop?, remembered: ConfiguredDesktop? = nil, byCommand: Bool = false,
+                   floating: Set<String> = []) -> Route {
+            FremspaceCore.route(window: window(app), on: here, reason: .reapply, configuration: configuration,
+                                remembered: remembered, sentByCommand: byCommand, noFloating: true, floatingApps: floating,
+                                givenASlot: true, available: all)
+        }
+        // Slack sat on "Le reste", sent there while it had no slot; the save gives it one.
+        XCTAssertEqual(given(slack, on: d(left, 2), remembered: d(left, 2)), .send(d(builtIn, 1)))
+        // Without that save, the free desktop keeps it, as it keeps everything.
+        XCTAssertEqual(route(slack, on: d(left, 2), .reapply, remembered: d(left, 2), strict: true), .stay)
+        // What a command put on the free desktop stays, and so does an app that may float.
+        XCTAssertEqual(given(slack, on: d(left, 2), remembered: d(left, 2), byCommand: true), .stay)
+        XCTAssertEqual(given(slack, on: d(left, 2), floating: [slack]), .stay)
+        // On a desktop with a layout nothing changes: already in its slot, it stays.
+        XCTAssertEqual(given(slack, on: d(builtIn, 1)), .stay)
+    }
 }

@@ -41,6 +41,8 @@ public enum Route: Equatable {
 ///   to the first desktop where their app has a slot (a mail reminder joins the mail window), else to
 ///   a free one. Windows of an app that has a slot on the desktop stay, whatever its profile or title
 ///   rule: they are that app's own side windows;
+/// - a window on a free or unconfigured desktop whose app was just given a slot (`givenASlot`: the
+///   save that did it, once) goes to that slot, unless a command put it where it is;
 /// - an app the owner lets float (`floatingApps`, a general setting; owner, 2026-11-13: a Finder
 ///   window opened from "Code" left for the free desktop) is outside both pulls: `noFloating` does
 ///   not send its windows away, and on a desktop with a layout where it has no slot a window of
@@ -50,6 +52,7 @@ public func route(window: WindowInfo, on here: ConfiguredDesktop?, reason: Route
                   remembered: ConfiguredDesktop?, rememberedDeliberately: Bool = true, heldSlot: String? = nil,
                   sentByCommand: Bool,
                   onIgnoredDisplay: Bool = false, noFloating: Bool = false, floatingApps: Set<String> = [],
+                  givenASlot: Bool = false,
                   available: Set<ConfiguredDesktop>) -> Route {
     let floats = floatingApps.contains(window.bundleID)
     // For an app that may float, the setting is as good as off.
@@ -115,7 +118,12 @@ public func route(window: WindowInfo, on here: ConfiguredDesktop?, reason: Route
         // not keep the window: it goes where the rules below say.
         guard let here, mayNotFloat(here) else { return .stay }
     }
-    if !onIgnoredDisplay {
+    // A free desktop keeps what is on it, with one exception: the app was just given a slot
+    // (`givenASlot`, the save that did it). Its window may sit on the free desktop only for want
+    // of a slot, sent there by `noFloating` (owner, 2026-11-13: Slack got its slot back and its
+    // window stayed on the free desktop). What a command put there stays.
+    let pulled = givenASlot && !sentByCommand && !floats && !(here.map { layout($0) != nil } ?? false)
+    if !onIgnoredDisplay, !pulled {
         guard let here, layout(here) != nil else { return .stay }
         if hasSlot(here) { return .stay }
         if remembered == here, rememberedDeliberately || sentByCommand, !mayNotFloat(here) { return .stay }

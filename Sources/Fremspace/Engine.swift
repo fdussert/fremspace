@@ -1007,7 +1007,10 @@ final class Engine {
         // An app that just got a slot: its windows kept in a drawer by hand go to the slot (owner,
         // 2026-11-13: the slot was saved and nothing moved, the window sat in a drawer).
         if let before, let config, let id = configuration?.id {
-            drawers.release(apps: appsGivenASlot(before: before, after: config, configuration: id))
+            let apps = appsGivenASlot(before: before, after: config, configuration: id)
+            drawers.release(apps: apps)
+            // And those that sit on a free desktop, at the sort that follows the save.
+            router.givenASlot.formUnion(apps)
         }
         scheduleApply()
         onConfigChanged?()

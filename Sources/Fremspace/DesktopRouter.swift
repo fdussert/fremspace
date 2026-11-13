@@ -65,6 +65,10 @@ final class DesktopRouter {
 
     /// The configuration or the desktop map changed: what is known per configured desktop no longer
     /// holds. Re-learned from the next pass, so nothing looks moved by hand.
+    /// The apps a save just gave a slot to (`appsGivenASlot`): at the sort that follows the save,
+    /// their windows on a free desktop go to the slot. Emptied by that sort.
+    var givenASlot: Set<String> = []
+
     func reset() {
         lastDesktop.removeAll()
         lastSlot.removeAll()
@@ -223,6 +227,7 @@ final class DesktopRouter {
         let entries = recognise(identities)
         var sent = 0
         for (info, _) in found where decide(info, reason: reason, entry: entries[info.id]) { sent += 1 }
+        if reason == .reapply { givenASlot = [] }
         engine.scheduleApplyFromRouter()
         Log.engine.notice("sorted \(found.count) windows (\(String(describing: reason), privacy: .public)): \(sent) sent, \(Int(Date().timeIntervalSince(started) * 1000)) ms")
         if found.isEmpty {
@@ -386,6 +391,7 @@ final class DesktopRouter {
                                  configuration.displays.contains { $0.identity == key.display && $0.ignored }
                              } ?? false,
                              noFloating: engine.noFloating, floatingApps: engine.floatingApps,
+                             givenASlot: reason == .reapply && givenASlot.contains(info.bundleID),
                              available: engine.availableDesktops)
         guard case .send(let target) = decision else { return false }
         send(info, to: target, entry: entry, byCommand: false, follow: follow)
