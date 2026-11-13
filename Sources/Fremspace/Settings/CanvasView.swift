@@ -106,6 +106,9 @@ struct DesktopTabs: View {
                     .help("Add a desktop to this display's configuration")
                     .accessibilityLabel("Add a desktop")
                 }
+                // A drawer is the display's, the same on every desktop: while one is edited the
+                // desktops step back (a click on one still leaves the drawer for it).
+                .opacity(session.selection.drawer == nil ? 1 : 0.5)
                 missingDesktops(display)
             }
         }
@@ -331,22 +334,23 @@ struct CanvasView: View {
         .onChange(of: session.selection) { _ in session.refreshSlotWindows() }
     }
 
+    /// Above the screen: what kind of desktop this is, and the capture. Not the desktop's name, which
+    /// its tab just above already says. While a drawer is edited: whose it is, and the way out.
     private var header: some View {
         HStack(spacing: 8) {
             if let edge = session.selection.drawer {
-                Button { session.editDrawer(nil) } label: {
-                    Label(session.spaceSpec?.label ?? "Desktop", systemImage: "chevron.left")
-                }
-                .keyboardShortcut(.cancelAction)
-                .help("Back to the desktop's layout (Esc)")
-                Text("\(edge == .left ? "Left" : "Right") drawer").font(.headline)
-            } else {
-                Text(session.spaceSpec?.label ?? "").font(.headline)
-            }
-            Spacer()
-            // A free desktop offers the capture on the screen itself, where the layout will be.
-            if session.selection.drawer == nil, session.spaceSpec?.layout != nil, session.displaySpec?.ignored != true {
-                CaptureButton(session: session)
+                // A drawer is the display's, not the desktop's: named after the display.
+                Text("\(edge == .left ? "Left" : "Right") drawer of \(session.displaySpec?.displayName ?? "this display")")
+                    .font(.headline).lineLimit(1)
+                Spacer()
+                Button("Done") { session.editDrawer(nil) }
+                    .keyboardShortcut(.cancelAction)
+                    .help("Back to the desktop's layout (Esc)")
+            } else if session.spaceSpec != nil, session.displaySpec?.ignored != true {
+                DesktopMode(session: session)
+                Spacer()
+                // A free desktop offers the capture on the screen itself, where the layout will be.
+                if session.spaceSpec?.layout != nil { CaptureButton(session: session) }
             }
         }
         .frame(minHeight: 24)
@@ -510,6 +514,33 @@ struct CanvasView: View {
                 dragged = nil
                 session.checkpoint()
             })
+    }
+}
+
+/// Whether the desktop has a layout or is left alone. Above the screen it changes, not among the
+/// desktop's settings in the inspector, which a selected slot puts out of sight.
+struct DesktopMode: View {
+    @ObservedObject var session: EditSession
+
+    var body: some View {
+        let free = session.spaceSpec?.layout == nil
+        Picker("Windows of this desktop", selection: Binding(
+            get: { free ? 0 : 1 },
+            set: { mode in
+                if mode == 0 {
+                    session.checkpoint()
+                    session.updateSpace { $0.layout = nil; $0.focusSlot = nil }
+                    session.selection.slot = nil
+                } else {
+                    session.makeLayout()
+                }
+            })) {
+            Text("Free").tag(0)
+            Text("Layout").tag(1)
+        }
+        .pickerStyle(.segmented).labelsHidden().fixedSize()
+        .help(free ? "Free: Fremspace leaves every window of this desktop alone"
+              : "Layout: windows go to their slot; those without a slot float where you put them")
     }
 }
 

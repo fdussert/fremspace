@@ -509,27 +509,7 @@ struct DesktopInspector: View {
                     TextField("Name", text: Binding(get: { space.label }, set: { text in session.updateSpace { $0.label = text } }))
                         .textFieldStyle(.roundedBorder)
                 }
-                Field("Windows") {
-                    Picker("Windows", selection: Binding(
-                        get: { space.layout == nil ? 0 : 1 },
-                        set: { mode in
-                            if mode == 0 {
-                                session.checkpoint()
-                                session.updateSpace { $0.layout = nil; $0.focusSlot = nil }
-                                session.selection.slot = nil
-                            } else {
-                                session.makeLayout()
-                            }
-                        })) {
-                        Text("Free").tag(0)
-                        Text("Layout").tag(1)
-                    }
-                    .pickerStyle(.segmented).labelsHidden()
-                    // A free desktop says what it is on the screen itself: not a second time here.
-                    if space.layout != nil {
-                        HelpText("Windows go to their slot. Those without a slot float where you put them.")
-                    }
-                }
+                // Free or Layout is chosen above the screen (`DesktopMode`).
                 SwiftUI.Divider()
                 Button(role: .destructive) { session.removeDesktop(at: session.selection.desktop) } label: {
                     Label("Remove this desktop", systemImage: "trash")
