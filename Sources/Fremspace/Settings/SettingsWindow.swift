@@ -146,9 +146,9 @@ struct SettingsView: View {
                     SettingsPageView(session: session, page: page, actions: actions)
                         .id(page)
                 } else if session.configuration != nil {
-                    EditorArea(session: session)
+                    EditorArea(session: session, openConfigFile: actions.openConfigFile)
                 } else {
-                    EmptyEditor(session: session)
+                    EmptyEditor(session: session, openConfigFile: actions.openConfigFile)
                 }
             }
             Divider()
@@ -163,11 +163,13 @@ struct SettingsView: View {
 /// displays found, says the three steps, and has one button.
 struct EmptyEditor: View {
     @ObservedObject var session: EditSession
+    let openConfigFile: () -> Void
 
     var body: some View {
         VStack(spacing: 18) {
             if let loadError = session.loadError {
-                Banner(kind: .error, text: "\(loadError) Nothing can be set up until the file is readable: see the Status page.")
+                Banner(kind: .error, text: "\(loadError) Nothing can be set up until the file is readable.",
+                       action: ("Open the file", openConfigFile))
                     .frame(maxWidth: 460)
             }
             VStack(spacing: 6) {
@@ -439,12 +441,14 @@ struct Sidebar: View {
 /// Displays, desktops, canvas and inspector of the selected configuration.
 struct EditorArea: View {
     @ObservedObject var session: EditSession
+    let openConfigFile: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
                 if let loadError = session.loadError {
-                    Banner(kind: .error, text: "\(loadError) Saving is off so the file is not overwritten: fix it with \"Open config file\" in the menu, then reopen Settings.")
+                    Banner(kind: .error, text: "\(loadError) Saving is off so that the file is not overwritten: fix the file, then close this window and open it again.",
+                           action: ("Open the file", openConfigFile))
                 }
                 DisplayStrip(session: session)
                 DesktopTabs(session: session)
@@ -459,15 +463,21 @@ struct EditorArea: View {
     }
 }
 
-/// A message that stays above the editor.
+/// A message that stays above the editor, with the way out of what it says when there is one: a
+/// message that sent the owner to a menu left them to find it.
 struct Banner: View {
     let kind: Status.Kind
     let text: String
+    var action: (title: String, run: () -> Void)?
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: kind.symbol).foregroundColor(kind.color)
             Text(text).fixedSize(horizontal: false, vertical: true)
+            if let action {
+                Spacer(minLength: 8)
+                Button(action.title, action: action.run).fixedSize()
+            }
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)

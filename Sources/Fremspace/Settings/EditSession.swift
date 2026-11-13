@@ -253,7 +253,7 @@ final class EditSession: ObservableObject {
 
     func save() {
         if let loadError {
-            status = Status(kind: .error, text: "\(loadError) Fix it with \"Open config file\", then reopen Settings. Nothing was saved.")
+            status = Status(kind: .error, text: "\(loadError) Nothing was saved: fix the file (Maintenance opens it), then open this window again.")
             return
         }
         if let problem {
@@ -265,7 +265,7 @@ final class EditSession: ObservableObject {
             try store.save(config, expecting: saved)
             let previewsSwitchedOn = config.windowPreviews && !saved.windowPreviews
             saved = config
-            status = Status(kind: .success, text: "Saved. The layouts apply now.")
+            status = Status(kind: .success, text: "Saved and applied.")
             if !removedDesktops.isEmpty {
                 // The removals are now final (links and remembered windows dropped): the undo steps
                 // recorded around them count desktops the old way, so they go.
