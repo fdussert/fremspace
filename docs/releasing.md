@@ -40,7 +40,9 @@ through private calls of the window server that the store refuses.
 ## Each release
 
 1. On `main`: set the version in `Sources/FremspaceCore/Version.swift`, rename `## Unreleased` in
-   `CHANGELOG.md` to `## X.Y.Z` (and put an empty `## Unreleased` back above it), commit.
+   `CHANGELOG.md` to `## X.Y.Z` (and put an empty `## Unreleased` back above it), write the
+   version on the site (`site/index.html` names it three times), commit. Do not push yet: the
+   site is published from `main`, and would name a version nobody can download.
 2. `bash scripts/release.sh X.Y.Z`. It refuses a dirty tree or a version that does not match, runs
    the tests, builds `dist/release/Fremspace.app` (the everyday `dist/Fremspace.app` is left alone),
    signs, notarizes and staples the app, then the DMG, and checks both with Gatekeeper. Then it
