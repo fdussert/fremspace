@@ -479,6 +479,25 @@ struct DrawerSlotInspector: View {
                              ? "No app yet: this slot holds the windows you send to the drawer (\(session.shortcutLabel(edge == .left ? "drawerSendLeft" : "drawerSendRight")))."
                              : "Their windows go to this slot by themselves, on every desktop of this display. Other windows can still be sent here (\(session.shortcutLabel(edge == .left ? "drawerSendLeft" : "drawerSendRight"))).")
                 }
+                if let display = session.displaySpec?.identity {
+                    let guests = session.drawerGuests(on: display, edge: edge, slot: slot)
+                    if !guests.isEmpty {
+                        SwiftUI.Divider()
+                        Field("Sent here by hand") {
+                            ForEach(guests, id: \.window.id) { guest in
+                                HStack(spacing: 6) {
+                                    if let icon = AppIcons.small(guest.bundleID) { Image(nsImage: icon) }
+                                    Text(appName(guest.bundleID)).lineLimit(1)
+                                    Spacer()
+                                    Button("Take out") { session.takeOutOfDrawer(guest) }
+                                        .controlSize(.small)
+                                        .help("Takes this window of \(appName(guest.bundleID)) out of the drawer now")
+                                }
+                            }
+                            HelpText("Windows in this slot now that you sent to the drawer. They are not part of the configuration: taking one out acts at once, with no save.")
+                        }
+                    }
+                }
                 SwiftUI.Divider()
                 Text(sizeWords(width: slot.rect.w, height: slot.rect.h))
                     .font(.callout).foregroundColor(.secondary)

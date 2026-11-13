@@ -814,6 +814,10 @@ final class DrawerController {
         Log.engine.info("window \(id) \(bundleID, privacy: .public) sent to drawer slot \(slot, privacy: .public)")
     }
 
+    /// Takes one window out of its drawer, for the editor: a window sent to a drawer by hand is in
+    /// no configuration, so the editor is the only place that lists it.
+    func takeOut(window id: UInt32) { takeOut(id) }
+
     /// The member leaves its drawer and floats where it is; a parked one first comes back on screen.
     private func takeOut(_ id: UInt32) {
         guard let member = members[id], let identity = state.display(of: id) else { return }

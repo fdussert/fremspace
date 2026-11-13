@@ -505,6 +505,15 @@ struct CanvasView: View {
         .padding(16)
     }
 
+    /// The apps of the windows sent by hand to this slot of the drawer being edited, and held there
+    /// now; none for a slot of a layout.
+    private func drawerGuests(_ slot: Slot) -> [String] {
+        guard let edge = session.selection.drawer, let display = session.displaySpec,
+              let drawerSlot = display.drawers.first(where: { $0.edge == edge })?.layout.slots.first(where: { $0.id == slot.id })
+        else { return [] }
+        return session.drawerGuests(on: display.identity, edge: edge, slot: drawerSlot).map(\.bundleID)
+    }
+
     private func rect(_ r: UnitRect, in c: UnitRect, size: CGSize) -> CGRect {
         CGRect(x: (c.x + r.x * c.w) * size.width, y: (c.y + r.y * c.h) * size.height,
                width: r.w * c.w * size.width, height: r.h * c.h * size.height)
@@ -539,7 +548,8 @@ struct CanvasView: View {
                 let r = rect(slot.rect, in: c, size: size)
                 let tile = SlotTile(slot: slot, isDrawer: editingDrawer, isFocus: space.map { focusSlots($0).contains { $0.id == slot.id } } ?? false,
                                     selected: session.selection.slot == slot.id,
-                                    picture: pictured.contains(slot.id) ? session.slotWindows[slot.id].flatMap { previews.images[$0] } : nil)
+                                    picture: pictured.contains(slot.id) ? session.slotWindows[slot.id].flatMap { previews.images[$0] } : nil,
+                                    guests: drawerGuests(slot))
                 tile
                     .frame(width: max(r.width - 6, 1), height: max(r.height - 6, 1))
                     .offset(x: r.minX + 3, y: r.minY + 3)
@@ -845,6 +855,8 @@ struct SlotTile: View {
     let selected: Bool
     /// The window in the slot now, when previews are on and the slot is as saved.
     var picture: NSImage?
+    /// The apps of the windows sent to this drawer slot by hand and held there now.
+    var guests: [String] = []
 
     private var empty: Bool { !isDrawer && slot.rule.bundleID.isEmpty }
 
@@ -935,6 +947,10 @@ struct SlotTile: View {
         }
         if apps.count > 1 {
             list.append(("square.stack.fill", "\(apps.count) apps", "The windows of these apps stack in this slot"))
+        }
+        if !guests.isEmpty {
+            list.append(("tray.and.arrow.down.fill", "\(guests.count) sent here",
+                         "Held here now, sent by hand: \(ListFormatter.localizedString(byJoining: guests.map(appName)))"))
         }
         return list
     }

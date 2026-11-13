@@ -77,6 +77,8 @@ final class EditSession: ObservableObject {
     @Published private(set) var unlistedDesktops: [DisplayIdentity: [Engine.UnlistedDesktop]] = [:]
     /// Display → its configured desktops in Mission Control's order, where it is not the tabs'.
     @Published private(set) var desktopOrder: [DisplayIdentity: [Int]] = [:]
+    /// The windows the drawers hold now, those sent by hand included.
+    @Published private(set) var drawerMembers: [SavedDrawerMember] = []
     /// Set when the file exists but cannot be read: the editor then refuses to save, so the file is
     /// never overwritten by an empty or new configuration.
     let loadError: String?
@@ -125,6 +127,7 @@ final class EditSession: ObservableObject {
         attentionTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
             guard let self else { return }
             self.refreshAttention()
+            self.refreshDrawerMembers()
             // The pictures every time, the windows themselves one time in four.
             self.ticks += 1
             self.refreshSlotWindows(again: self.ticks % 4 == 0)
@@ -173,7 +176,33 @@ final class EditSession: ObservableObject {
         let onTheMac = engine.desktopsOnTheMac()
         unlistedDesktops = onTheMac.unlisted
         desktopOrder = onTheMac.order
+        refreshDrawerMembers()
         refreshAttention()
+    }
+
+    /// Reads which windows the drawers hold now.
+    func refreshDrawerMembers() {
+        let now = engine.drawers.membership.members
+        if now != drawerMembers { drawerMembers = now }
+    }
+
+    /// The windows sent by hand to slot `slot` of the drawer of `edge` on `display`: the members of
+    /// that slot whose app the slot does not name. They are in no configuration, so nothing else in
+    /// the editor shows them (owner, 2026-11-13: a window sat in a drawer for hours and the
+    /// drawer's page listed two apps). Only for the configuration in use: the drawers are its own.
+    func drawerGuests(on display: DisplayIdentity, edge: DrawerEdge, slot: DrawerSlot) -> [SavedDrawerMember] {
+        guard let configuration, isActive(configuration) else { return [] }
+        let named = Set(slot.rules.map(\.bundleID))
+        return drawerMembers.filter {
+            $0.display == display && $0.slot == "\(edge.rawValue).\(slot.id)" && !named.contains($0.bundleID)
+        }
+    }
+
+    /// Takes a window out of its drawer, at once: it is a window on the Mac, not a setting.
+    func takeOutOfDrawer(_ member: SavedDrawerMember) {
+        engine.drawers.takeOut(window: member.window.id)
+        refreshDrawerMembers()
+        status = Status(kind: .success, text: "\(appName(member.bundleID)) taken out of the drawer.")
     }
 
     // MARK: - Undo, redo

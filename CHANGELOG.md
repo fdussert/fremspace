@@ -24,6 +24,9 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 - An app that is given a slot leaves the drawer: its windows put in a drawer by hand go to the
   slot when the configuration is saved. Saving the slot used to change nothing on screen. A drawer
   that names the app in one of its own slots keeps its windows.
+- The editor shows the windows you sent to a drawer by hand: a drawer slot lists them under "Sent
+  here by hand", with a button that takes one out at once, and its tile counts them. They are in
+  no configuration, and nothing showed that they were held there.
 
 ## 0.1.1
 
