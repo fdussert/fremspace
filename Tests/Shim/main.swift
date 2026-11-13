@@ -400,6 +400,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testOwnersDeskFreeSides", { ($0 as! DrawerGeometryTests).testOwnersDeskFreeSides() }),
         ("testTwoDrawersShareOneSetOfSlotKeys", { ($0 as! DrawerGeometryTests).testTwoDrawersShareOneSetOfSlotKeys() }),
         ("testParkSideFollowsTheFallbackOrder", { ($0 as! DrawerGeometryTests).testParkSideFollowsTheFallbackOrder() }),
+        ("testASideAcrossAGapIsNotTakenWhenTheWindowWouldShowBeyondIt", { ($0 as! DrawerGeometryTests).testASideAcrossAGapIsNotTakenWhenTheWindowWouldShowBeyondIt() }),
         ("testParkedFrameLeavesTheStrip", { ($0 as! DrawerGeometryTests).testParkedFrameLeavesTheStrip() }),
         ("testParkedThroughTheLeftOrTheTopTheStripIsTheWindowsFarEdge", { ($0 as! DrawerGeometryTests).testParkedThroughTheLeftOrTheTopTheStripIsTheWindowsFarEdge() }),
         ("testAWindowDoesNotHangPastTheBottomOntoADisplayBelow", { ($0 as! DrawerGeometryTests).testAWindowDoesNotHangPastTheBottomOntoADisplayBelow() }),

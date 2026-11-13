@@ -48,6 +48,26 @@ final class DrawerGeometryTests: XCTestCase {
         XCTAssertNil(parkSide(for: .left, free: [.top]))
     }
 
+    func testASideAcrossAGapIsNotTakenWhenTheWindowWouldShowBeyondIt() {
+        // A display 300 points to the left, a third one above bridging the gap, one against the
+        // right side: the left side is free, and a window 400 wide parked through it would lie
+        // over the display beyond the gap.
+        let display = CGRect(x: 0, y: 0, width: 1000, height: 800)
+        let beyond = CGRect(x: -1300, y: 0, width: 1000, height: 800)
+        let bridge = CGRect(x: -1300, y: -600, width: 2300, height: 600)
+        let beside = CGRect(x: 1000, y: 0, width: 1000, height: 800)
+        let others = [beyond, bridge, beside]
+        let slot = CGRect(x: 0, y: 0, width: 400, height: 700)
+        let free = freeSides(of: display, others: others)
+        XCTAssertEqual(free, [.left, .bottom])
+        XCTAssertNil(hiddenParkedFrame(slot, display: display, others: others, edge: .left, strip: 1))
+        XCTAssertEqual(parkSide(for: .left, free: free), .left)
+        XCTAssertEqual(parkSide(for: .left, free: free, frame: slot, display: display, others: others, strip: 1), .bottom)
+        // A window narrower than the gap fits in it: the side is taken.
+        let narrow = CGRect(x: 0, y: 0, width: 250, height: 700)
+        XCTAssertEqual(parkSide(for: .left, free: free, frame: narrow, display: display, others: others, strip: 1), .left)
+    }
+
     func testParkedFrameLeavesTheStrip() {
         let w = CGRect(x: 4880, y: -581, width: 1244, height: 933)
         XCTAssertEqual(parkedFrame(w, display: rightDell, side: .bottom, strip: 8), CGRect(x: 4880, y: 1293, width: 1244, height: 933))

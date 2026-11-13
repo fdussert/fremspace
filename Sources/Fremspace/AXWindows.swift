@@ -52,6 +52,11 @@ final class AXWindows {
     /// per app, on the main thread: for startup, ⌃⌥⌘R and login only, and bounded: it stops once it
     /// found as many windows as the window list shows for the app, after `scanBudget`, or when the app
     /// stops answering.
+    /// A known limit, not observed: an app that ran for days may have given its windows ids past
+    /// 1000, and those on a desktop that is not shown are then missed until their desktop is.
+    /// The bound stays: most apps own windows the window list counts and Accessibility never
+    /// gives, so the scan runs to its end for them, and a longer one would cost its whole budget
+    /// per app at every pass.
     static let scanBudget: TimeInterval = 0.3
 
     func allWindows(pid: pid_t) -> [AXUIElement] {

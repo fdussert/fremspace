@@ -744,7 +744,8 @@ final class DrawerController {
                                               strip: Self.strip) {
                 return (hidden, false)
             }
-            guard let side = parkSide(for: spec.edge, free: free) else { return nil }
+            guard let side = parkSide(for: spec.edge, free: free, frame: frame, display: display.frameAX, others: others,
+                                      strip: Self.strip) else { return nil }
             guard side == .bottom else {
                 return (FremspaceCore.parkedFrame(frame, display: display.frameAX, side: side, strip: Self.strip), false)
             }

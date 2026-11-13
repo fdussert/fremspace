@@ -61,6 +61,25 @@ public func parkSide(for edge: DrawerEdge, free: Set<ScreenSide>) -> ScreenSide?
     return [own, opposite, .bottom].first { free.contains($0) }
 }
 
+/// The side to park through when no side hides the window (`hiddenParkedFrame` found none): like
+/// `parkSide(for:free:)`, but a left or right side is taken only when the window parked there
+/// lies over no other display. A side is free when no display is against it; across a gap that
+/// a third display bridges, a neighbour can still be nearer than the window is wide, and the
+/// "closed" drawer would show on it. The bottom then comes first.
+public func parkSide(for edge: DrawerEdge, free: Set<ScreenSide>, frame: CGRect, display: CGRect, others: [CGRect],
+                     strip: CGFloat) -> ScreenSide? {
+    let own: ScreenSide = edge == .left ? .left : .right
+    let opposite: ScreenSide = edge == .left ? .right : .left
+    return [own, opposite, .bottom].first { side in
+        guard free.contains(side) else { return false }
+        guard side != .bottom else { return true }
+        var hidden = parkedFrame(frame, display: display, side: side, strip: strip)
+        hidden.size.width -= strip
+        if side == .right { hidden.origin.x += strip }
+        return !others.contains { $0.intersects(hidden) }
+    }
+}
+
 /// `frame` moved through `side` of `display` so that `strip` points stay inside it.
 public func parkedFrame(_ frame: CGRect, display: CGRect, side: ScreenSide, strip: CGFloat) -> CGRect {
     var f = frame

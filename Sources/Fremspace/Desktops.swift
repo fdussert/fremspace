@@ -30,10 +30,14 @@ enum Desktops {
         guard let wm = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.WindowManager").first else { return false }
         let app = AXUIElementCreateApplication(wm.processIdentifier)
         AXUIElementSetMessagingTimeout(app, 1)
-        _ = dockNotification("com.apple.expose.awake" as CFString, 0)
-        var opened = false
-        // Escape only if Mission Control showed up: otherwise it would reach the user's app.
-        defer { if opened { closeMissionControl() } }
+        func isOpen() -> Bool { children(app).contains { identifier($0) == "mc.display" } }
+        // The notification toggles Mission Control: sent while it is open, it would close it, and
+        // no desktop would be added.
+        var opened = isOpen()
+        if !opened { _ = dockNotification("com.apple.expose.awake" as CFString, 0) }
+        // Escape only if Mission Control showed up and is still there: otherwise it would reach
+        // the user's app.
+        defer { if opened, isOpen() { closeMissionControl() } }
         var bar: AXUIElement?
         for _ in 0..<20 where bar == nil {
             wait(0.1)

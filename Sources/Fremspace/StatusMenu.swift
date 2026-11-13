@@ -243,7 +243,10 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     func menuDidClose(_ menu: NSMenu) {
         // The chosen command runs before this: forget the window the menu was for afterwards.
-        guard menu === windowMenu || menu === popupMenu else { return }
+        // Also when the whole menu closes: the Window submenu pins its window when AppKit fills
+        // it, and should AppKit ever fill it without showing it, it would never be told closed
+        // and every later command would act on that old window.
+        guard menu === windowMenu || menu === popupMenu || menu === self.menu else { return }
         let wasPopup = menu === popupMenu
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
