@@ -949,6 +949,10 @@ struct ShareEditor: View {
                     Text(report.apps.isEmpty ? "None" : report.apps.map(appName).joined(separator: ", "))
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                row("Of your displays") {
+                    Text("The shape of each one that is connected (how wide for how high), so that a layout made for a tall display is not a surprise on a wide one.")
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 row("Never in it") {
                     Text("The models and serial numbers of your displays (a display is its name, or \u{201C}Display 2\u{201D}), your shortcuts and general settings, and what Fremspace remembers about your windows."
                          + (report.displaysIgnored > 0 ? " \(count(report.displaysIgnored, "ignored display")) left out." : ""))

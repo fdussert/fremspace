@@ -403,9 +403,17 @@ final class EditSession: ObservableObject {
         var file: String
     }
 
+    /// The shape of each connected display, width over height: the one thing an export says of a
+    /// display (`SharedDisplay.aspect`). A display that is away has none to give.
+    var displayShapes: [DisplayIdentity: Double] {
+        Dictionary(connected.compactMap { display in
+            display.frameAX.height > 0 ? (display.identity, Double(display.frameAX.width / display.frameAX.height)) : nil
+        }, uniquingKeysWith: { first, _ in first })
+    }
+
     /// The file the selected configuration makes, as edited, and what is in it.
     var shareExport: (layout: SharedLayout, report: ShareReport)? {
-        configuration.map { sharedLayout(of: $0, withFilters: shareWithFilters) }
+        configuration.map { sharedLayout(of: $0, withFilters: shareWithFilters, aspects: displayShapes) }
     }
 
     /// The browser profiles and title filters of the selected configuration, each once: shown to
