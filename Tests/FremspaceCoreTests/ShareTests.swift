@@ -128,6 +128,66 @@ final class ShareTests: XCTestCase {
         XCTAssertEqual(saved, config)
     }
 
+    func testWhereWindowsWithoutASlotGoIsNeverInAFileNorTakenFromOne() throws {
+        // Written by hand in the config file: windows without a slot go to a display, which is
+        // named by its model and serial number.
+        var mine = desk
+        mine.displays[1].spaces[1].unmatched = .sendTo(display: side, spaceIndex: 0)
+        let export = sharedLayout(of: mine, withFilters: false).layout
+        XCTAssertEqual(export.displays[1].desktops[1].unmatched, .float)
+        let text = String(decoding: try export.data(), as: UTF8.self)
+        for hidden in ["6161", "ACME", "sendTo", "serial"] { XCTAssertFalse(text.contains(hidden), "the file holds \(hidden)") }
+        // And a file that carries one is read without it.
+        var theirs = export
+        theirs.displays[1].desktops[1].unmatched = .sendTo(display: big, spaceIndex: 3)
+        let back = try SharedLayout.read(try theirs.data())
+        XCTAssertEqual(back.displays[1].desktops[1].unmatched, .float)
+    }
+
+    func testSlotsThatOverlapRefuseTheFile() {
+        XCTAssertEqual(refused { $0.displays[1].desktops[1].layout?.slots[1].rect.x = 0.25 }, .invalid("two slots that overlap"))
+        XCTAssertEqual(refused {
+            $0.displays[1].drawers[0].layout.slots.append(DrawerSlot(id: "again", rect: UnitRect(x: 0, y: 0.5, w: 1, h: 0.5)))
+        }, .invalid("two drawer slots that overlap"))
+    }
+
+    func testTheLimitsOfAFileAreKept() {
+        let slots = (0..<17).map { self.slot("s\($0)", 0, Rule(bundleID: "com.example.app")) }
+        XCTAssertEqual(refused { $0.displays[1].desktops[1].layout?.slots = slots }, .invalid("the number of slots"))
+        XCTAssertEqual(refused {
+            $0.displays[1].desktops[1].layout?.slots[0].rules = Array(repeating: Rule(bundleID: "com.example.app"), count: 9)
+        }, .invalid("the number of apps in a slot"))
+        XCTAssertEqual(refused { $0.scenes = Array(repeating: SharedScene(name: "s"), count: 33) }, .invalid("the number of scenes"))
+        XCTAssertEqual(refused { $0.displays[1].desktops[1].layout?.slots[0].id = String(repeating: "a", count: 41) },
+                       .invalid("a slot's identifier"))
+        XCTAssertEqual(refused { $0.displays[1].desktops[1].layout?.slots[0].rules[0].bundleID = String(repeating: "a", count: 201) },
+                       .invalid("an app's identifier"))
+        XCTAssertEqual(refused { $0.displays[1].drawers.append($0.displays[1].drawers[0]) }, .invalid("two drawers on one edge"))
+        XCTAssertEqual(refused { $0.displays[1].drawers[0].layout.slots[0].id = "a b" }, .invalid("a drawer slot's identifier"))
+        XCTAssertEqual(refused { $0.displays[1].drawers[0].layout.slots[0].rect.h = 2 }, .invalid("a drawer slot's rectangle"))
+        // One megabyte: a file of that size that is a layout is refused for its size, not for
+        // what it holds.
+        var padded = (try? sharedLayout(of: desk, withFilters: false).layout.data()) ?? Data()
+        padded.append(Data(repeating: 32, count: SharedLayout.Limit.bytes))
+        XCTAssertThrowsError(try SharedLayout.read(padded)) { error in
+            XCTAssertEqual(error as? ShareError, .tooBig)
+        }
+    }
+
+    func testANameIsCutByItsWeightTooAndTheAppsOpenedAtLoginAreListed() throws {
+        var layout = sharedLayout(of: desk, withFilters: false).layout
+        // Twenty letters, each under fifty combining marks: twenty characters, two kilobytes.
+        layout.name = String(repeating: "a" + String(repeating: "\u{0301}", count: 50), count: 20)
+        XCTAssertEqual(layout.name.count, 20)
+        let back = try SharedLayout.read(try layout.data())
+        XCTAssertTrue(back.name.utf8.count <= SharedLayout.Limit.textBytes)
+        XCTAssertFalse(back.name.isEmpty)
+        // A slot opens its app at login unless it says not to.
+        XCTAssertEqual(back.appsOpenedAtLogin, ["com.example.browser", "com.example.ide"])
+        layout.displays[1].desktops[1].layout?.slots[0].launchAtLogin = false
+        XCTAssertEqual(layout.appsOpenedAtLogin, ["com.example.browser"])
+    }
+
     func testNamesAreCutToOneLineAndAScenePartThatPointsNowhereIsDropped() throws {
         var layout = sharedLayout(of: desk, withFilters: false).layout
         layout.name = "A\nB" + String(repeating: "x", count: 200)

@@ -28,6 +28,8 @@ text on the clipboard, **Keep in the library** writes it among the layouts of th
 - A display the configuration ignores.
 - Shortcuts, general settings, and what Fremspace remembers (`state.json`): windows, titles, where
   things were.
+- Where a desktop sends the windows that have no slot, when the config file says so by hand: it
+  can name a display.
 
 ### What goes in only if you tick it
 
@@ -45,9 +47,9 @@ The file is somebody else's, so nothing in it is taken at its word:
   Fremspace says so instead of being half-read;
 - it may weigh 1 MB at most, and hold 8 displays, 16 desktops a display, 16 slots a layout, 8 apps
   a slot, 32 scenes;
-- names are cut to one line of 60 characters; a slot or app identifier with anything but letters,
-  digits, `.`, `_` and `-`, a rectangle outside its desktop, two slots with one identifier or two
-  drawers on one edge refuse the whole file;
+- names are cut to one line of 60 characters and 240 bytes; a slot or app identifier with anything
+  but letters, digits, `.`, `_` and `-`, a rectangle outside its desktop, two slots with one
+  identifier, two slots that overlap or two drawers on one edge refuse the whole file;
 - a part of a scene that names a display, a desktop, a slot or a drawer the file does not have is
   dropped, the rest of the scene stays.
 
@@ -62,7 +64,9 @@ Then you choose, for each display of the file, the display of yours that takes i
 Nothing of yours is replaced, the import is one step to undo, and nothing changes on screen until
 you save. macOS needs as many desktops as the configuration lists: after saving, the Status page
 offers to add the ones that are missing. Apps the file names that are not on your Mac are listed;
-their slots are added and stay empty.
+their slots are added and stay empty. A slot opens its app at login unless that is switched off
+in its inspector, and the file's slots come as their author set them: the apps they name that are
+on your Mac will be opened at your next login.
 
 ## The library
 

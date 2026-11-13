@@ -141,6 +141,9 @@ public func sharedLayout(of configuration: Configuration, withFilters: Bool) -> 
     for (position, display) in kept.enumerated() {
         var desktops = display.spaces
         for d in desktops.indices {
+            // What happens to a window without a slot can name a display (`sendTo`), with its
+            // model and serial number: it is the owner's desk, not part of the layout.
+            desktops[d].unmatched = .float
             guard var layout = desktops[d].layout else { continue }
             for s in layout.slots.indices { layout.slots[s].rules = shared(layout.slots[s].rules) }
             report.slots += layout.slots.count
@@ -211,6 +214,9 @@ extension SharedLayout {
         public static let scenes = 32
         public static let apps = 16
         public static let text = 60
+        /// A character can be a letter under a pile of combining marks: sixty characters must
+        /// not weigh a megabyte.
+        public static let textBytes = 240
         public static let id = 40
         public static let bundleID = 200
     }
@@ -247,6 +253,8 @@ extension SharedLayout {
         guard display.desktops.count <= Limit.desktops else { throw ShareError.invalid("the number of desktops") }
         for d in display.desktops.indices {
             display.desktops[d].label = clean(display.desktops[d].label, fallback: "Desktop \(d + 1)")
+            // Never a display of the author's desk (see `sharedLayout`), whatever the file says.
+            display.desktops[d].unmatched = .float
             guard var layout = display.desktops[d].layout else {
                 display.desktops[d].focusSlot = nil
                 continue
@@ -264,6 +272,8 @@ extension SharedLayout {
                 // to, and every later Save would be refused as "changed outside the editor".
                 layout.slots[s].fullScreenCalls = false
             }
+            // Added as they are, two slots over each other would block every Save of the editor.
+            guard !anyOverlap(layout.slots.map(\.rect)) else { throw ShareError.invalid("two slots that overlap") }
             display.desktops[d].layout = layout
             if let focus = display.desktops[d].focusSlot, !ids.contains(focus) { display.desktops[d].focusSlot = nil }
         }
@@ -279,8 +289,13 @@ extension SharedLayout {
                 guard isUnit(slot.rect) else { throw ShareError.invalid("a drawer slot's rectangle") }
                 display.drawers[d].layout.slots[s].rules = try checked(slot.rules)
             }
+            guard !anyOverlap(drawer.layout.slots.map(\.rect)) else { throw ShareError.invalid("two drawer slots that overlap") }
         }
         return display
+    }
+
+    private static func anyOverlap(_ rects: [UnitRect]) -> Bool {
+        rects.indices.contains { i in rects[(i + 1)...].contains { overlaps(rects[i], $0) } }
     }
 
     private static func checked(_ rules: [Rule]) throws -> [Rule] {
@@ -318,11 +333,14 @@ extension SharedLayout {
         return result
     }
 
-    /// One line of text: no control character, no line break, cut at `Limit.text`.
+    /// One line of text: no control character, no line break, cut at `Limit.text` characters and
+    /// `Limit.textBytes` bytes.
     private static func clean(_ text: String, fallback: String) -> String {
         let scalars = text.unicodeScalars.filter { !CharacterSet.controlCharacters.contains($0) && !CharacterSet.newlines.contains($0) }
         let line = String(String.UnicodeScalarView(scalars)).trimmingCharacters(in: .whitespaces)
-        return line.isEmpty ? fallback : String(line.prefix(Limit.text))
+        var cut = String(line.prefix(Limit.text))
+        while cut.utf8.count > Limit.textBytes { cut.removeLast() }
+        return cut.isEmpty ? fallback : cut
     }
 
     private static let idCharacters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
@@ -339,6 +357,16 @@ extension SharedLayout {
         let slack = 0.001
         return [rect.x, rect.y, rect.w, rect.h].allSatisfy(\.isFinite) && rect.x >= -slack && rect.y >= -slack
             && rect.w > 0 && rect.h > 0 && rect.x + rect.w <= 1 + slack && rect.y + rect.h <= 1 + slack
+    }
+}
+
+extension SharedLayout {
+    /// The apps Fremspace would open at login once the layout is added and saved: those of the
+    /// slots that say so, and a slot does unless it was switched off. For the owner to read before
+    /// adding somebody else's file: they are opened whether or not they are missing from the Mac.
+    public var appsOpenedAtLogin: [String] {
+        let slots = displays.flatMap(\.desktops).flatMap { $0.layout?.slots ?? [] }
+        return Set(slots.filter(\.launchAtLogin).flatMap { $0.rules.map(\.bundleID) }).sorted()
     }
 }
 
