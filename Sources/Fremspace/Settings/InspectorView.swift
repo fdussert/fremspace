@@ -47,6 +47,14 @@ struct InspectorView: View {
     }
 }
 
+extension View {
+    /// For the label of a button that is a symbol alone: a target of 24 points around it. A glyph of
+    /// 13 points is a thing to aim at, not to click.
+    func hitTarget(_ side: CGFloat = 24) -> some View {
+        frame(width: side, height: side).contentShape(Rectangle())
+    }
+}
+
 /// A group of the inspector: its controls on a card.
 struct InspectorCard<Content: View>: View {
     let content: Content
@@ -332,7 +340,7 @@ struct SlotInspector: View {
                         session.checkpoint()
                         update { if $0.rules.indices.contains(offset + 1) { $0.rules.remove(at: offset + 1) } }
                     } label: {
-                        Image(systemName: "minus.circle")
+                        Image(systemName: "minus.circle").hitTarget()
                     }
                     .buttonStyle(.borderless)
                     .help("Take \(appName(rule.bundleID)) out of this slot")
@@ -480,7 +488,7 @@ struct DrawerSlotInspector: View {
                     session.checkpoint()
                     update { if $0.rules.indices.contains(offset) { $0.rules.remove(at: offset) } }
                 } label: {
-                    Image(systemName: "minus.circle")
+                    Image(systemName: "minus.circle").hitTarget()
                 }
                 .buttonStyle(.borderless)
                 .help("Take \(appName(rule.bundleID)) out of this slot")

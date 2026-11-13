@@ -555,7 +555,7 @@ struct ShortcutsEditor: View {
                         reset(entry)
                     } label: {
                         // Not the arrow of Undo, which is in the bar at the foot of the same window.
-                        Image(systemName: "arrow.counterclockwise")
+                        Image(systemName: "arrow.counterclockwise").hitTarget()
                     }
                     .buttonStyle(.borderless)
                     .help(entry.fallback == nil ? "Back to no shortcut" : "Back to \(ShortcutCatalog.label(entry.defaultShortcut))")
@@ -688,7 +688,7 @@ struct ScenesEditor: View {
                             Button {
                                 session.removeScene(scene.id)
                             } label: {
-                                Image(systemName: "trash")
+                                Image(systemName: "trash").hitTarget()
                             }
                             .buttonStyle(.borderless)
                             .accessibilityLabel("Delete the scene \(scene.name)")
@@ -746,7 +746,7 @@ struct ScenesEditor: View {
                                     Button {
                                         session.updateScene(scene.id) { $0.apps.removeAll { $0 == bundleID } }
                                     } label: {
-                                        Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                                        Image(systemName: "xmark.circle.fill").foregroundColor(.secondary).hitTarget(18)
                                     }
                                     .buttonStyle(.borderless)
                                     .accessibilityLabel("Do not open \(appName(bundleID)) with the scene \(scene.name)")
@@ -854,7 +854,7 @@ struct ShareEditor: View {
                             Button {
                                 session.removeFromLibrary(item)
                             } label: {
-                                Image(systemName: "trash")
+                                Image(systemName: "trash").hitTarget()
                             }
                             .buttonStyle(.borderless)
                             .help("Move this layout file to the Trash")
