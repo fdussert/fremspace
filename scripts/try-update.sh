@@ -25,6 +25,9 @@ T="$(mktemp -d "${TMPDIR:-/tmp}/fremspace-update.XXXXXX")"
 PORT="${FREMSPACE_TRY_UPDATE_PORT:-8765}"
 APP="$T/app/Fremspace.app"
 SERVER=""
+# Set once the trial has taken the place of the Fremspace that runs: only then is there something
+# to put back. Before (a download or a build that fails), that Fremspace is left alone.
+STARTED=""
 # The Fremspace that runs now, to open it again at the end.
 RUNNING="$(ps -axo comm= | sed -n 's|\(.*/Fremspace\.app\)/Contents/MacOS/Fremspace$|\1|p' | head -1)"
 
@@ -36,7 +39,19 @@ quit_fremspace() {
 
 # What Sparkle remembers under the identifier of the app (when it last looked, a version skipped).
 # Forgotten before the trial, so that 0.0.1 looks for an update as soon as it starts, and after
-# it: the everyday build has no use for it.
+# it, so that nothing of the trial stays. The identifier is also the one of the app the owner
+# installed: what it had there (updates switched off, a version skipped) is kept aside first and
+# put back last.
+keep_preferences() {
+    defaults export dev.fremspace.app "$T/preferences.plist" >/dev/null 2>&1 || rm -f "$T/preferences.plist"
+}
+
+restore_preferences() {
+    if [ -f "$T/preferences.plist" ]; then
+        defaults import dev.fremspace.app "$T/preferences.plist" >/dev/null 2>&1 || true
+    fi
+}
+
 forget_sparkle() {
     for key in SULastCheckTime SUSkippedVersion SUHasLaunchedBefore SUUpdateGroupIdentifier SUAutomaticallyUpdate \
                SUEnableAutomaticChecks SUSendProfileInfo SUUpdateRelaunchingMarker "NSWindow Frame SUUpdateAlert2"; do
@@ -49,10 +64,13 @@ cleanup() {
         kill "$SERVER" 2>/dev/null || true
         wait "$SERVER" 2>/dev/null || true
     fi
-    quit_fremspace
-    forget_sparkle
+    if [ -n "$STARTED" ]; then
+        quit_fremspace
+        forget_sparkle
+        restore_preferences
+    fi
     rm -rf "$T"
-    if [ -n "$RUNNING" ] && [ -d "$RUNNING" ]; then
+    if [ -n "$STARTED" ] && [ -n "$RUNNING" ] && [ -d "$RUNNING" ]; then
         open -g "$RUNNING"
         echo "back to $RUNNING"
     fi
@@ -96,7 +114,9 @@ SERVER=$!
 curl -fsS -o /dev/null "http://127.0.0.1:$PORT/"
 
 echo "==> Fremspace 0.0.1 in place of the one that runs"
+STARTED=1
 quit_fremspace
+keep_preferences
 forget_sparkle
 open -g "$APP"
 

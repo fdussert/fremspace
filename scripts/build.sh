@@ -115,7 +115,11 @@ fi
 # (scripts/create-signing-identity.sh). Ad hoc is the fallback when the identity is missing.
 IDENTITY="${FREMSPACE_SIGN_IDENTITY:-Fremspace Dev}"
 # By name ("Fremspace Dev") or by hash (a release names the Developer ID identity by its hash).
-if security find-identity -v -p codesigning 2>/dev/null | grep -q -e "\"$IDENTITY\"" -e " $IDENTITY \""; then
+# The list is read first and searched after: in `security … | grep -q`, grep leaves at its first
+# match, and under pipefail a `security` cut short while still writing fails the test, which would
+# sign ad hoc without a word.
+IDENTITIES="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+if grep -q -e "\"$IDENTITY\"" -e " $IDENTITY \"" <<<"$IDENTITIES"; then
     echo "signing with: $IDENTITY"
     SIGN_AS="$IDENTITY"
 else

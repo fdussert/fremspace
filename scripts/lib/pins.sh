@@ -31,8 +31,13 @@ fremspace_fetch_sparkle() {
         return 1
     fi
     if [ ! -d "$SPARKLE_DIR/Sparkle.framework" ]; then
-        rm -rf "$SPARKLE_DIR" && mkdir -p "$SPARKLE_DIR"
-        tar -xJf "$tarball" -C "$SPARKLE_DIR"
+        # Unpacked beside, then moved into place in one step. The tarball is checked at every
+        # build and the unpacked folder never: an unpacking cut short left half a framework that
+        # the next build took as it was.
+        rm -rf "$SPARKLE_DIR" "$SPARKLE_DIR.unpacking"
+        mkdir -p "$SPARKLE_DIR.unpacking"
+        tar -xJf "$tarball" -C "$SPARKLE_DIR.unpacking"
+        mv "$SPARKLE_DIR.unpacking" "$SPARKLE_DIR"
     fi
 }
 

@@ -16,7 +16,16 @@ set -euo pipefail
 IDENTITY="${FREMSPACE_SIGN_IDENTITY:-Fremspace Dev}"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
-if security find-identity -v -p codesigning 2>/dev/null | grep -q "\"$IDENTITY\""; then
+# True when the identity is in the keychain. The list is read first and searched after: in
+# `security … | grep -q`, grep leaves at its first match, and under pipefail a `security` cut short
+# while still writing fails the test. Here that meant a second identity of the same name.
+has_identity() {
+    local identities
+    identities="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+    grep -q "\"$IDENTITY\"" <<<"$identities"
+}
+
+if has_identity; then
     echo "Identity \"$IDENTITY\" already exists in the login keychain; nothing to do."
     exit 0
 fi
@@ -117,7 +126,7 @@ else
     echo "note: could not pre-authorise codesign; macOS may ask for your password on each build."
 fi
 
-if security find-identity -v -p codesigning 2>/dev/null | grep -q "\"$IDENTITY\""; then
+if has_identity; then
     echo
     echo "Done. \"$IDENTITY\" is now a code-signing identity in your login keychain."
     echo "scripts/build.sh picks it up automatically."
