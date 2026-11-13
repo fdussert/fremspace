@@ -72,6 +72,17 @@ The first version to be packaged.
   page that lists what needs attention, a search across the settings, every shortcut changeable,
   and `fremspace://` links for other tools. A shortcut written by hand in the config file that
   cannot be used (a misspelt modifier, no ⌃, ⌥ or ⌘) is not registered, and the menu names it.
+- **The editor is a Mac window.** While it is open Fremspace has a menu bar: Save and Revert to
+  Saved, Undo, Redo and Find, and a Layout menu with the keys of the editor (split with ⌘D, the
+  slot beside with ⌥⌘ and an arrow, a slot one stop larger or smaller with ⇧⌥⌘ and an arrow, the
+  desktops with ⌘1 to ⌘9 and ⌃⇥, the displays with ⌃⌥⇥). The window is named after what it shows.
+  Closing it or quitting with unsaved changes asks first; the bar beside Save says where the
+  unsaved changes are and the sidebar marks those rows; Revert can be undone. A control that is
+  off says why under the pointer. VoiceOver names each slot, can select, split and remove it, and
+  moves a divider from stop to stop. Slot tiles share one ground, with the app's colour as a line
+  along the top; a shortcut is shown as its keys, and one on ⌘ or ⌥ alone is taken with a
+  warning; a shortcut being typed stops listening when you leave the window. "Add desktops" in
+  the editor adds what the saved configuration in use lacks, never what is still unsaved.
 - **What needs macOS 26.4.** Sending a window to another desktop: to the desktop of its slot, back
   where it was after a restart, a drawer following its display. On an older macOS the windows are
   arranged on the desktop where they are, and the Status page says so.
