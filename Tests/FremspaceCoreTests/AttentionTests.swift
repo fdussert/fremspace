@@ -118,6 +118,8 @@ final class AttentionTests: XCTestCase {
         XCTAssertEqual(items.map(\.id), ["mover"])
         XCTAssertEqual(items[0].level, .warning)
         XCTAssertTrue(items[0].detail.contains("not on this Mac"))
+        // The version the README gives, so that the owner knows what would bring it.
+        XCTAssertTrue(items[0].detail.contains("macOS 26.4"))
         XCTAssertFalse(items[0].detail.contains("Re-apply"))
     }
 

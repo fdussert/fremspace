@@ -132,7 +132,7 @@ public func attentionItems(_ facts: AttentionFacts) -> [AttentionItem] {
     }
     if facts.moverMissing {
         add("mover", .warning, "This macOS cannot send a window to another desktop",
-            "The part of macOS that Fremspace does it with is not on this Mac. A window stays on the desktop where it opens, is not put back on its desktop after a restart, and a drawer does not follow its display to another desktop.")
+            "It needs macOS 26.4 or later: the part of macOS that Fremspace does it with is not on this Mac. A window stays on the desktop where it opens, is not put back on its desktop after a restart, and a drawer does not follow its display to another desktop.")
     } else if !facts.moverAvailable {
         add("mover", .warning, "Windows can no longer be sent to another desktop",
             "macOS refused the last moves. A window stays on the desktop where it opens; Re-apply the layouts tries again.")

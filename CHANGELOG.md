@@ -61,6 +61,9 @@ The first version to be packaged.
   act without Save are marked "At once". Also: desktops reordered by dragging their tab, a Status
   page that lists what needs attention, a search across the settings, every shortcut changeable,
   and `fremspace://` links for other tools.
+- **What needs macOS 26.4.** Sending a window to another desktop: to the desktop of its slot, back
+  where it was after a restart, a drawer following its display. On an older macOS the windows are
+  arranged on the desktop where they are, and the Status page says so.
 - **Updates.** The downloaded app updates itself (Sparkle): about once a day it looks for a newer
   version, and **Check for Updates…** is in the menu. It fetches one file and sends nothing; the
   switch is on the General page.
