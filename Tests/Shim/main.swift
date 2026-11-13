@@ -50,6 +50,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testRemovingAConfiguredDesktopDropsItsLink", { ($0 as! DesktopMapTests).testRemovingAConfiguredDesktopDropsItsLink() }),
         ("testFirstRunLinksByPosition", { ($0 as! DesktopMapTests).testFirstRunLinksByPosition() }),
         ("testRearrangedDesktopsFollowTheirUuid", { ($0 as! DesktopMapTests).testRearrangedDesktopsFollowTheirUuid() }),
+        ("testTheDesktopWithoutUuidIsFollowedWhenAnotherTakesItsPosition", { ($0 as! DesktopMapTests).testTheDesktopWithoutUuidIsFollowedWhenAnotherTakesItsPosition() }),
         ("testRemovedDesktopIsNotReplacedByItsNeighbour", { ($0 as! DesktopMapTests).testRemovedDesktopIsNotReplacedByItsNeighbour() }),
         ("testAddedDesktopInTheMiddleIsUnconfigured", { ($0 as! DesktopMapTests).testAddedDesktopInTheMiddleIsUnconfigured() }),
         ("testLinkMovesAUuid", { ($0 as! DesktopMapTests).testLinkMovesAUuid() }),

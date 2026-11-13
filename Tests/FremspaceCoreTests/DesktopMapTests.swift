@@ -17,6 +17,20 @@ final class DesktopMapTests: XCTestCase {
         XCTAssertEqual(r.links, [nil, "U2", "U3"])
     }
 
+    func testTheDesktopWithoutUuidIsFollowedWhenAnotherTakesItsPosition() {
+        // The first desktop of the main display (no uuid) dragged after the second in Mission
+        // Control: its layout goes with it instead of applying nowhere.
+        let moved = resolveDesktops(configured: 2, links: [nil, "U2"], live: ["U2", ""])
+        XCTAssertEqual(moved.real, [1, 0])
+        XCTAssertEqual(moved.links, [nil, "U2"])
+        // A configured desktop that macOS does not have yet takes nobody's place.
+        let short = resolveDesktops(configured: 3, links: [nil, "U2", nil], live: ["U2", ""])
+        XCTAssertEqual(short.real, [1, 0, nil])
+        // And a desktop with a uuid that is gone is still not replaced by the one without.
+        let gone = resolveDesktops(configured: 2, links: ["U1", "U2"], live: ["", "U2"])
+        XCTAssertEqual(gone.real, [nil, 1])
+    }
+
     func testRemovedDesktopIsNotReplacedByItsNeighbour() {
         let r = resolveDesktops(configured: 3, links: [nil, "U2", "U3"], live: ["", "U3"])
         XCTAssertEqual(r.real, [0, nil, 1])

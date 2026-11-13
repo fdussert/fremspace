@@ -38,7 +38,10 @@ public struct DesktopLinks: Codable, Equatable {
 /// The real position of each configured desktop. Linked desktops follow their uuid; a linked uuid
 /// that is gone maps to nothing (its neighbour does not take its place). Unlinked desktops take
 /// their own position when it is free and its uuid is not linked elsewhere, and get linked to it
-/// (an empty uuid stays position-based).
+/// (an empty uuid stays position-based). The first desktop of the main display has no uuid, so it
+/// can never be linked: when another desktop was moved to its position in Mission Control, the
+/// unlinked configured desktop that found its place taken follows it to the position that has no
+/// uuid, instead of resolving to nothing.
 public func resolveDesktops(configured: Int, links: [String?], live: [String]) -> (real: [Int?], links: [String?]) {
     var newLinks = Array(links.prefix(configured))
     newLinks += Array(repeating: nil, count: configured - newLinks.count)
@@ -55,6 +58,11 @@ public func resolveDesktops(configured: Int, links: [String?], live: [String]) -
         real[i] = i
         used.insert(i)
         if !live[i].isEmpty { newLinks[i] = live[i] }
+    }
+    for i in 0..<configured where real[i] == nil && newLinks[i] == nil && i < live.count && used.contains(i) {
+        guard let position = live.indices.first(where: { live[$0].isEmpty && !used.contains($0) }) else { break }
+        real[i] = position
+        used.insert(position)
     }
     return (real, newLinks)
 }
