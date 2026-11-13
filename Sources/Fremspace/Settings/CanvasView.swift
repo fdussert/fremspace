@@ -400,25 +400,30 @@ struct CanvasView: View {
         .frame(minHeight: 24)
     }
 
+    /// A control that is off says why under the pointer: dimmed without a word, it reads as broken.
     private func slotActions(_ id: String, named: Bool) -> some View {
-        HStack(spacing: 8) {
+        let wide = session.canSplitSelected(.vertical), high = session.canSplitSelected(.horizontal)
+        let several = (session.editedLayout?.slots.count ?? 0) > 1
+        return HStack(spacing: 8) {
             Button { session.split(slot: id, along: .vertical) } label: {
                 action("Split left | right", "rectangle.split.2x1", named: named)
             }
-            .disabled(!session.canSplitSelected(.vertical))
-            .help(named ? "" : "Split left | right")
+            .disabled(!wide)
+            .help(wide ? "Split left | right (⌘D)" : "This slot is too narrow to be split again")
             Button { session.split(slot: id, along: .horizontal) } label: {
                 action("Split top / bottom", "rectangle.split.1x2", named: named)
             }
-            .disabled(!session.canSplitSelected(.horizontal))
-            .help(named ? "" : "Split top / bottom")
+            .disabled(!high)
+            .help(high ? "Split top / bottom (⇧⌘D)" : "This slot is too low to be split again")
             Button(role: .destructive) { session.remove(slot: id) } label: {
                 action("Remove", "trash", named: named)
             }
             // ⌘⌫ is the Layout menu's: there it is off while a text field has the keyboard, where the
             // same keys delete to the start of the line.
-            .disabled((session.editedLayout?.slots.count ?? 0) <= 1)
-            .help("Remove this slot; a neighbour takes its place (⌘⌫)")
+            .disabled(!several)
+            .help(several ? "Remove this slot; a neighbour takes its place (⌘⌫)"
+                  : session.selection.drawer != nil ? "A drawer keeps at least one slot: remove the drawer itself in the inspector"
+                  : "A layout keeps at least one slot: choose Free above to have none")
         }
         .fixedSize()
     }

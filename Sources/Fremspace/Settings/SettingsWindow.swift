@@ -517,7 +517,8 @@ struct StatusBar: View {
                 .keyboardShortcut("s", modifiers: .command)
                 .buttonStyle(.borderedProminent)
                 .disabled(!session.isDirty || problem != nil || session.loadError != nil)
-                .help(problem?.text ?? "Save and apply the layouts (⌘S)")
+                .help(problem?.text ?? (session.loadError != nil ? "Saving is off: the config file could not be read"
+                                        : session.isDirty ? "Save and apply the layouts (⌘S)" : "Nothing to save"))
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
         .background(session.isDirty ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.035))

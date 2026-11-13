@@ -772,6 +772,10 @@ struct ScenesEditor: View {
                         .disabled(!session.isActive(configuration))
                     Button("Add an empty scene") { session.addScene(capturing: false) }
                 }
+                // The page's main button, off: the reason is written, not left to a tooltip.
+                if !session.isActive(configuration) {
+                    HelpText("\u{201C}\(configuration.name)\u{201D} is not the configuration in use: there is nothing on the displays to start a scene from.")
+                }
             }
         } else {
             NoConfiguration(session: session, text: "Scenes belong to a configuration: make one first.")
@@ -920,6 +924,7 @@ struct ShareEditor: View {
                 Button("Add to \u{201C}\(configuration.name)\u{201D}") { session.applyImport() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(pending.mapping.isEmpty)
+                    .help(pending.mapping.isEmpty ? "Choose where the desktops of at least one display go" : "")
                 Button("Cancel") { session.pendingImport = nil }
             }
         }

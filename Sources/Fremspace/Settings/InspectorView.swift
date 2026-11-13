@@ -344,6 +344,7 @@ struct SlotInspector: View {
                 update { $0.rules.append(Rule(bundleID: id)) }
             }
             .disabled(slot.rule.bundleID.isEmpty)
+            .help(slot.rule.bundleID.isEmpty ? "Choose the slot's app first" : "Another app whose windows stack in this slot")
             HelpText("Several windows here stack: \(session.shortcutLabel("stackNext")) goes through them, \(session.shortcutLabel("stackPrevious")) the other way.")
         }
     }
@@ -515,7 +516,9 @@ struct DesktopInspector: View {
                     Label("Remove this desktop", systemImage: "trash")
                 }
                 .disabled((session.displaySpec?.spaces.count ?? 0) <= 1)
-                .help("Takes the desktop out of the configuration; the macOS desktop itself stays")
+                .help((session.displaySpec?.spaces.count ?? 0) > 1
+                      ? "Takes the desktop out of the configuration; the macOS desktop itself stays"
+                      : "A display keeps at least one desktop: make it free, or ignore the display")
             }
         }
     }
