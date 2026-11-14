@@ -31,6 +31,9 @@ final class DrawerController {
     /// Gives the keyboard to the main layout of a desktop (after closing its drawer by hotkey), or
     /// on a free desktop to the window in front.
     var focusMainLayout: (SpaceKey) -> Void = { _ in }
+    /// Brings the folders the slots of a drawer ask for into it and opens it. False when it asks
+    /// for none that can be had.
+    var fetchFolders: (DisplayIdentity, DrawerEdge) -> Bool = { _, _ in false }
 
     private let windows: AXWindows
     private var state = DrawerState()
@@ -210,7 +213,12 @@ final class DrawerController {
         bring(display, edges: [edge.rawValue]) { [weak self] _ in
             guard let self else { return }
             self.prune(display)
-            guard !self.state.stacks(display, edge: edge.rawValue).isEmpty else { return NSSound.beep() }
+            guard !self.state.stacks(display, edge: edge.rawValue).isEmpty else {
+                // An empty drawer whose slots ask for folders: the folders are fetched, and it opens
+                // with them (owner, 2026-11-14: a new drawer with a folder "never shows").
+                if self.fetchFolders(display, edge) { return }
+                return NSSound.beep()
+            }
             if self.state.isOpen(display, edge: edge.rawValue) {
                 self.close(display, edges: [edge.rawValue])
                 // The other drawer, still open, keeps the keyboard; else it goes back to the layout.
@@ -296,7 +304,8 @@ final class DrawerController {
 
     /// A window of an app that has a drawer slot (`slot`, a slot key of `display`) joins it by itself:
     /// shown at once when the owner is on it, parked otherwise. Not one the owner took out.
-    func adopt(_ element: AXUIElement, _ info: WindowInfo, display: DisplayIdentity, slot: String) {
+    /// `show`: the owner asked for this drawer (it was empty, and its folder was opened for them).
+    func adopt(_ element: AXUIElement, _ info: WindowInfo, display: DisplayIdentity, slot: String, show: Bool = false) {
         guard isActive(), members[info.id] == nil, takenOut[info.id] == nil, !draggedOthers.contains(info.id) else { return }
         let edge = drawerEdge(ofSlotKey: slot)
         join(info.id, element: element, pid: info.pid, bundleID: info.bundleID, display: display, slot: slot)
@@ -304,7 +313,7 @@ final class DrawerController {
         let inFront = Date() >= appsStartUntil && windows.focusedWindow().flatMap(AXWindows.windowID) == info.id
         whenMouseUp { [weak self] in
             guard let self, self.members[info.id] != nil else { return }
-            if inFront || self.state.isOpen(display, edge: edge) {
+            if show || inFront || self.state.isOpen(display, edge: edge) {
                 self.open(display, edges: [edge], keyboardTo: inFront ? info.id : nil)
             } else {
                 self.close(display, edges: [edge])

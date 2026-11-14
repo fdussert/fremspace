@@ -11,6 +11,9 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 - A Finder slot of a drawer can ask for a folder too, as a slot of a layout can since 0.1.3: the
   folder is opened when the windows are restored and its window joins the drawer.
+- The folder a slot asks for is also opened when you save the slot with it, and when you open a
+  drawer that is empty: it then opens with the folder in it. Before, a new drawer whose only slot
+  asked for a folder did nothing until the next login.
 ## 0.1.3
 
 - A Finder slot can ask for a folder. Choose it in the slot's settings ("Folder to open"): at login

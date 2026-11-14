@@ -185,10 +185,15 @@ final class Engine {
 
     /// The folders the slots ask for that no window of their app shows are opened there, without
     /// taking the keyboard, and each window that opens goes to its slot (`DesktopRouter.expect`).
-    /// When the windows are restored: at a login, and on "Restore everything now".
-    func openSlotFolders() {
-        guard isRunning, !paused, AXIsProcessTrusted(), !Self.sessionIsLocked, let configuration else { return }
-        for wanted in foldersToOpen(configuration) {
+    /// When the windows are restored (a login, "Restore everything now"), for the folders a save
+    /// just added (`only`), and for a drawer the owner opens while it is empty (`show`: a window
+    /// that shows the folder already is then taken too, and the drawer opens). Returns how many
+    /// folders were opened or taken.
+    @discardableResult
+    func openSlotFolders(only: [FolderToOpen]? = nil, show: Bool = false) -> Int {
+        guard isRunning, !paused, AXIsProcessTrusted(), !Self.sessionIsLocked, let configuration else { return 0 }
+        var count = 0
+        for wanted in only ?? foldersToOpen(configuration) {
             let url = URL(fileURLWithPath: (wanted.folder as NSString).expandingTildeInPath)
             var isDirectory: ObjCBool = false
             guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
@@ -198,20 +203,34 @@ final class Engine {
             }
             guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: wanted.bundleID) else { continue }
             let byTitle = wanted.bundleID == Self.finder
-            let shown = NSRunningApplication.runningApplications(withBundleIdentifier: wanted.bundleID).contains { running in
-                windows.allWindows(pid: running.processIdentifier).contains {
-                    windowShows(url, document: windows.document(of: $0), title: windows.title(of: $0), byTitle: byTitle)
+            var showing: (element: AXUIElement, info: WindowInfo)?
+            search: for running in NSRunningApplication.runningApplications(withBundleIdentifier: wanted.bundleID) {
+                for element in windows.allWindows(pid: running.processIdentifier)
+                where windowShows(url, document: windows.document(of: element), title: windows.title(of: element), byTitle: byTitle) {
+                    if let info = windows.info(for: element, pid: running.processIdentifier, bundleID: wanted.bundleID) {
+                        showing = (element, info)
+                        break search
+                    }
                 }
             }
-            guard !shown else { continue }
-            router.expect(folder: url, for: wanted)
+            if let showing {
+                // Shown already: left where it is, unless the owner is asking for the drawer it is for.
+                if show, !drawers.isMember(showing.info.id), placements[showing.info.id] == nil {
+                    router.take(showing.info, showing.element, to: wanted.target, show: true)
+                    count += 1
+                }
+                continue
+            }
+            router.expect(folder: url, for: wanted, show: show)
             let options = NSWorkspace.OpenConfiguration()
             options.activates = false
             NSWorkspace.shared.open([url], withApplicationAt: app, configuration: options) { _, error in
                 if let error { Log.engine.error("opening the folder of slot \(wanted.target.name, privacy: .public) failed: \(error.localizedDescription, privacy: .public)") }
             }
             Log.engine.notice("slot \(wanted.target.name, privacy: .public): its folder was shown by no window of \(wanted.bundleID, privacy: .public), opened")
+            count += 1
         }
+        return count
     }
 
     /// Shows files in the Finder for the owner, as `openForOwner` opens one.
@@ -296,6 +315,14 @@ final class Engine {
             self?.scheduleApply()
         }
         drawers.focusMainLayout = { [weak self] space in self?.focusMainLayout(space) }
+        drawers.fetchFolders = { [weak self] display, edge in
+            guard let self, let configuration = self.configuration else { return false }
+            let wanted = foldersToOpen(configuration).filter {
+                guard case .drawer(let of, let key) = $0.target else { return false }
+                return of == display && drawerEdge(ofSlotKey: key) == edge.rawValue
+            }
+            return !wanted.isEmpty && self.openSlotFolders(only: wanted, show: true) > 0
+        }
         drawers.isActive = { [weak self] in
             guard let self else { return false }
             return self.isRunning && !self.displaysSettling
@@ -1144,6 +1171,15 @@ final class Engine {
             drawers.release(apps: apps)
             // And those that sit on a free desktop, at the sort that follows the save.
             router.givenASlot.formUnion(apps)
+        }
+        // The folders this save added to the slots are opened now: the owner just asked for them,
+        // and need not wait for a login to see them.
+        if let before, let now = configuration, let old = before.configurations.first(where: { $0.id == now.id }) {
+            let had = foldersToOpen(old)
+            let added = foldersToOpen(now).filter { !had.contains($0) }
+            if !added.isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.openSlotFolders(only: added) }
+            }
         }
         scheduleApply()
         onConfigChanged?()

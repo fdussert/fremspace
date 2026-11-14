@@ -220,14 +220,15 @@ final class DesktopRouter {
     }
 
     /// Folders Fremspace just opened for a slot: the window that shows one goes to that slot.
-    private var expectedFolders: [(url: URL, wanted: FolderToOpen, until: Date)] = []
+    private var expectedFolders: [(url: URL, wanted: FolderToOpen, show: Bool, until: Date)] = []
 
     /// Fremspace is about to open `url` in its app for a slot: the window that appears showing it
     /// goes to that slot, on its desktop. Forgotten after `AskedWindows.wait` (an app that opens
     /// the folder in a window it already had shows no new one).
-    func expect(folder url: URL, for wanted: FolderToOpen) {
+    /// `show`: the owner asked to see the drawer the folder is for; it opens once the window is in it.
+    func expect(folder url: URL, for wanted: FolderToOpen, show: Bool = false) {
         expectedFolders.removeAll { $0.until < Date() }
-        expectedFolders.append((url, wanted, Date().addingTimeInterval(AskedWindows.wait)))
+        expectedFolders.append((url, wanted, show, Date().addingTimeInterval(AskedWindows.wait)))
     }
 
     /// Sends a window that shows a folder a slot asked for to that slot. False when it is not one.
@@ -238,7 +239,15 @@ final class DesktopRouter {
                 && windowShows(expected.url, document: windows.document(of: element), title: info.title,
                                byTitle: info.bundleID == "com.apple.finder")
         }) else { return false }
-        let wanted = expectedFolders.remove(at: index).wanted
+        let expected = expectedFolders.remove(at: index)
+        take(info, element, to: expected.wanted.target, show: expected.show)
+        return true
+    }
+
+    /// Puts a window in the slot that asked for the folder it shows: a new window Fremspace just
+    /// opened, or one that showed the folder already.
+    func take(_ info: WindowInfo, _ element: AXUIElement, to target: FolderTarget, show: Bool) {
+        let wanted = (target: target, show: show)
         // Like a window a command sent: nothing pulls it away, and it does not float off.
         sentByCommand.insert(info.id)
         lastInfo[info.id] = info
@@ -255,20 +264,23 @@ final class DesktopRouter {
             }
         case .drawer(let display, let key):
             // A drawer is its display's, whichever desktop it shows: a window that opened on
-            // another display first comes to the desktop that one shows.
+            // another display, or on another desktop of this one, first comes to the desktop shown.
             let id = info.id
-            if place?.display == display {
-                engine.drawers.adopt(element, info, display: display, slot: key)
-            } else if let shown = Spaces.current()[display], let space = Spaces.spaceID(display: display, real: shown) {
+            let join = { [weak self] in
+                guard let self else { return }
+                self.engine.drawers.adopt(element, info, display: display, slot: key, show: wanted.show)
+            }
+            guard let shown = Spaces.current()[display] else { return }
+            if place == SpaceKey(display: display, spaceIndex: shown) {
+                join()
+            } else if let space = Spaces.spaceID(display: display, real: shown) {
                 inFlight.insert(id)
                 SpaceMover.send(id, toSpace: space) { [weak self] arrived in
-                    guard let self else { return }
-                    self.inFlight.remove(id)
-                    if arrived { self.engine.drawers.adopt(element, info, display: display, slot: key) }
+                    self?.inFlight.remove(id)
+                    if arrived { join() }
                 }
             }
         }
-        return true
     }
 
     private func routeAppeared(_ id: UInt32) {
