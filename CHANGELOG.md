@@ -9,6 +9,13 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- A desktop can keep its windows **as placed**: exactly where they are, over one another if they
+  are, instead of in slots cut out of the screen. "Keep windows as placed" on a free desktop (or
+  "As placed" above the screen) takes the places of the windows it shows; after Save, Fremspace
+  puts them back there whenever it places windows again: a display plugged in again, a login,
+  ⌃⌥⌘R. Between two of those the windows stay where you drag them. With "no floating windows" on,
+  such a desktop keeps only the windows it has a place for, like any layout. Which window is in
+  front is not restored.
 - Browser profiles are read whatever the browser's language. Fremspace took the profile from a
   window title written the English way, "Page - Brave – Work"; a French Brave writes "Page – Brave
   – Work", and none of its profiles was seen. A profile whose name holds a dash ("Client - Work")

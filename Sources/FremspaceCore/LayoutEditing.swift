@@ -210,6 +210,8 @@ public func isValid(_ layout: Layout) -> String? {
 /// Whether cutting slot `id` in halves keeps both halves at least the smallest stop of an axis
 /// `length` points long (else the new divider could never move).
 public func canSplit(_ layout: Layout, slot id: String, along axis: Axis, length: CGFloat) -> Bool {
+    // A slot of a free-form layout is a window's frame, not a share of the screen to cut again.
+    guard !layout.freeForm else { return false }
     guard let slot = layout.slots.first(where: { $0.id == id }), let smallest = Fractions.stops(forWidth: length).first else { return false }
     let half = (axis == .vertical ? slot.rect.w : slot.rect.h) / 2
     return half >= smallest - epsilon

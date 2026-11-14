@@ -447,6 +447,9 @@ struct CanvasView: View {
                     slotActions(id, named: true)
                     slotActions(id, named: false)
                 }
+            } else if session.editedLayout?.freeForm == true {
+                Text("Windows go back to these places. Click one to set it up; capture again to change the places.")
+                    .font(.callout).foregroundColor(.secondary)
             } else if session.editedLayout != nil {
                 Text("Click a slot to set it up. Drag the handles between slots to resize them.")
                     .font(.callout).foregroundColor(.secondary)
@@ -464,24 +467,28 @@ struct CanvasView: View {
     private func slotActions(_ id: String, named: Bool) -> some View {
         let wide = session.canSplitSelected(.vertical), high = session.canSplitSelected(.horizontal)
         let several = (session.editedLayout?.slots.count ?? 0) > 1
+        // A window's place is not a share of the screen: there is nothing to split.
+        let asPlaced = session.editedLayout?.freeForm == true
         return HStack(spacing: 8) {
-            Button { session.split(slot: id, along: .vertical) } label: {
-                action("Split left | right", "rectangle.split.2x1", named: named)
+            if !asPlaced {
+                Button { session.split(slot: id, along: .vertical) } label: {
+                    action("Split left | right", "rectangle.split.2x1", named: named)
+                }
+                .disabled(!wide)
+                .help(wide ? "Split left | right (⌘D)" : "This slot is too narrow to be split again")
+                Button { session.split(slot: id, along: .horizontal) } label: {
+                    action("Split top / bottom", "rectangle.split.1x2", named: named)
+                }
+                .disabled(!high)
+                .help(high ? "Split top / bottom (⇧⌘D)" : "This slot is too low to be split again")
             }
-            .disabled(!wide)
-            .help(wide ? "Split left | right (⌘D)" : "This slot is too narrow to be split again")
-            Button { session.split(slot: id, along: .horizontal) } label: {
-                action("Split top / bottom", "rectangle.split.1x2", named: named)
-            }
-            .disabled(!high)
-            .help(high ? "Split top / bottom (⇧⌘D)" : "This slot is too low to be split again")
             Button(role: .destructive) { session.remove(slot: id) } label: {
                 action("Remove", "trash", named: named)
             }
             // ⌘⌫ is the Layout menu's: there it is off while a text field has the keyboard, where the
             // same keys delete to the start of the line.
             .disabled(!several)
-            .help(several ? "Remove this slot; a neighbour takes its place (⌘⌫)"
+            .help(several ? (asPlaced ? "Remove this place: its window is left alone (⌘⌫)" : "Remove this slot; a neighbour takes its place (⌘⌫)")
                   : session.selection.drawer != nil ? "A drawer keeps at least one slot: remove the drawer itself in the inspector"
                   : "A layout keeps at least one slot: choose Free above to have none")
         }
@@ -547,7 +554,8 @@ struct CanvasView: View {
                     .frame(width: zone.width, height: zone.height).offset(x: zone.minX, y: zone.minY)
                     .allowsHitTesting(false)
             }
-            ForEach(layout.slots, id: \.id) { slot in
+            // A free-form layout lists its windows front to back: the front one is drawn last, on top.
+            ForEach(layout.freeForm ? layout.slots.reversed() : layout.slots, id: \.id) { slot in
                 let r = rect(slot.rect, in: c, size: size)
                 let tile = SlotTile(slot: slot, isDrawer: editingDrawer, isFocus: space.map { focusSlots($0).contains { $0.id == slot.id } } ?? false,
                                     selected: session.selection.slot == slot.id,
@@ -659,24 +667,36 @@ struct DesktopMode: View {
     @ObservedObject var session: EditSession
 
     var body: some View {
-        let free = session.spaceSpec?.layout == nil
+        let layout = session.spaceSpec?.layout
+        let mode = layout == nil ? 0 : layout?.freeForm == true ? 2 : 1
         Picker("Windows of this desktop", selection: Binding(
-            get: { free ? 0 : 1 },
-            set: { mode in
-                if mode == 0 {
+            get: { mode },
+            set: { wanted in
+                switch wanted {
+                case 0:
                     session.checkpoint()
                     session.updateSpace { $0.layout = nil; $0.focusSlot = nil }
                     session.selection.slot = nil
-                } else {
+                case 2:
+                    // Made from the windows as they are: there is nothing to draw it from otherwise.
+                    session.captureDesktop(asPlaced: true)
+                default:
+                    if layout?.freeForm == true {
+                        // The places kept are not slots cut out of the screen: a layout starts again.
+                        session.checkpoint()
+                        session.updateSpace { $0.layout = nil; $0.focusSlot = nil }
+                    }
                     session.makeLayout()
                 }
             })) {
             Text("Free").tag(0)
             Text("Layout").tag(1)
+            Text("As placed").tag(2)
         }
         .pickerStyle(.segmented).labelsHidden().fixedSize()
-        .help(free ? "Free: Fremspace leaves every window of this desktop alone"
-              : "Layout: windows go to their slot; those without a slot float where you put them")
+        .help(mode == 0 ? "Free: Fremspace leaves every window of this desktop alone"
+              : mode == 1 ? "Layout: windows go to their slot; those without a slot float where you put them"
+              : "As placed: windows go back to the places they had when captured, over one another if they were")
     }
 }
 
@@ -855,10 +875,13 @@ struct FreeDesktopStart: View {
                 Button("Capture this desktop") { session.captureDesktop() }
                     .buttonStyle(.borderedProminent)
                     .disabled(!connected)
+                Button("Keep windows as placed") { session.captureDesktop(asPlaced: true) }
+                    .disabled(!connected)
+                    .help("The windows keep the exact places they have now, over one another if they are, and go back there whenever Fremspace places windows again")
                 Button("Make a layout") { session.makeLayout() }
             }
             VStack(spacing: 3) {
-                Text(connected ? "Capture makes the layout from the windows this desktop shows now."
+                Text(connected ? "Capture makes the layout from the windows this desktop shows now; as placed keeps them exactly where they are."
                      : "This display is not connected: there is no window to capture.")
                 if full {
                     Text("Or leave it free: Fremspace does not touch the windows here.")

@@ -8,19 +8,25 @@ struct CaptureButton: View {
     @ObservedObject var session: EditSession
 
     var body: some View {
-        Button { session.captureDesktop() } label: {
+        // A desktop whose windows are kept as placed is captured again the same way.
+        let asPlaced = session.spaceSpec?.layout?.freeForm == true
+        Button { session.captureDesktop(asPlaced: asPlaced) } label: {
             // Windows on a screen, not a camera: nothing is photographed, and the previews are what
             // ask for Screen Recording.
-            Label("Capture this desktop", systemImage: "macwindow.on.rectangle")
+            Label(asPlaced ? "Capture again" : "Capture this desktop", systemImage: "macwindow.on.rectangle")
         }
-        .help("Make this desktop's layout from the windows it shows now (Undo brings the previous one back)")
+        .help(asPlaced ? "Take the places of the windows this desktop shows now (Undo brings the previous ones back)"
+              : "Make this desktop's layout from the windows it shows now (Undo brings the previous one back)")
     }
 }
 
 extension EditSession {
     /// Makes the selected desktop's layout from the windows it shows now. Says in the status bar
     /// why not, when the display is away or shows another desktop.
-    func captureDesktop() {
+    ///
+    /// `asPlaced`: the windows keep the exact places they have, over one another when they are (a
+    /// free-form layout), instead of becoming slots snapped to clean fractions.
+    func captureDesktop(asPlaced: Bool = false) {
         guard let identity = selection.display,
               let display = connected.first(where: { $0.identity == identity }) else {
             status = Status(kind: .warning, text: "This display is not connected: there is nothing to capture.")
@@ -49,7 +55,8 @@ extension EditSession {
         let order = AXWindows.onScreenWindowOrder()
         let sorted = here.sorted { (order.firstIndex(of: $0.info.id) ?? .max) < (order.firstIndex(of: $1.info.id) ?? .max) }
         let input = sorted.compactMap { w in windows.frame(w.element).map { (info: w.info, frame: $0) } }
-        let layout = FremspaceCore.capture(windows: input, visible: display.visibleAX)
+        let layout = asPlaced ? captureFreeForm(windows: input, visible: display.visibleAX)
+            : FremspaceCore.capture(windows: input, visible: display.visibleAX)
         guard !layout.slots.isEmpty else {
             status = Status(kind: .warning, text: "No window to capture on this desktop.")
             return
@@ -57,6 +64,8 @@ extension EditSession {
         checkpoint()
         updateSpace { $0.layout = layout; $0.focusSlot = nil }
         selection.slot = layout.slots.first?.id
-        status = Status(kind: .info, text: "Captured \(counted(layout.slots.count, "slot")). Check them, then save.")
+        status = asPlaced
+            ? Status(kind: .info, text: "Kept the places of \(counted(layout.slots.count, "window")). After Save, Fremspace puts them back there whenever it places windows again.")
+            : Status(kind: .info, text: "Captured \(counted(layout.slots.count, "slot")). Check them, then save.")
     }
 }
