@@ -297,6 +297,16 @@ final class Engine {
         return configuredSpec(space)
     }
 
+    /// The drawer slot of its display that takes this window: its app has a slot in a drawer there,
+    /// the layout of the desktop it is on has none for it, and the owner did not take it out. Such a
+    /// window is the drawer's, whether or not it has joined it yet (it joins when it is seen on the
+    /// desktop shown, or when its drawer is opened).
+    func drawerSlot(for info: WindowInfo) -> String? {
+        guard isRunning, let configuration, !drawers.wasTakenOut(info.id), let space = Spaces.spaceIndex(ofWindow: info.id),
+              let specs = displaySpec(for: space.display, in: configuration)?.drawers, !specs.isEmpty else { return nil }
+        return drawerSlotKey(for: info, in: specs, layout: configuredSpec(space)?.layout)
+    }
+
     /// The configured desktop a real desktop is (through the desktop links), if any.
     private func configuredSpec(_ space: SpaceKey) -> SpaceSpec? {
         guard let configuration, let display = displaySpec(for: space.display, in: configuration),

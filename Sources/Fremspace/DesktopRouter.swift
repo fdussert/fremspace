@@ -426,6 +426,10 @@ final class DesktopRouter {
         }
         // Wherever its app has a slot: the owner asked for this window here, now.
         if askedFor.contains(info.id), reason == .appeared { return false }
+        // A window a drawer of its display takes is not sent anywhere: with "no floating windows" it
+        // has no slot in the layouts, and a sort that ran before it joined its drawer sent it to the
+        // free desktop (owner, 2026-11-14: the three windows of the drawers, at a start of Fremspace).
+        if engine.drawerSlot(for: info) != nil { return false }
         let decision = route(window: info, on: here, reason: reason, configuration: configuration,
                              remembered: entry?.desktop, rememberedDeliberately: entry?.slotID == nil,
                              sentByCommand: sentByCommand.contains(info.id),
