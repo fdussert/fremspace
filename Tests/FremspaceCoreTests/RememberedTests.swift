@@ -101,6 +101,25 @@ final class RememberedTests: XCTestCase {
         XCTAssertEqual(remembered.entries.count, 1)
     }
 
+    func testAWindowFoundOnAFreeDesktopKeepsItsSlotElsewhere() {
+        var remembered = Remembered()
+        let free = ConfiguredDesktop(display: dell, index: 3)
+        // Its place is the slot "web" of desktop 2; its app put it on the free desktop.
+        remembered.record(entry(10, ["Jira"], desktop: 1, slot: "web"))
+        XCTAssertTrue(remembered.keepsItsSlot(window: 10, configurationID: home, awayFrom: free))
+        // On the desktop of its slot there is nothing to keep it from.
+        XCTAssertFalse(remembered.keepsItsSlot(window: 10, configurationID: home, awayFrom: ConfiguredDesktop(display: dell, index: 1)))
+        // The owner dragged it to the free desktop: the move was recorded, without a slot.
+        remembered.record(entry(10, ["Jira"], desktop: 3))
+        XCTAssertFalse(remembered.keepsItsSlot(window: 10, configurationID: home, awayFrom: free))
+        // A window remembered on another free desktop, a new window, another configuration.
+        remembered.record(entry(11, ["Mail"], desktop: 2))
+        XCTAssertFalse(remembered.keepsItsSlot(window: 11, configurationID: home, awayFrom: free))
+        XCTAssertFalse(remembered.keepsItsSlot(window: 12, configurationID: home, awayFrom: free))
+        remembered.record(entry(13, ["Docs"], desktop: 1, slot: "web", configuration: train))
+        XCTAssertFalse(remembered.keepsItsSlot(window: 13, configurationID: home, awayFrom: free))
+    }
+
     func testUnrecognisedWindowOfARememberedAppIsNotRecorded() {
         // C1: at login a window placed where it appeared must not be recorded (and then matched by
         // id) before the router compared it with the remembered windows of its app.

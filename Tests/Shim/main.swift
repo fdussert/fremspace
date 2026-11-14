@@ -97,6 +97,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
     ]),
     ("RememberedTests", { RememberedTests() }, [
         ("testUnrecognisedWindowOfARememberedAppIsNotRecorded", { ($0 as! RememberedTests).testUnrecognisedWindowOfARememberedAppIsNotRecorded() }),
+        ("testAWindowFoundOnAFreeDesktopKeepsItsSlotElsewhere", { ($0 as! RememberedTests).testAWindowFoundOnAFreeDesktopKeepsItsSlotElsewhere() }),
         ("testIdReusedAfterBootKeepsTheOlderEntry", { ($0 as! RememberedTests).testIdReusedAfterBootKeepsTheOlderEntry() }),
         ("testRecordKeepsTheEntryOfAnotherConfiguration", { ($0 as! RememberedTests).testRecordKeepsTheEntryOfAnotherConfiguration() }),
         ("testRemovingADesktopDropsItsEntriesAndShiftsTheNext", { ($0 as! RememberedTests).testRemovingADesktopDropsItsEntriesAndShiftsTheNext() }),

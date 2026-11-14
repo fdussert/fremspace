@@ -1729,8 +1729,15 @@ final class Engine {
                var frame = windows.frame(element) {
                 if let desktop = configuredDesktop(space) { router.saw(info, on: desktop) }
                 if let placed = placeArrival(info.id, element, space: space, frame: frame) { frame = placed }
-                // A window of a free desktop: remembered there (restored there after a reboot).
-                remember(element, info, space: space, slotID: nil, frame: frame)
+                // A window of a free desktop: remembered there (restored there after a reboot),
+                // unless its place is a slot elsewhere and nobody moved it (see `keepsItsSlot`).
+                let keepsSlot = configuration.flatMap { configuration in
+                    configuredDesktop(space).map {
+                        state.remembered.keepsItsSlot(window: info.id, configurationID: configuration.id, awayFrom: $0,
+                                                      idsSince: router.bootTime)
+                    }
+                } ?? false
+                if !keepsSlot { remember(element, info, space: space, slotID: nil, frame: frame) }
             }
             guard let space, desktops[space] != nil else { continue }
             if lockGuard.isReleased(info.id) || drawers.isMember(info.id) {

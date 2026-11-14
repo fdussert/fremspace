@@ -22,6 +22,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   shows its windows before their tabs can be read; Fremspace looked once, a second after a window
   appeared, did not know it, left it on the desktop where the browser had put it and remembered it
   there. It now looks again over the next minute and remembers nothing for that window meanwhile.
+- A window whose place is a slot, and that its app put on a free desktop, keeps that place: showing
+  the free desktop no longer records it there, so "Restore everything now" can still send it back.
 - After a restart of the Mac the drawers stay closed. Each app comes to the front as it starts, and
   a window of a drawer's app in front was taken for you asking for it: the drawer opened by itself.
 - A Mac that wakes no longer scatters the desk. Waking, macOS shows the built-in display first and

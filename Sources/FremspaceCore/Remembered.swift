@@ -75,6 +75,18 @@ public struct Remembered: Codable, Equatable {
         recognised || !entries.contains { $0.identity.bundleID == bundleID && $0.configurationID == configurationID }
     }
 
+    /// Whether a window found on the free desktop `desktop` keeps the place it has in a slot of
+    /// another desktop, instead of being recorded where it sits. Nobody said it moved: a move by
+    /// hand and a command record the new place themselves, without a slot. So its app or macOS put
+    /// it there (a browser showing its windows again after a restart of the Mac), and what sends
+    /// every window back to its place must still know that place (owner, 2026-11-14: the windows
+    /// were recorded on the free desktop the moment it was shown, and nothing could send them back).
+    public func keepsItsSlot(window id: UInt32, configurationID: UUID, awayFrom desktop: ConfiguredDesktop,
+                             idsSince: Date = .distantPast) -> Bool {
+        guard let known = entry(forWindow: id, configurationID: configurationID, idsSince: idsSince) else { return false }
+        return known.slotID != nil && known.desktop != desktop
+    }
+
     /// Configured desktop `index` of a display was removed (editor): its entries go, the next
     /// desktops' entries move up.
     public mutating func removeDesktop(configuration: UUID, display: DisplayIdentity, index: Int) {
