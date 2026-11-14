@@ -147,10 +147,19 @@ final class DrawerController {
         }
         for window in savedOut where window.isAlive(alive) { takenOut[window.id] = window.pid }
         var edges: [DisplayIdentity: Set<String>] = [:]
-        for entry in saved where entry.isAlive(alive, app: Self.bundleID(of:)) && members[entry.window.id] == nil {
+        for entry in saved where members[entry.window.id] == nil {
             let id = entry.window.id, edge = drawerEdge(ofSlotKey: entry.slot)
+            // Said, each time a saved member is let go: a silent one left its window to be sorted
+            // like any other, with nothing in the log to tell why.
+            guard entry.isAlive(alive, app: Self.bundleID(of:)) else {
+                Log.engine.notice("drawer member \(id) \(entry.bundleID, privacy: .public) is gone or is another app's window now (process \(entry.window.pid), now \(alive[id].map(String.init) ?? "none", privacy: .public)): let go")
+                continue
+            }
             guard let spec = drawerSpecs(entry.display).first(where: { $0.edge.rawValue == edge }),
-                  spec.layout.slots.contains(where: { "\(edge).\($0.id)" == entry.slot }) else { continue }
+                  spec.layout.slots.contains(where: { "\(edge).\($0.id)" == entry.slot }) else {
+                Log.engine.notice("drawer member \(id) \(entry.bundleID, privacy: .public): no slot \(entry.slot, privacy: .public) on \(entry.display.name, privacy: .public) now (\(self.drawerSpecs(entry.display).count) drawers there, active: \(self.isActive())): let go")
+                continue
+            }
             guard let element = windows.allWindows(pid: entry.window.pid).first(where: { AXWindows.windowID($0) == id }) else {
                 // The window lives but cannot be read now (the session is locked, its app is busy):
                 // it stays a member, and is read again later (`retryRejoin`). Until then it sits
