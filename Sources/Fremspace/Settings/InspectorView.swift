@@ -382,42 +382,11 @@ struct SlotInspector: View {
     /// app whose windows are folders.
     @ViewBuilder
     private var folderField: some View {
-        if slot.rule.bundleID == "com.apple.finder" {
-            let folder = slot.rule.folder.flatMap { $0.isEmpty ? nil : $0 }
+        if slot.rule.bundleID == FolderPicker.finder {
             Field("Folder to open") {
-                HStack(spacing: 6) {
-                    Text(folder ?? "None").lineLimit(1).truncationMode(.middle)
-                        .foregroundColor(folder == nil ? .secondary : .primary)
-                        .help(folder ?? "No folder: Fremspace opens no Finder window for this slot")
-                    Spacer(minLength: 4)
-                    Button("Choose\u{2026}") { chooseFolder() }
-                    if folder != nil {
-                        Button { update { $0.rule.folder = nil } } label: { Image(systemName: "minus.circle") }
-                            .buttonStyle(.plain).foregroundColor(.secondary)
-                            .help("No folder for this slot")
-                            .accessibilityLabel("No folder for this slot")
-                    }
-                }
-                Text("Opened in this slot at login and by \u{201C}Restore everything now\u{201D}, when no Finder window shows it. The slot still takes other Finder windows.")
-                    .font(.caption).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                FolderPicker(folder: slot.rule.folder) { path in update { $0.rule.folder = path } }
             }
         }
-    }
-
-    private func chooseFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.prompt = "Choose"
-        panel.message = "The folder this slot opens"
-        if let current = slot.rule.folder, !current.isEmpty {
-            panel.directoryURL = URL(fileURLWithPath: (current as NSString).expandingTildeInPath)
-        }
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        // With ~ for the home folder: the configuration file does not carry the account's name.
-        let path = (url.path as NSString).abbreviatingWithTildeInPath
-        update { $0.rule.folder = path }
     }
 
     @ViewBuilder
@@ -587,7 +556,57 @@ struct DrawerSlotInspector: View {
                 }
                 .labelsHidden().controlSize(.small)
             }
+            if rule.bundleID == FolderPicker.finder {
+                FolderPicker(folder: rule.folder, small: true) { path in
+                    update { if $0.rules.indices.contains(offset) { $0.rules[offset].folder = path } }
+                }
+            }
         }
+    }
+}
+
+/// The folder a Finder slot (of a layout or of a drawer) asks for: its path, the panel that chooses
+/// it, and the way back to none.
+struct FolderPicker: View {
+    static let finder = "com.apple.finder"
+
+    let folder: String?
+    var small = false
+    let set: (String?) -> Void
+
+    var body: some View {
+        let current = folder.flatMap { $0.isEmpty ? nil : $0 }
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text(current ?? (small ? "No folder to open" : "None")).lineLimit(1).truncationMode(.middle)
+                    .foregroundColor(current == nil ? .secondary : .primary)
+                    .help(current ?? "No folder: Fremspace opens no Finder window for this slot")
+                Spacer(minLength: 4)
+                Button("Choose\u{2026}") { choose(from: current) }
+                if current != nil {
+                    Button { set(nil) } label: { Image(systemName: "minus.circle") }
+                        .buttonStyle(.plain).foregroundColor(.secondary)
+                        .help("No folder for this slot")
+                        .accessibilityLabel("No folder for this slot")
+                }
+            }
+            .controlSize(small ? .small : .regular)
+            Text("Opened in this slot at login and by \u{201C}Restore everything now\u{201D}, when no Finder window shows it. The slot still takes other Finder windows.")
+                .font(.caption).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func choose(from current: String?) {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Choose"
+        panel.message = "The folder this slot opens"
+        if let current { panel.directoryURL = URL(fileURLWithPath: (current as NSString).expandingTildeInPath) }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        // With ~ for the home folder: the configuration file does not carry the account's name.
+        set((url.path as NSString).abbreviatingWithTildeInPath)
     }
 }
 

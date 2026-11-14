@@ -42,35 +42,59 @@ public func windowShows(_ url: URL, document: String?, title: String?, byTitle: 
     return byTitle && title == url.lastPathComponent
 }
 
+/// Where the window of a folder a slot asked for goes.
+public enum FolderTarget: Equatable {
+    /// A slot of the layout of a desktop.
+    case slot(ConfiguredDesktop, String)
+    /// A slot of a drawer of a display, by its key (`"<edge>.<slot id>"`).
+    case drawer(DisplayIdentity, String)
+
+    /// The slot's name, for the log (a folder's path never goes there).
+    public var name: String {
+        switch self {
+        case .slot(_, let id): return id
+        case .drawer(_, let key): return key
+        }
+    }
+}
+
 /// A folder a slot asks for: where it is, the app to open it in, and the slot its window goes to.
 public struct FolderToOpen: Equatable {
     public var folder: String
     public var bundleID: String
-    public var desktop: ConfiguredDesktop
-    public var slotID: String
+    public var target: FolderTarget
 
-    public init(folder: String, bundleID: String, desktop: ConfiguredDesktop, slotID: String) {
+    public init(folder: String, bundleID: String, target: FolderTarget) {
         self.folder = folder
         self.bundleID = bundleID
-        self.desktop = desktop
-        self.slotID = slotID
+        self.target = target
     }
 }
 
 /// The folders the slots of `configuration` ask for, in the order of the file: the layouts of the
-/// displays Fremspace arranges. A folder asked for twice in one app is opened once, for the first
-/// slot that asks: one window cannot be in two slots.
+/// displays Fremspace arranges, then their drawers. A folder asked for twice in one app is opened
+/// once, for the first slot that asks: one window cannot be in two slots.
 public func foldersToOpen(_ configuration: Configuration) -> [FolderToOpen] {
     var result: [FolderToOpen] = []
-    for display in configuration.displays where !display.ignored {
+    func add(_ rules: [Rule], _ target: FolderTarget) {
+        for rule in rules {
+            guard let folder = rule.folder?.trimmingCharacters(in: .whitespaces), !folder.isEmpty, !rule.bundleID.isEmpty,
+                  !result.contains(where: { $0.folder == folder && $0.bundleID == rule.bundleID }) else { continue }
+            result.append(FolderToOpen(folder: folder, bundleID: rule.bundleID, target: target))
+        }
+    }
+    let displays = configuration.displays.filter { !$0.ignored }
+    for display in displays {
         for (index, space) in display.spaces.enumerated() {
             for slot in space.layout?.slots ?? [] {
-                for rule in slot.rules {
-                    guard let folder = rule.folder?.trimmingCharacters(in: .whitespaces), !folder.isEmpty, !rule.bundleID.isEmpty,
-                          !result.contains(where: { $0.folder == folder && $0.bundleID == rule.bundleID }) else { continue }
-                    result.append(FolderToOpen(folder: folder, bundleID: rule.bundleID,
-                                               desktop: ConfiguredDesktop(display: display.identity, index: index), slotID: slot.id))
-                }
+                add(slot.rules, .slot(ConfiguredDesktop(display: display.identity, index: index), slot.id))
+            }
+        }
+    }
+    for display in displays {
+        for drawer in display.drawers {
+            for slot in drawer.layout.slots {
+                add(slot.rules, .drawer(display.identity, "\(drawer.edge.rawValue).\(slot.id)"))
             }
         }
     }

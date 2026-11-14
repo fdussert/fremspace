@@ -239,17 +239,34 @@ final class DesktopRouter {
                                byTitle: info.bundleID == "com.apple.finder")
         }) else { return false }
         let wanted = expectedFolders.remove(at: index).wanted
-        engine.choose(slot: wanted.slotID, for: info.id)
         // Like a window a command sent: nothing pulls it away, and it does not float off.
         sentByCommand.insert(info.id)
         lastInfo[info.id] = info
-        let here = Spaces.spaceIndex(ofWindow: info.id).flatMap { engine.configuredDesktop($0) }
-        Log.engine.notice("window \(info.id) \(info.bundleID, privacy: .public) shows the folder slot \(wanted.slotID, privacy: .public) asked for: it goes there")
-        if here == wanted.desktop {
-            lastDesktop[info.id] = wanted.desktop
-            engine.scheduleApplyFromRouter()
-        } else {
-            send(info, to: wanted.desktop, entry: nil, byCommand: true)
+        let place = Spaces.spaceIndex(ofWindow: info.id)
+        Log.engine.notice("window \(info.id) \(info.bundleID, privacy: .public) shows the folder slot \(wanted.target.name, privacy: .public) asked for: it goes there")
+        switch wanted.target {
+        case .slot(let desktop, let slotID):
+            engine.choose(slot: slotID, for: info.id)
+            if place.flatMap({ engine.configuredDesktop($0) }) == desktop {
+                lastDesktop[info.id] = desktop
+                engine.scheduleApplyFromRouter()
+            } else {
+                send(info, to: desktop, entry: nil, byCommand: true)
+            }
+        case .drawer(let display, let key):
+            // A drawer is its display's, whichever desktop it shows: a window that opened on
+            // another display first comes to the desktop that one shows.
+            let id = info.id
+            if place?.display == display {
+                engine.drawers.adopt(element, info, display: display, slot: key)
+            } else if let shown = Spaces.current()[display], let space = Spaces.spaceID(display: display, real: shown) {
+                inFlight.insert(id)
+                SpaceMover.send(id, toSpace: space) { [weak self] arrived in
+                    guard let self else { return }
+                    self.inFlight.remove(id)
+                    if arrived { self.engine.drawers.adopt(element, info, display: display, slot: key) }
+                }
+            }
         }
         return true
     }

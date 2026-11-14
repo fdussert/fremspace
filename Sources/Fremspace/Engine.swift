@@ -193,7 +193,7 @@ final class Engine {
             var isDirectory: ObjCBool = false
             guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
                 // No path in the log: it names the owner's folders.
-                Log.engine.notice("slot \(wanted.slotID, privacy: .public): the folder it asks for is not there, nothing opened")
+                Log.engine.notice("slot \(wanted.target.name, privacy: .public): the folder it asks for is not there, nothing opened")
                 continue
             }
             guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: wanted.bundleID) else { continue }
@@ -208,9 +208,9 @@ final class Engine {
             let options = NSWorkspace.OpenConfiguration()
             options.activates = false
             NSWorkspace.shared.open([url], withApplicationAt: app, configuration: options) { _, error in
-                if let error { Log.engine.error("opening the folder of slot \(wanted.slotID, privacy: .public) failed: \(error.localizedDescription, privacy: .public)") }
+                if let error { Log.engine.error("opening the folder of slot \(wanted.target.name, privacy: .public) failed: \(error.localizedDescription, privacy: .public)") }
             }
-            Log.engine.notice("slot \(wanted.slotID, privacy: .public): its folder was shown by no window of \(wanted.bundleID, privacy: .public), opened")
+            Log.engine.notice("slot \(wanted.target.name, privacy: .public): its folder was shown by no window of \(wanted.bundleID, privacy: .public), opened")
         }
     }
 

@@ -48,19 +48,28 @@ final class AskedWindowsTests: XCTestCase {
         }
         var ignored = DisplaySpec(identity: side, spaces: [SpaceSpec(label: "Side", layout: Layout(slots: [slot("s", finder, folder: "~/Side")]))])
         ignored.ignored = true
-        let configuration = Configuration(id: UUID(), name: "Desk", displays: [
-            DisplaySpec(identity: laptop, spaces: [
-                SpaceSpec(label: "Work", layout: Layout(slots: [slot("files", finder, folder: "~/Projects"), slot("web", "com.example.web", folder: nil)])),
-                SpaceSpec(label: "Free"),
-                // The same folder again, a folder that is only spaces, and another one.
-                SpaceSpec(label: "More", layout: Layout(slots: [slot("again", finder, folder: "~/Projects"), slot("blank", finder, folder: "  "),
-                                                               slot("inbox", finder, folder: "~/Inbox")])),
-            ]),
-            ignored,
-        ])
+        var notes = Rule(bundleID: finder)
+        notes.folder = "~/Notes"
+        var again = Rule(bundleID: finder)
+        again.folder = "~/Inbox"
+        var desk = DisplaySpec(identity: laptop, spaces: [])
+        desk.drawers = [DrawerSpec(edge: .left, size: 0.3, layout: DrawerLayout(slots: [
+            DrawerSlot(id: "top", rect: UnitRect(x: 0, y: 0, w: 1, h: 0.5), rules: [notes, again]),
+            DrawerSlot(id: "bottom", rect: UnitRect(x: 0, y: 0.5, w: 1, h: 0.5)),
+        ]))]
+        desk.spaces = [
+            SpaceSpec(label: "Work", layout: Layout(slots: [slot("files", finder, folder: "~/Projects"), slot("web", "com.example.web", folder: nil)])),
+            SpaceSpec(label: "Free"),
+            // The same folder again, a folder that is only spaces, and another one.
+            SpaceSpec(label: "More", layout: Layout(slots: [slot("again", finder, folder: "~/Projects"), slot("blank", finder, folder: "  "),
+                                                           slot("inbox", finder, folder: "~/Inbox")])),
+        ]
+        let configuration = Configuration(id: UUID(), name: "Desk", displays: [desk, ignored])
+        // The layouts first, then the drawers; a folder a layout slot already asks for is not asked again.
         XCTAssertEqual(foldersToOpen(configuration), [
-            FolderToOpen(folder: "~/Projects", bundleID: finder, desktop: ConfiguredDesktop(display: laptop, index: 0), slotID: "files"),
-            FolderToOpen(folder: "~/Inbox", bundleID: finder, desktop: ConfiguredDesktop(display: laptop, index: 2), slotID: "inbox"),
+            FolderToOpen(folder: "~/Projects", bundleID: finder, target: .slot(ConfiguredDesktop(display: laptop, index: 0), "files")),
+            FolderToOpen(folder: "~/Inbox", bundleID: finder, target: .slot(ConfiguredDesktop(display: laptop, index: 2), "inbox")),
+            FolderToOpen(folder: "~/Notes", bundleID: finder, target: .drawer(laptop, "left.top")),
         ])
         // Kept in the configuration file, and absent from the files written before it existed.
         let data = try JSONEncoder().encode(configuration)
