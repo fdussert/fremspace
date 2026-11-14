@@ -184,4 +184,18 @@ final class FocusStateTests: XCTestCase {
         XCTAssertEqual(focusKept([kept(0, "ide"), kept(2, "web")], afterMovingDesktop: 2, to: 0, of: display, configuration: home),
                        [kept(1, "ide"), kept(0, "web")])
     }
+
+    func testTheWindowInFocusComesBackInFrontOfTheOthersOfItsDesktop() {
+        let slots: [UInt32: String] = [10: "ide", 20: "web", 21: "web"]
+        // The browser, started later, is in front: the window in Focus is the one to raise.
+        XCTAssertEqual(focusWindowToRaise(order: [20, 99, 10, 21], slots: slots, focus: "ide"), 10)
+        // Already in front of the layout's windows (a window of no slot above it is not the layout's).
+        XCTAssertNil(focusWindowToRaise(order: [99, 10, 20, 21], slots: slots, focus: "ide"))
+        // Two windows in the slot in Focus: the front one of them, and none when one of them leads.
+        XCTAssertEqual(focusWindowToRaise(order: [10, 21, 20], slots: slots, focus: "web"), 21)
+        XCTAssertNil(focusWindowToRaise(order: [21, 10, 20], slots: slots, focus: "web"))
+        // The slot in Focus holds no window, or the desktop none at all.
+        XCTAssertNil(focusWindowToRaise(order: [20, 21], slots: [20: "web", 21: "web"], focus: "ide"))
+        XCTAssertNil(focusWindowToRaise(order: [99], slots: [:], focus: "ide"))
+    }
 }

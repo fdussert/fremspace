@@ -128,3 +128,14 @@ public func settingFocus(_ space: SpaceSpec, slot id: String, on: Bool) -> Space
     space.focusSlot = nil
     return space
 }
+
+/// The window of the slot in Focus to bring back in front of its desktop, nil when nothing covers
+/// it. `order` is every window on screen, front to back; `slots` the slot of each window of the
+/// desktop's layout. A slot in Focus takes the whole display: a window of another slot in front of
+/// it hides part of what the owner enlarged (owner, 2026-11-14: after a restart of the Mac the
+/// browser, started after the window in Focus, sat in front of it).
+public func focusWindowToRaise(order: [UInt32], slots: [UInt32: String], focus: String) -> UInt32? {
+    let layout = order.filter { slots[$0] != nil }
+    guard let front = layout.first, slots[front] != focus else { return nil }
+    return layout.first { slots[$0] == focus }
+}

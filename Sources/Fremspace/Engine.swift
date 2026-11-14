@@ -1812,6 +1812,7 @@ final class Engine {
             router.arrived(planned.id)
             if let desktop = configuredDesktop(planned.space) { router.placed(planned.id, in: planned.slotID, on: desktop) }
         }
+        keepFocusInFront(on: Set(desktops.keys), only: only)
         // Sent windows on a layout desktop where they have no slot (a command): their own frame.
         for window in seen where !plannedIDs.contains(window.info.id) {
             if let element = elements[window.info.id]?.element, let space = window.space, let frame = window.frame {
@@ -1824,6 +1825,45 @@ final class Engine {
             if unmatched, unsupportedPolicyLogged.insert(spec.label).inserted {
                 Log.engine.notice("unmatched policy of \(spec.label, privacy: .public) not yet supported; windows float")
             }
+        }
+    }
+
+    /// Until when the apps of the session are starting (a login, "Restore everything now").
+    private var focusFrontUntil = Date.distantPast
+    /// The desktops looked at once since then: each is looked at one more time when it is first
+    /// shown, for the windows that arrived on it while it was not.
+    private var focusFrontSettled: Set<SpaceKey> = []
+
+    /// The apps of the session are starting: until `date`, and once more on each desktop first
+    /// shown after it, a slot in Focus has its window brought back in front of the layout's other
+    /// windows. An app started after the window in Focus puts its own in front of it, and nothing
+    /// the owner did asked for that. Not at other times: a window of another slot that the owner
+    /// brings forward (⌘Tab) is in front because they want it there.
+    func appsAreStarting(until date: Date) {
+        focusFrontUntil = date
+        focusFrontSettled.removeAll()
+        drawers.appsAreStarting(until: date)
+    }
+
+    private func keepFocusInFront(on spaces: Set<SpaceKey>, only: SpaceKey?) {
+        let starting = Date() < focusFrontUntil
+        var read: [UInt32]?
+        for space in spaces where only == nil || only == space {
+            guard let slot = focus.slot(space), starting || !focusFrontSettled.contains(space) else { continue }
+            if !starting { focusFrontSettled.insert(space) }
+            let order = read ?? AXWindows.onScreenWindowOrder()
+            read = order
+            let slots = Dictionary(uniqueKeysWithValues: placements.filter { $0.value.space == space }.map { ($0.key, $0.value.slotID) })
+            guard let id = focusWindowToRaise(order: order, slots: slots, focus: slot), let placement = placements[id] else { continue }
+            // The window that covers it has the keyboard: the window in Focus takes it with the
+            // front, rather than leave the owner typing in a window they cannot see.
+            let covering = order.first { slots[$0] != nil }
+            if covering != nil, windows.focusedWindow().flatMap(AXWindows.windowID) == covering {
+                windows.focus(placement.element, pid: placement.info.pid)
+            } else {
+                windows.raise(placement.element)
+            }
+            Log.engine.notice("window \(id) of the slot in Focus brought back in front of desktop \(space.spaceIndex + 1) of \(space.display.name, privacy: .public)")
         }
     }
 

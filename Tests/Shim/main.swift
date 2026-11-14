@@ -416,6 +416,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testForgetEndsRelease", { ($0 as! LockGuardTests).testForgetEndsRelease() }),
     ]),
     ("FocusStateTests", { FocusStateTests() }, [
+        ("testTheWindowInFocusComesBackInFrontOfTheOthersOfItsDesktop", { ($0 as! FocusStateTests).testTheWindowInFocusComesBackInFrontOfTheOthersOfItsDesktop() }),
         ("testFocusTogglesPerSpace", { ($0 as! FocusStateTests).testFocusTogglesPerSpace() }),
         ("testFocusFollowsItsDesktopWhenAnotherOneIsRemoved", { ($0 as! FocusStateTests).testFocusFollowsItsDesktopWhenAnotherOneIsRemoved() }),
         ("testFocusFollowsADesktopThatIsMoved", { ($0 as! FocusStateTests).testFocusFollowsADesktopThatIsMoved() }),
