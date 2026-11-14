@@ -9,6 +9,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+## 0.1.3
+
 - A Finder slot can ask for a folder. Choose it in the slot's settings ("Folder to open"): at login
   and on "Restore everything now", when no Finder window shows that folder, Fremspace opens it and
   the window goes to the slot. It is not a filter: the slot takes other Finder windows as before.
