@@ -9,6 +9,15 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- You choose which configuration applies. When several fit the connected displays, Fremspace took
+  the one that arranges the most of them, with no way to say otherwise: a copy made to try one
+  more display took over, and going back meant deleting it. "Use on these displays" is now in a
+  configuration's menus (right-click, or the … button) and in a line above its layouts whenever it
+  is not the one in use, which also says why when it cannot be (a display that is not connected,
+  or not saved yet). The menu bar has a Configuration submenu when there is a choice. The choice is
+  kept for that set of displays, and "Let Fremspace choose" gives it back.
+- Renaming a configuration shows a real text field. The name was typed in white on the selected
+  row's colour, with an insertion point of that same colour.
 - A Mac that wakes no longer scatters the desk. Waking, macOS shows the built-in display first and
   the others seconds later, and Fremspace took each step for a change of displays: the drawers came
   out, and windows stayed where macOS had dropped them. It now waits for the displays to hold still;

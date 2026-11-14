@@ -1476,7 +1476,8 @@ final class Engine {
         if let config {
             let connected = Displays.connected().map(\.identity)
             let previous = configuration?.id
-            configuration = FremspaceCore.chooseConfiguration(config, connected: connected)
+            configuration = FremspaceCore.chooseConfiguration(config, connected: connected,
+                                                              chosen: state.chosenConfigurations[deskKey(connected)])
             if configuration?.id != previous { router.reset() }
             ambiguous = configuration.flatMap { ambiguousDisplay(connected: connected, in: $0) }
         } else {
@@ -1487,6 +1488,49 @@ final class Engine {
         // Also when the desktops are where they were: another configuration, or other layouts.
         rebuildFocus()
         refreshStatus()
+    }
+
+    /// The configurations of the saved file that the connected displays allow, in its order.
+    var fittingConfigurations: [Configuration] {
+        config.map { FremspaceCore.fittingConfigurations($0, connected: Displays.connected().map(\.identity)) } ?? []
+    }
+
+    /// The configuration the owner picked for the connected displays, when it is the one in use.
+    var chosenConfigurationID: UUID? {
+        guard let id = state.chosenConfigurations[deskKey(Displays.connected().map(\.identity))],
+              id == configuration?.id else { return nil }
+        return id
+    }
+
+    /// The owner picks the configuration for the displays connected now (nil: Fremspace picks again
+    /// by itself). A command, like Focus: it applies at once and is kept in the state file, the
+    /// configuration file is not written. False when the configuration does not fit the displays.
+    @discardableResult
+    func useConfiguration(_ id: UUID?) -> Bool {
+        guard let config else { return false }
+        let connected = Displays.connected().map(\.identity)
+        if let id {
+            guard FremspaceCore.fittingConfigurations(config, connected: connected).contains(where: { $0.id == id }) else { return false }
+            state.chosenConfigurations[deskKey(connected)] = id
+        } else {
+            state.chosenConfigurations[deskKey(connected)] = nil
+        }
+        saveState()
+        let before = configuration?.id
+        chooseConfiguration()
+        guard configuration?.id != before else {
+            onConfigChanged?()
+            return true
+        }
+        Log.engine.notice("configuration \(id == nil ? "left to Fremspace" : "picked by the owner", privacy: .public): \(self.configuration?.name ?? "none", privacy: .public) is in use")
+        // As after a save: other layouts, other drawers, and windows that belong elsewhere now.
+        resetPlacements()
+        memory.removeAll()
+        drawers.reconcile()
+        scheduleApply()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.router.sortAll(reason: .reapply) }
+        onConfigChanged?()
+        return true
     }
 
     private func refreshStatus() {

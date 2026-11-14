@@ -70,6 +70,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
     ("StateStoreTests", { StateStoreTests() }, [
         ("testOldStateWithoutRememberedLoads", { try ($0 as! StateStoreTests).testOldStateWithoutRememberedLoads() }),
         ("testRoundTripAndMissingFile", { try ($0 as! StateStoreTests).testRoundTripAndMissingFile() }),
+        ("testTheChosenConfigurationIsKeptAndOlderStatesHaveNone", { try ($0 as! StateStoreTests).testTheChosenConfigurationIsKeptAndOlderStatesHaveNone() }),
         ("testCorruptFileLoadsEmptyAndIsKept", { try ($0 as! StateStoreTests).testCorruptFileLoadsEmptyAndIsKept() }),
         ("testAnEntryThatCannotBeReadDoesNotLoseTheRest", { try ($0 as! StateStoreTests).testAnEntryThatCannotBeReadDoesNotLoseTheRest() }),
         ("testTheFileSaysItsVersionAndALaterOneIsKeptBeforeItIsRewritten", { try ($0 as! StateStoreTests).testTheFileSaysItsVersionAndALaterOneIsKeptBeforeItIsRewritten() }),
@@ -541,6 +542,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testDuplicateIdentityOfAConfiguredDisplayIsAmbiguous", { ($0 as! EngineRulesTests).testDuplicateIdentityOfAConfiguredDisplayIsAmbiguous() }),
         ("testTheDockChangingDisplayIsNotADisplayChange", { ($0 as! EngineRulesTests).testTheDockChangingDisplayIsNotADisplayChange() }),
         ("testAWakingMacIsGivenTimeToShowAllItsDisplays", { ($0 as! EngineRulesTests).testAWakingMacIsGivenTimeToShowAllItsDisplays() }),
+        ("testTheOwnersChoiceWinsWhileItFitsTheDisplays", { ($0 as! EngineRulesTests).testTheOwnersChoiceWinsWhileItFitsTheDisplays() }),
+        ("testAChoiceIsKeptPerSetOfDisplays", { ($0 as! EngineRulesTests).testAChoiceIsKeptPerSetOfDisplays() }),
     ]),
 ]
 

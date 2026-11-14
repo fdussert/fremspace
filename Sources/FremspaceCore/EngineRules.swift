@@ -1,23 +1,38 @@
 import CoreGraphics
 import Foundation
 
-/// The configuration to use for the connected displays: among those whose displays are all
-/// connected, the one with the most displays; the first one on a tie. Nil when none fits.
-/// Ignored displays are optional (owner, 2026-11-10: unplugging the ignored Xeneon Edge must not
-/// switch the whole configuration off): only the displays Fremspace arranges are required and
-/// counted, and a configuration needs at least one.
-/// (Plan 3 replaces this with proper detection and a menu override.)
-public func chooseConfiguration(_ config: Config, connected: [DisplayIdentity]) -> Configuration? {
+/// The configurations the connected displays allow, in the order of the file: those whose displays
+/// are all connected. Ignored displays are optional (owner, 2026-11-10: unplugging the ignored
+/// Xeneon Edge must not switch the whole configuration off): only the displays Fremspace arranges
+/// are required, and a configuration needs at least one.
+public func fittingConfigurations(_ config: Config, connected: [DisplayIdentity]) -> [Configuration] {
     let present = Set(connected)
-    var best: (configuration: Configuration, required: Int)?
-    for candidate in config.configurations {
+    return config.configurations.filter { candidate in
         let required = candidate.displays.filter { !$0.ignored }
-        guard !required.isEmpty, required.allSatisfy({ present.contains($0.identity) }) else { continue }
-        if required.count > (best?.required ?? -1) {
-            best = (candidate, required.count)
-        }
+        return !required.isEmpty && required.allSatisfy { present.contains($0.identity) }
+    }
+}
+
+/// The configuration to use for the connected displays. `chosen`, the one the owner picked for
+/// these displays, when it still fits them (owner, 2026-11-14: a copy that arranges one display
+/// more was taken instead of the original, with no way back but deleting it). Else, among those
+/// that fit, the one that arranges the most displays; the first one on a tie. Nil when none fits.
+public func chooseConfiguration(_ config: Config, connected: [DisplayIdentity], chosen: UUID? = nil) -> Configuration? {
+    let fitting = fittingConfigurations(config, connected: connected)
+    if let chosen, let picked = fitting.first(where: { $0.id == chosen }) { return picked }
+    var best: (configuration: Configuration, required: Int)?
+    for candidate in fitting {
+        let required = candidate.displays.filter { !$0.ignored }.count
+        if required > (best?.required ?? -1) { best = (candidate, required) }
     }
     return best?.configuration
+}
+
+/// The name under which the owner's choice of configuration is kept for a set of displays: the
+/// choice made at the desk says nothing about the laptop alone. The displays' names are left out,
+/// they change with the language of the Mac.
+public func deskKey(_ connected: [DisplayIdentity]) -> String {
+    connected.map { "\($0.vendor)-\($0.model)-\($0.serial)" }.sorted().joined(separator: "+")
 }
 
 /// A connected display: the whole of it, and the room the menu bar and the Dock leave.

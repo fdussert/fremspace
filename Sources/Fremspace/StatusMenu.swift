@@ -9,6 +9,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private let pauseItem = NSMenuItem(title: "Pause", action: nil, keyEquivalent: "p")
     /// "This desktop is…": ties the desktop shown under the mouse to a configured desktop.
     private let thisDesktopItem = NSMenuItem(title: "This desktop is…", action: nil, keyEquivalent: "")
+    /// "Configuration": which one applies to the displays connected now, when several fit them.
+    private let configurationItem = NSMenuItem(title: "Configuration", action: nil, keyEquivalent: "")
     private let windows: AXWindows
     private let engine: Engine
     private let store: ConfigStore
@@ -36,6 +38,10 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         thisDesktopMenu.autoenablesItems = false
         thisDesktopItem.submenu = thisDesktopMenu
         menu.addItem(thisDesktopItem)
+        let configurationMenu = NSMenu()
+        configurationMenu.autoenablesItems = false
+        configurationItem.submenu = configurationMenu
+        menu.addItem(configurationItem)
         menu.addItem(.separator())
         let adminItem = NSMenuItem(title: "Open Fremspace admin", action: #selector(openSettings), keyEquivalent: ",")
         adminItem.keyEquivalentModifierMask = [.control, .option, .command]
@@ -187,8 +193,39 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         showMissingDesktops()
         showSpacesOrder()
         showThisDesktop()
+        showConfigurations()
         showMoverAvailability()
         showDidNotStart()
+    }
+
+    /// The configurations the connected displays allow, the one in use ticked. Hidden when there is
+    /// nothing to choose: one configuration fits, or none.
+    private func showConfigurations() {
+        guard let submenu = configurationItem.submenu else { return }
+        submenu.removeAllItems()
+        let fitting = engine.fittingConfigurations
+        configurationItem.isHidden = fitting.count < 2
+        guard fitting.count >= 2 else { return }
+        let active = engine.activeConfigurationID
+        for configuration in fitting {
+            let entry = NSMenuItem(title: configuration.name.isEmpty ? "Untitled" : configuration.name,
+                                   action: #selector(useConfiguration(_:)), keyEquivalent: "")
+            entry.target = self
+            entry.representedObject = configuration.id
+            entry.state = configuration.id == active ? .on : .off
+            submenu.addItem(entry)
+        }
+        submenu.addItem(.separator())
+        let automatic = NSMenuItem(title: "Let Fremspace choose", action: #selector(useConfiguration(_:)), keyEquivalent: "")
+        automatic.target = self
+        automatic.state = engine.chosenConfigurationID == nil ? .on : .off
+        automatic.toolTip = "Among the configurations that fit the connected displays, the one that arranges the most of them"
+        submenu.addItem(automatic)
+    }
+
+    @objc private func useConfiguration(_ sender: NSMenuItem) {
+        engine.useConfiguration(sender.representedObject as? UUID)
+        settings.configurationInUseChanged()
     }
 
     private var didNotStartItem: NSMenuItem?

@@ -80,6 +80,33 @@ final class EngineRulesTests: XCTestCase {
         XCTAssertEqual(chooseConfiguration(config, connected: [laptop])?.name, "A")
     }
 
+    func testTheOwnersChoiceWinsWhileItFitsTheDisplays() {
+        // The desk with the right display left alone, and a copy that arranges it too.
+        var mine = configuration("Mine", [laptop, left, right])
+        mine.displays[2].ignored = true
+        let copy = configuration("Copy", [laptop, left, right])
+        let train = configuration("Train", [laptop])
+        let config = Config(configurations: [mine, copy, train])
+        let desk = [laptop, left, right]
+        XCTAssertEqual(fittingConfigurations(config, connected: desk).map(\.name), ["Mine", "Copy", "Train"])
+        // By itself: the one that arranges the most displays.
+        XCTAssertEqual(chooseConfiguration(config, connected: desk)?.name, "Copy")
+        // The owner's pick, even when it arranges fewer.
+        XCTAssertEqual(chooseConfiguration(config, connected: desk, chosen: mine.id)?.name, "Mine")
+        XCTAssertEqual(chooseConfiguration(config, connected: desk, chosen: train.id)?.name, "Train")
+        // A pick that needs a display that is gone, or a configuration since deleted, is no pick.
+        XCTAssertEqual(chooseConfiguration(config, connected: [laptop], chosen: copy.id)?.name, "Train")
+        XCTAssertEqual(chooseConfiguration(config, connected: desk, chosen: UUID())?.name, "Copy")
+    }
+
+    func testAChoiceIsKeptPerSetOfDisplays() {
+        // The same displays in another order, or under another name, are the same desk.
+        let renamed = DisplayIdentity(vendor: 2, model: 2, serial: 2, name: "Gauche")
+        XCTAssertEqual(deskKey([laptop, left]), deskKey([renamed, laptop]))
+        XCTAssertNotEqual(deskKey([laptop, left]), deskKey([laptop]))
+        XCTAssertNotEqual(deskKey([laptop, left]), deskKey([laptop, right]))
+    }
+
     func testNearestSlotByCentre() {
         let frames = ["ide": CGRect(x: 8, y: 33, width: 2052, height: 1399),
                       "web": CGRect(x: 2068, y: 33, width: 1364, height: 1399)]

@@ -1175,6 +1175,48 @@ final class EditSession: ObservableObject {
     func isActive(_ configuration: Configuration) -> Bool {
         engine.activeConfigurationID == configuration.id
     }
+
+    /// Whether a configuration is the one Fremspace applies and, when it is not, whether it could be.
+    enum ConfigurationUse: Equatable {
+        /// `picked`: by the owner, for these displays; else Fremspace took it by itself.
+        case inUse(picked: Bool)
+        /// It fits the connected displays and another one is applied.
+        case available
+        /// Never saved: Fremspace runs what the file says.
+        case unsaved
+        /// The displays it arranges that are not connected (none: it arranges no display).
+        case needs([String])
+    }
+
+    /// Judged on the saved configuration, the one Fremspace runs.
+    func use(of configuration: Configuration) -> ConfigurationUse {
+        if isActive(configuration) { return .inUse(picked: engine.chosenConfigurationID == configuration.id) }
+        guard let saved = saved.configurations.first(where: { $0.id == configuration.id }) else { return .unsaved }
+        if engine.fittingConfigurations.contains(where: { $0.id == configuration.id }) { return .available }
+        return .needs(saved.displays.filter { !$0.ignored && !isConnected($0.identity) }.map(\.displayName))
+    }
+
+    /// Puts a configuration in use on the displays connected now. It applies at once, like any
+    /// command: what is being edited stays unsaved, and Fremspace runs the saved configuration.
+    func use(_ configuration: Configuration) {
+        let name = configuration.name.isEmpty ? "Untitled" : configuration.name
+        if engine.useConfiguration(configuration.id) {
+            status = Status(kind: .success, text: "\u{201C}\(name)\u{201D} is in use on these displays. Fremspace keeps to it whenever they are the ones connected.")
+        } else {
+            status = Status(kind: .error, text: "\u{201C}\(name)\u{201D} does not fit the connected displays.")
+        }
+        refreshEnvironment()
+        objectWillChange.send()
+    }
+
+    /// Fremspace picks again by itself for these displays: the configuration that arranges the most.
+    func leaveConfigurationToFremspace() {
+        engine.useConfiguration(nil)
+        let name = engine.activeConfiguration.map { $0.name.isEmpty ? "Untitled" : $0.name }
+        status = Status(kind: .info, text: name.map { "Fremspace chose \u{201C}\($0)\u{201D} for these displays." } ?? "No configuration fits these displays.")
+        refreshEnvironment()
+        objectWillChange.send()
+    }
 }
 
 /// A drawer's layout seen as a layout, so the same editing operations apply. Drawer slots have no

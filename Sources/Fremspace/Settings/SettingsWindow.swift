@@ -93,6 +93,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
     /// Before the app quits (⌘Q while the editor is in front, the menu's Quit, a logout, an update's
     /// relaunch): the same question as when the window closes. False: do not quit.
+    /// Another configuration is in use (picked in the menu bar): the open editor says so.
+    func configurationInUseChanged() {
+        session?.refreshEnvironment()
+        session?.objectWillChange.send()
+    }
+
     func mayQuit() -> Bool {
         guard let session, session.isDirty else { return true }
         // The question is about this window: it comes to the front with it.
@@ -299,6 +305,7 @@ struct Sidebar: View {
                     Menu {
                         let index = session.selection.configuration
                         if let configuration = session.configuration {
+                            useItems(configuration)
                             Button("Rename") { beginRenaming(index, configuration) }
                             Button("Duplicate") { session.duplicateConfiguration() }
                             Divider()
@@ -309,7 +316,7 @@ struct Sidebar: View {
                     }
                     .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 24, height: 24)
                     .disabled(session.configuration == nil)
-                    .help(session.configuration == nil ? "No configuration yet" : "Rename, duplicate or delete the selected configuration")
+                    .help(session.configuration == nil ? "No configuration yet" : "Use, rename, duplicate or delete the selected configuration")
                     .accessibilityLabel("Actions on the selected configuration")
                 }
                 .padding(.trailing, 4)
@@ -386,8 +393,16 @@ struct Sidebar: View {
                         get: { session.config.configurations.indices.contains(i) ? session.config.configurations[i].name : "" },
                         set: { if session.config.configurations.indices.contains(i) { session.config.configurations[i].name = $0 } }))
                         .textFieldStyle(.plain)
+                        // A field that looks like one: the plain field had the row's white text and
+                        // the insertion point in the accent colour, on the accent colour of the
+                        // selected row (owner, 2026-11-14: nothing showed that the name was being typed).
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(Color(nsColor: .textBackgroundColor)))
+                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.primary.opacity(0.25), lineWidth: 1))
                         .focused($nameFocused)
                         .onSubmit { renaming = nil }
+                        .onExitCommand { renaming = nil }
                 } else {
                     Text(configuration.name.isEmpty ? "Untitled" : configuration.name).lineLimit(1)
                 }
@@ -417,7 +432,7 @@ struct Sidebar: View {
         // Simultaneous, so that selecting does not wait to see whether a second click comes.
         .simultaneousGesture(TapGesture(count: 2).onEnded { beginRenaming(i, configuration) })
         // The whole name when it is cut, and how to change it.
-        .help("\(configuration.name.isEmpty ? "Untitled" : configuration.name): double-click to rename")
+        .help("\(configuration.name.isEmpty ? "Untitled" : configuration.name): double-click to rename, right-click to put it in use, duplicate or delete it")
         // One element, except while its name is being typed: the field must stay reachable.
         .accessibilityElement(children: renaming == configuration.id ? .contain : .combine)
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
@@ -426,6 +441,7 @@ struct Sidebar: View {
             session.select(configuration: i)
         }
         .contextMenu {
+            useItems(configuration)
             Button("Rename") { beginRenaming(i, configuration) }
             Button("Duplicate") { session.select(configuration: i); session.duplicateConfiguration() }
             SwiftUI.Divider()
@@ -434,6 +450,25 @@ struct Sidebar: View {
         .onChange(of: nameFocused) { focused in
             if !focused && renaming == configuration.id { renaming = nil }
         }
+    }
+
+    /// Putting a configuration in use, or why it cannot be: the first thing in its menus.
+    @ViewBuilder
+    private func useItems(_ configuration: Configuration) -> some View {
+        switch session.use(of: configuration) {
+        case .inUse(let picked):
+            Button("In use on these displays") {}.disabled(true)
+            if picked {
+                Button("Let Fremspace choose") { session.leaveConfigurationToFremspace() }
+            }
+        case .available:
+            Button("Use on these displays") { session.use(configuration) }
+        case .unsaved:
+            Button("Save to use it on these displays") {}.disabled(true)
+        case .needs(let names):
+            Button(names.isEmpty ? "Arranges no display" : "Needs \(names.joined(separator: ", "))") {}.disabled(true)
+        }
+        SwiftUI.Divider()
     }
 
     private func beginRenaming(_ i: Int, _ configuration: Configuration) {
@@ -456,6 +491,9 @@ struct EditorArea: View {
                     Banner(kind: .error, text: "\(loadError) Saving is off so that the file is not overwritten: fix the file, then close this window and open it again.",
                            action: ("Open the file", openConfigFile))
                 }
+                if session.loadError == nil, let configuration = session.configuration {
+                    notInUse(configuration)
+                }
                 DisplayStrip(session: session)
                 DesktopTabs(session: session)
                 CanvasView(session: session)
@@ -465,6 +503,31 @@ struct EditorArea: View {
             Divider()
             InspectorView(session: session)
                 .frame(width: 280)
+        }
+    }
+}
+
+extension EditorArea {
+    /// The configuration shown is not the one Fremspace applies: said above its layouts, with the
+    /// way to put it in use (owner, 2026-11-14: a copy had taken over and nothing in the window
+    /// said which configuration ran, or how to go back to the other).
+    @ViewBuilder
+    func notInUse(_ configuration: Configuration) -> some View {
+        let name = configuration.name.isEmpty ? "Untitled" : configuration.name
+        switch session.use(of: configuration) {
+        case .inUse:
+            EmptyView()
+        case .available:
+            let running = session.engine.activeConfiguration.map { "\u{201C}\($0.name.isEmpty ? "Untitled" : $0.name)\u{201D}" }
+            Banner(kind: .info,
+                   text: "Not in use. \(running.map { "Fremspace applies \($0) to these displays." } ?? "Fremspace applies no configuration now.") What is saved here waits until this one is in use.",
+                   action: ("Use \u{201C}\(name)\u{201D}", { session.use(configuration) }))
+        case .unsaved:
+            Banner(kind: .info, text: "Not in use yet: save it first, then it can be put in use on these displays.")
+        case .needs(let names):
+            Banner(kind: .info, text: names.isEmpty
+                   ? "Not in use: it arranges no display. Fremspace applies a configuration only when it arranges at least one."
+                   : "Not in use: \(names.joined(separator: ", ")) \(names.count == 1 ? "is" : "are") not connected. Fremspace applies it when all its displays are.")
         }
     }
 }

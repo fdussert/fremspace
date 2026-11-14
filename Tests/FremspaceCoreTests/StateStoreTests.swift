@@ -28,6 +28,20 @@ final class StateStoreTests: XCTestCase {
         XCTAssertTrue(older.focused.isEmpty)
     }
 
+    func testTheChosenConfigurationIsKeptAndOlderStatesHaveNone() throws {
+        let store = StateStore(url: try temporaryURL())
+        var state = FremspaceState()
+        state.chosenConfigurations = ["1-1-1+2-2-2": UUID()]
+        try store.save(state)
+        XCTAssertEqual(store.load().chosenConfigurations, state.chosenConfigurations)
+        let older = try JSONDecoder().decode(FremspaceState.self, from: Data(#"{"desktopLinks":{"links":{}}}"#.utf8))
+        XCTAssertTrue(older.chosenConfigurations.isEmpty)
+        // Something else under that name does not lose the rest of the file.
+        let odd = try JSONDecoder().decode(FremspaceState.self, from: Data(#"{"chosenConfigurations":"mine","paletteUses":{"app":3}}"#.utf8))
+        XCTAssertTrue(odd.chosenConfigurations.isEmpty)
+        XCTAssertEqual(odd.paletteUses, ["app": 3])
+    }
+
     func testCorruptFileLoadsEmptyAndIsKept() throws {
         let url = try temporaryURL()
         try Data("{ nope".utf8).write(to: url)
