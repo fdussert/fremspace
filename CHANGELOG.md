@@ -24,6 +24,10 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   were all awake, stayed on the desktop where Brave had put it and was remembered there. A window
   that is still not known when it appears is also looked at again over the next minute, and
   nothing is remembered for it meanwhile.
+- ⌃⌥⌘R (Re-apply layout) also takes back a window that sits on a free desktop while its place is a
+  slot elsewhere. It left free desktops alone, whatever was on them, and only "Restore everything
+  now" sent such a window back. A window you moved to a free desktop yourself stays: that move is
+  remembered.
 - A window whose place is a slot, and that its app put on a free desktop, keeps that place: showing
   the free desktop no longer records it there, so "Restore everything now" can still send it back.
 - After a restart of the Mac the drawers stay closed. Each app comes to the front as it starts, and

@@ -311,6 +311,26 @@ final class DesktopRoutingTests: XCTestCase {
                        .stay)
     }
 
+    func testReapplyTakesBackAWindowItsAppPutOnTheFreeDesktop() {
+        // Brave showed its window again on "Le reste"; its remembered place is a slot of "Web".
+        XCTAssertEqual(route(brave, on: d(left, 2), .reapply, remembered: d(left, 1), deliberate: false), .send(d(left, 1)))
+        // The owner dragged it to "Le reste": that is where it is remembered, it stays.
+        XCTAssertEqual(route(brave, on: d(left, 2), .reapply, remembered: d(left, 2)), .stay)
+        // Remembered elsewhere outside any slot (a command, a hand move): not taken back either.
+        XCTAssertEqual(route(brave, on: d(left, 2), .reapply, remembered: d(left, 1)), .stay)
+        // A window Fremspace never remembered, one a command sent, an app that may float: they stay.
+        XCTAssertEqual(route(brave, on: d(left, 2), .reapply), .stay)
+        XCTAssertEqual(route(brave, on: d(left, 2), .reapply, remembered: d(left, 1), deliberate: false, byCommand: true), .stay)
+        XCTAssertEqual(route(brave, on: d(left, 2), .reapply, remembered: d(left, 1), deliberate: false, floating: [brave]), .stay)
+        // Its remembered desktop is not there (a display unplugged), or gives it no slot any more.
+        XCTAssertEqual(route(brave, on: d(left, 2), .reapply, remembered: d(left, 1), deliberate: false,
+                             available: [d(left, 0), d(left, 2)]), .stay)
+        XCTAssertEqual(route(brave, on: d(left, 2), .reapply, remembered: d(builtIn, 1), deliberate: false), .stay)
+        // Only ⌃⌥⌘R: a start of Fremspace and a new window leave the free desktop alone.
+        XCTAssertEqual(route(brave, on: d(left, 2), .startup, remembered: d(left, 1), deliberate: false), .stay)
+        XCTAssertEqual(route(brave, on: d(left, 2), .appeared, remembered: d(left, 1), deliberate: false), .stay)
+    }
+
     func testAWindowOnTheFreeDesktopGoesToTheSlotItsAppWasJustGiven() {
         func given(_ app: String, on here: ConfiguredDesktop?, remembered: ConfiguredDesktop? = nil, byCommand: Bool = false,
                    floating: Set<String> = []) -> Route {

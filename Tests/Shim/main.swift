@@ -131,6 +131,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testNoFloatingIsAGeneralSettingAndOlderFilesHaveItOff", { try ($0 as! DesktopRoutingTests).testNoFloatingIsAGeneralSettingAndOlderFilesHaveItOff() }),
         ("testAnAppThatMayFloatStaysOnALayoutDesktop", { ($0 as! DesktopRoutingTests).testAnAppThatMayFloatStaysOnALayoutDesktop() }),
         ("testAWindowOnTheFreeDesktopGoesToTheSlotItsAppWasJustGiven", { ($0 as! DesktopRoutingTests).testAWindowOnTheFreeDesktopGoesToTheSlotItsAppWasJustGiven() }),
+        ("testReapplyTakesBackAWindowItsAppPutOnTheFreeDesktop", { ($0 as! DesktopRoutingTests).testReapplyTakesBackAWindowItsAppPutOnTheFreeDesktop() }),
         ("testAnAppThatMayFloatIsNotPulledToItsSlotOnAnotherDesktop", { ($0 as! DesktopRoutingTests).testAnAppThatMayFloatIsNotPulledToItsSlotOnAnotherDesktop() }),
         ("testTheAppsThatMayFloatAreAGeneralSettingWrittenOnlyWhenUsed", { try ($0 as! DesktopRoutingTests).testTheAppsThatMayFloatAreAGeneralSettingWrittenOnlyWhenUsed() }),
         ("testWindowOnFreeDesktopStays", { ($0 as! DesktopRoutingTests).testWindowOnFreeDesktopStays() }),

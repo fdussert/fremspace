@@ -41,6 +41,8 @@ public enum Route: Equatable {
 ///   to the first desktop where their app has a slot (a mail reminder joins the mail window), else to
 ///   a free one. Windows of an app that has a slot on the desktop stay, whatever its profile or title
 ///   rule: they are that app's own side windows;
+/// - on ⌃⌥⌘R, a window on a free desktop whose remembered place is a slot of another desktop goes
+///   back to it: nobody put it on the free desktop, or the free desktop would be its remembered place;
 /// - a window on a free or unconfigured desktop whose app was just given a slot (`givenASlot`: the
 ///   save that did it, once) goes to that slot, unless a command put it where it is;
 /// - an app the owner lets float (`floatingApps`, a general setting; owner, 2026-11-13: a Finder
@@ -123,7 +125,15 @@ public func route(window: WindowInfo, on here: ConfiguredDesktop?, reason: Route
     // of a slot, sent there by `noFloating` (owner, 2026-11-13: Slack got its slot back and its
     // window stayed on the free desktop). What a command put there stays.
     let pulled = givenASlot && !sentByCommand && !floats && !(here.map { layout($0) != nil } ?? false)
-    if !onIgnoredDisplay, !pulled {
+    // And a second one, for ⌃⌥⌘R: the window's remembered place is a slot on another desktop. The
+    // owner did not put it on the free desktop, or that would be its remembered place (a move by
+    // hand and a command record it, without a slot): its app or macOS did (a browser showing its
+    // windows again after a restart of the Mac). Owner, 2026-11-14: ⌃⌥⌘R left three such windows
+    // where they were, and only "Restore everything now" sent them back.
+    let strayed = reason == .reapply && !sentByCommand && !floats && !rememberedDeliberately
+        && (here.map { layout($0) == nil } ?? false)
+        && (remembered.map { $0 != here && available.contains($0) && hasSlot($0) } ?? false)
+    if !onIgnoredDisplay, !pulled, !strayed {
         guard let here, layout(here) != nil else { return .stay }
         if hasSlot(here) { return .stay }
         if remembered == here, rememberedDeliberately || sentByCommand, !mayNotFloat(here) { return .stay }
