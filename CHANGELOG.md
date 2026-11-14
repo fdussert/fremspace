@@ -18,10 +18,12 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   kept for that set of displays, and "Let Fremspace choose" gives it back.
 - Renaming a configuration shows a real text field. The name was typed in white on the selected
   row's colour, with an insertion point of that same colour.
-- After a restart of the Mac, browser windows go back to their desktops more reliably. A browser
-  shows its windows before their tabs can be read; Fremspace looked once, a second after a window
-  appeared, did not know it, left it on the desktop where the browser had put it and remembered it
-  there. It now looks again over the next minute and remembers nothing for that window meanwhile.
+- After a restart of the Mac, Brave windows are recognised again and go back to their desktops.
+  Brave names a sleeping tab "… - Inactive tab - 123 MB freed"; Fremspace removed that suffix
+  without the last word, so a window whose tabs had slept no longer looked like itself once they
+  were all awake, stayed on the desktop where Brave had put it and was remembered there. A window
+  that is still not known when it appears is also looked at again over the next minute, and
+  nothing is remembered for it meanwhile.
 - A window whose place is a slot, and that its app put on a free desktop, keeps that place: showing
   the free desktop no longer records it there, so "Restore everything now" can still send it back.
 - After a restart of the Mac the drawers stay closed. Each app comes to the front as it starts, and

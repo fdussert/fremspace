@@ -16,9 +16,12 @@ public func browserProfile(fromTitle title: String, bundleID: String) -> String?
 }
 
 private let tabNoise = try! NSRegularExpression(
-    pattern: #"(\s-\s(Memory usage|Inactive tab|Audio playing|Network error)(\s-\s[\d.,]+\s?[KMGT]?B)?)+$"#)
+    pattern: #"(\s-\s(Memory usage|Inactive tab|Audio playing|Network error)(\s-\s[\d.,]+\s?[KMGT]?B(\s\p{L}+)*)?)+$"#)
 
-/// A tab title without what Brave appends to it (memory use, "Inactive tab").
+/// A tab title without what Brave appends to it (memory use, "Inactive tab"). A size may be
+/// followed by a word: a tab put to sleep reads "Inactive tab - 123 MB freed", which was left on
+/// (owner, 2026-11-14: after a restart of the Mac no tab is asleep yet, 18 of a window's 47 tabs
+/// differed from what was remembered by that suffix alone, and the window was not recognised).
 public func normalizedTabTitle(_ title: String) -> String {
     let range = NSRange(title.startIndex..., in: title)
     return tabNoise.stringByReplacingMatches(in: title, range: range, withTemplate: "")
@@ -53,7 +56,9 @@ public func similarity(_ a: WindowIdentity, _ b: WindowIdentity) -> Double {
     guard a.bundleID == b.bundleID, a.profile == b.profile else { return 0 }
     if let da = a.document, let db = b.document { return da == db ? 1 : 0 }
     if !a.tabs.isEmpty, !b.tabs.isEmpty {
-        let sa = Set(a.tabs), sb = Set(b.tabs)
+        // Normalised again: what was remembered by an earlier build still carries what that build
+        // did not remove.
+        let sa = Set(a.tabs.map(normalizedTabTitle)), sb = Set(b.tabs.map(normalizedTabTitle))
         return Double(sa.intersection(sb).count) / Double(sa.union(sb).count)
     }
     return a.title == b.title ? 0.9 : 0

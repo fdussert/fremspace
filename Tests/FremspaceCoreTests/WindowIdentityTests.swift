@@ -23,6 +23,20 @@ final class WindowIdentityTests: XCTestCase {
         XCTAssertEqual(normalizedTabTitle("App Store Connect - Memory usage - 169 MB"), "App Store Connect")
         XCTAssertEqual(normalizedTabTitle("App Store Connect - Inactive tab - 61.9 MB"), "App Store Connect")
         XCTAssertEqual(normalizedTabTitle("GitHub"), "GitHub")
+        // A tab put to sleep says what it gave back.
+        XCTAssertEqual(normalizedTabTitle("App Store Connect - Inactive tab - 123 MB freed"), "App Store Connect")
+        XCTAssertEqual(normalizedTabTitle("App Store Connect - Inactive tab - 61.9 MB freed"), "App Store Connect")
+        // A title that merely ends like a size keeps its words.
+        XCTAssertEqual(normalizedTabTitle("Pricing - 20 GB plan"), "Pricing - 20 GB plan")
+    }
+
+    func testAWindowIsRecognisedWhateverItsTabsSleep() {
+        // Remembered by a build that left "freed" on, then seen after a restart, every tab awake.
+        var before = identity(["Jira", "Mail", "Docs", "Wiki"], title: "Jira - Brave – Work")
+        before.tabs = ["Docs - Inactive tab - 61.9 MB freed", "Jira", "Mail - Inactive tab - 123 MB freed",
+                       "Wiki - Inactive tab - 80 MB freed"]
+        let after = identity(["Jira", "Mail", "Docs", "Wiki"], title: "Jira - Brave – Work")
+        XCTAssertEqual(similarity(before, after), 1)
     }
 
     func testSameProfileWindowsKeepTheirPlaceAfterRelaunch() {
