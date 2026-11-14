@@ -36,6 +36,12 @@ final class WindowIdentityTests: XCTestCase {
         XCTAssertNil(browserProfile(fromTitle: "Review - Brave - Brave", bundleID: brave))
         XCTAssertNil(browserProfile(fromTitle: "Accueil – Brave – Wikipédia – Brave", bundleID: brave))
         XCTAssertEqual(browserProfile(fromTitle: "Review - Brave - Brave – Work", bundleID: brave), "Work")
+        // As a current Brave and a current Chrome write them (a report of 2026-11-14): a hyphen before
+        // the profile, a profile called like a channel, and one with an account in brackets after a
+        // title that carries the tab's memory use.
+        XCTAssertEqual(browserProfile(fromTitle: "New Tab - Brave - Dev", bundleID: brave), "Dev")
+        XCTAssertEqual(browserProfile(fromTitle: "Dashboard – Shop – Pay - High memory usage - 1.1 GB - Google Chrome - Jane (example.org)",
+                                      bundleID: chrome), "Jane (example.org)")
         // A profile's own name may hold a dash.
         XCTAssertEqual(browserProfile(fromTitle: "Inbox - Google Chrome – Client - Work", bundleID: chrome), "Client - Work")
         XCTAssertEqual(browserProfile(fromTitle: "Download - Brave - Fast - Brave – Client - Work", bundleID: brave), "Client - Work")
