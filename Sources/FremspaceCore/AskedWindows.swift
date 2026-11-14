@@ -41,3 +41,38 @@ public func windowShows(_ url: URL, document: String?, title: String?, byTitle: 
     }
     return byTitle && title == url.lastPathComponent
 }
+
+/// A folder a slot asks for: where it is, the app to open it in, and the slot its window goes to.
+public struct FolderToOpen: Equatable {
+    public var folder: String
+    public var bundleID: String
+    public var desktop: ConfiguredDesktop
+    public var slotID: String
+
+    public init(folder: String, bundleID: String, desktop: ConfiguredDesktop, slotID: String) {
+        self.folder = folder
+        self.bundleID = bundleID
+        self.desktop = desktop
+        self.slotID = slotID
+    }
+}
+
+/// The folders the slots of `configuration` ask for, in the order of the file: the layouts of the
+/// displays Fremspace arranges. A folder asked for twice in one app is opened once, for the first
+/// slot that asks: one window cannot be in two slots.
+public func foldersToOpen(_ configuration: Configuration) -> [FolderToOpen] {
+    var result: [FolderToOpen] = []
+    for display in configuration.displays where !display.ignored {
+        for (index, space) in display.spaces.enumerated() {
+            for slot in space.layout?.slots ?? [] {
+                for rule in slot.rules {
+                    guard let folder = rule.folder?.trimmingCharacters(in: .whitespaces), !folder.isEmpty, !rule.bundleID.isEmpty,
+                          !result.contains(where: { $0.folder == folder && $0.bundleID == rule.bundleID }) else { continue }
+                    result.append(FolderToOpen(folder: folder, bundleID: rule.bundleID,
+                                               desktop: ConfiguredDesktop(display: display.identity, index: index), slotID: slot.id))
+                }
+            }
+        }
+    }
+    return result
+}

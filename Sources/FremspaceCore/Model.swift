@@ -422,6 +422,11 @@ public struct Rule: Codable, Equatable {
     public var profile: String?
     /// Case-insensitive substring of the window title.
     public var titleContains: String?
+    /// A folder the slot asks for (a path, `~` for the home folder): opened in the rule's app when
+    /// the windows are restored and no window of that app shows it, and the window that opens goes
+    /// to the slot. Not a filter: the slot takes the app's other windows as before, and a window
+    /// may be taken to another folder (a request of 2026-11-14: "choose a folder to open for the Finder").
+    public var folder: String?
 
     public init(bundleID: String, profile: String? = nil, titleContains: String? = nil) {
         self.bundleID = bundleID

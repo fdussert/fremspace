@@ -331,6 +331,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
     ]),
     ("AskedWindowsTests", { AskedWindowsTests() }, [
         ("testTheNextNewWindowOfTheAppIsTheOneAskedForAndOnlyThatOne", { ($0 as! AskedWindowsTests).testTheNextNewWindowOfTheAppIsTheOneAskedForAndOnlyThatOne() }),
+        ("testTheFoldersTheSlotsAskFor", { try ($0 as! AskedWindowsTests).testTheFoldersTheSlotsAskFor() }),
         ("testARequestThatGotNoWindowInTimeIsForgotten", { ($0 as! AskedWindowsTests).testARequestThatGotNoWindowInTimeIsForgotten() }),
         ("testNothingAskedNothingTaken", { ($0 as! AskedWindowsTests).testNothingAskedNothingTaken() }),
         ("testAWindowShowsAFolderByItsDocumentAddressElseByItsTitleInTheFinder", { ($0 as! AskedWindowsTests).testAWindowShowsAFolderByItsDocumentAddressElseByItsTitleInTheFinder() }),

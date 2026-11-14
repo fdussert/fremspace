@@ -219,9 +219,45 @@ final class DesktopRouter {
         info.isManageable || (engine.noFloating && info.canChangeDesktop)
     }
 
+    /// Folders Fremspace just opened for a slot: the window that shows one goes to that slot.
+    private var expectedFolders: [(url: URL, wanted: FolderToOpen, until: Date)] = []
+
+    /// Fremspace is about to open `url` in its app for a slot: the window that appears showing it
+    /// goes to that slot, on its desktop. Forgotten after `AskedWindows.wait` (an app that opens
+    /// the folder in a window it already had shows no new one).
+    func expect(folder url: URL, for wanted: FolderToOpen) {
+        expectedFolders.removeAll { $0.until < Date() }
+        expectedFolders.append((url, wanted, Date().addingTimeInterval(AskedWindows.wait)))
+    }
+
+    /// Sends a window that shows a folder a slot asked for to that slot. False when it is not one.
+    private func takeToItsSlot(_ info: WindowInfo, _ element: AXUIElement) -> Bool {
+        expectedFolders.removeAll { $0.until < Date() }
+        guard let index = expectedFolders.firstIndex(where: { expected in
+            expected.wanted.bundleID == info.bundleID
+                && windowShows(expected.url, document: windows.document(of: element), title: info.title,
+                               byTitle: info.bundleID == "com.apple.finder")
+        }) else { return false }
+        let wanted = expectedFolders.remove(at: index).wanted
+        engine.choose(slot: wanted.slotID, for: info.id)
+        // Like a window a command sent: nothing pulls it away, and it does not float off.
+        sentByCommand.insert(info.id)
+        lastInfo[info.id] = info
+        let here = Spaces.spaceIndex(ofWindow: info.id).flatMap { engine.configuredDesktop($0) }
+        Log.engine.notice("window \(info.id) \(info.bundleID, privacy: .public) shows the folder slot \(wanted.slotID, privacy: .public) asked for: it goes there")
+        if here == wanted.desktop {
+            lastDesktop[info.id] = wanted.desktop
+            engine.scheduleApplyFromRouter()
+        } else {
+            send(info, to: wanted.desktop, entry: nil, byCommand: true)
+        }
+        return true
+    }
+
     private func routeAppeared(_ id: UInt32) {
         guard engine.mayRoute, pendingArrival[id] == nil, !inFlight.contains(id),
               let (info, element) = windows.window(id: id), mayRoute(info), !engine.drawers.isMember(id) else { return }
+        if !expectedFolders.isEmpty, takeToItsSlot(info, element) { return }
         let identity = engine.identity(of: element, info: info)
         let entry = recognise([id: identity])[id]
         // The owner just opened it (its app is frontmost): the view follows it to its desktop. A window

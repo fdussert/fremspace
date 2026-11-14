@@ -26,15 +26,19 @@ final class LoginRestorer {
     func startup() {
         if let session = Self.sessionStart(), isLoginStart(appStart: Self.processStart() ?? Date(), sessionStart: session) {
             Log.engine.notice("first start in this login session: restoring every window")
-            restoreNow()
+            // The Finder shows its own windows again after a login: it is given the time to, so
+            // that a folder it is about to show is not opened a second time.
+            restoreNow(foldersAfter: 20)
         } else {
             engine.router.sortAll(reason: .startup)
         }
     }
 
     /// Puts every window back where it was remembered and launches the missing apps.
-    func restoreNow() {
+    /// `foldersAfter`: how long before the folders the slots ask for are opened.
+    func restoreNow(foldersAfter delay: TimeInterval = 1) {
         guard engine.mayRoute, let configuration = engine.activeConfiguration else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in self?.engine.openSlotFolders() }
         engine.router.restoring(until: Date().addingTimeInterval(Self.restoreWindow))
         engine.appsAreStarting(until: Date().addingTimeInterval(Self.restoreWindow))
         engine.router.sortAll(reason: .login)

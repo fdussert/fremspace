@@ -142,7 +142,9 @@ public func sharedLayout(of configuration: Configuration, withFilters: Bool,
                 if rule.profile != nil { report.profilesLeftOut += 1 }
                 if rule.titleContains != nil { report.titleFiltersLeftOut += 1 }
             }
-            let kept = withFilters ? rule : Rule(bundleID: rule.bundleID)
+            var kept = withFilters ? rule : Rule(bundleID: rule.bundleID)
+            // A folder is a path of this Mac, with what it tells: never in a file made to be given.
+            kept.folder = nil
             apps.insert(kept.bundleID)
             // Two rules that differed by their profile only are one rule now.
             if !result.contains(kept) { result.append(kept) }

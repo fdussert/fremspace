@@ -9,6 +9,10 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- A Finder slot can ask for a folder. Choose it in the slot's settings ("Folder to open"): at login
+  and on "Restore everything now", when no Finder window shows that folder, Fremspace opens it and
+  the window goes to the slot. It is not a filter: the slot takes other Finder windows as before.
+  The folder stays out of the layout files you share.
 - A desktop can keep its windows **as placed**: exactly where they are, over one another if they
   are, instead of in slots cut out of the screen. "Keep windows as placed" on a free desktop (or
   "As placed" above the screen) takes the places of the windows it shows; after Save, Fremspace

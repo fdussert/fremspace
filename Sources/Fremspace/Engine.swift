@@ -178,6 +178,42 @@ final class Engine {
         bringHere(windowOf: app, showing: url) { NSWorkspace.shared.open(url) }
     }
 
+    /// The owner (or the router, for a folder a slot asked for) puts this window in this slot.
+    func choose(slot: String, for id: UInt32) {
+        chosenSlot[id] = slot
+    }
+
+    /// The folders the slots ask for that no window of their app shows are opened there, without
+    /// taking the keyboard, and each window that opens goes to its slot (`DesktopRouter.expect`).
+    /// When the windows are restored: at a login, and on "Restore everything now".
+    func openSlotFolders() {
+        guard isRunning, !paused, AXIsProcessTrusted(), !Self.sessionIsLocked, let configuration else { return }
+        for wanted in foldersToOpen(configuration) {
+            let url = URL(fileURLWithPath: (wanted.folder as NSString).expandingTildeInPath)
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+                // No path in the log: it names the owner's folders.
+                Log.engine.notice("slot \(wanted.slotID, privacy: .public): the folder it asks for is not there, nothing opened")
+                continue
+            }
+            guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: wanted.bundleID) else { continue }
+            let byTitle = wanted.bundleID == Self.finder
+            let shown = NSRunningApplication.runningApplications(withBundleIdentifier: wanted.bundleID).contains { running in
+                windows.allWindows(pid: running.processIdentifier).contains {
+                    windowShows(url, document: windows.document(of: $0), title: windows.title(of: $0), byTitle: byTitle)
+                }
+            }
+            guard !shown else { continue }
+            router.expect(folder: url, for: wanted)
+            let options = NSWorkspace.OpenConfiguration()
+            options.activates = false
+            NSWorkspace.shared.open([url], withApplicationAt: app, configuration: options) { _, error in
+                if let error { Log.engine.error("opening the folder of slot \(wanted.slotID, privacy: .public) failed: \(error.localizedDescription, privacy: .public)") }
+            }
+            Log.engine.notice("slot \(wanted.slotID, privacy: .public): its folder was shown by no window of \(wanted.bundleID, privacy: .public), opened")
+        }
+    }
+
     /// Shows files in the Finder for the owner, as `openForOwner` opens one.
     func revealForOwner(_ urls: [URL]) {
         router.expectWindow(of: Self.finder)
