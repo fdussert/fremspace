@@ -61,7 +61,44 @@ final class DesktopRouter {
     /// are (see `Remembered.mayRecord`).
     private var recognised: Set<UInt32> = []
 
-    func isRecognised(_ id: UInt32) -> Bool { recognised.contains(id) }
+    func isRecognised(_ id: UInt32) -> Bool { recognised.contains(id) && !stillUnknown.contains(id) }
+
+    /// Windows compared during a login that matched no remembered window yet. At a login a browser
+    /// shows its windows before their tabs and titles can be read, and one comparison, a second
+    /// after the window appeared, found nothing: the window stayed on the desktop where its app
+    /// had put it and was recorded there, over the place it had (owner, 2026-11-14: three browser
+    /// windows on the free desktop after a restart of the Mac). They are compared again
+    /// (`compareAgainLater`) and are not recorded where they sit meanwhile.
+    private var stillUnknown: Set<UInt32> = []
+    /// How long to wait before each new comparison; after the last one the window is a new one.
+    static let recognitionRetries: [TimeInterval] = [3, 8, 20, 40]
+
+    private func compareAgainLater(_ id: UInt32, after delays: [TimeInterval] = DesktopRouter.recognitionRetries) {
+        guard let delay = delays.first else {
+            // Not a window Fremspace knew: it is recorded where it is from the next pass.
+            stillUnknown.remove(id)
+            engine.scheduleApplyFromRouter()
+            return
+        }
+        stillUnknown.insert(id)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, self.stillUnknown.contains(id) else { return }
+            guard self.engine.mayRoute, self.matched[id] == nil, !self.inFlight.contains(id),
+                  let (info, element) = self.windows.window(id: id), !self.engine.drawers.isMember(id) else {
+                self.stillUnknown.remove(id)
+                return
+            }
+            // Read again: what was read when the window appeared is what failed.
+            let identity = self.engine.freshIdentity(of: element, info: info)
+            guard let entry = self.recognise([id: identity])[id] else {
+                return self.compareAgainLater(id, after: Array(delays.dropFirst()))
+            }
+            self.stillUnknown.remove(id)
+            Log.engine.notice("window \(id) \(info.bundleID, privacy: .public) recognised on a later look: it goes where it was remembered")
+            self.decide(info, reason: .login, entry: entry)
+            self.engine.scheduleApplyFromRouter()
+        }
+    }
 
     /// The configuration or the desktop map changed: what is known per configured desktop no longer
     /// holds. Re-learned from the next pass, so nothing looks moved by hand.
@@ -133,6 +170,7 @@ final class DesktopRouter {
         lastInfo[id] = nil
         matched[id] = nil
         recognised.remove(id)
+        stillUnknown.remove(id)
         notRoutable.remove(id)
     }
 
@@ -189,6 +227,7 @@ final class DesktopRouter {
         // The owner just opened it (its app is frontmost): the view follows it to its desktop. A window
         // that appears in the background goes without changing what the displays show.
         if isRestoring {
+            if entry == nil { compareAgainLater(id) }
             decide(info, reason: .login, entry: entry)
             engine.scheduleApplyFromRouter()
             return
@@ -226,6 +265,9 @@ final class DesktopRouter {
         for (info, element) in found { identities[info.id] = engine.identity(of: element, info: info) }
         let entries = recognise(identities)
         var sent = 0
+        if reason == .login {
+            for (info, _) in found where entries[info.id] == nil { compareAgainLater(info.id) }
+        }
         for (info, _) in found where decide(info, reason: reason, entry: entries[info.id]) { sent += 1 }
         if reason == .reapply { givenASlot = [] }
         engine.scheduleApplyFromRouter()

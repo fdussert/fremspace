@@ -18,6 +18,10 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   kept for that set of displays, and "Let Fremspace choose" gives it back.
 - Renaming a configuration shows a real text field. The name was typed in white on the selected
   row's colour, with an insertion point of that same colour.
+- After a restart of the Mac, browser windows go back to their desktops more reliably. A browser
+  shows its windows before their tabs can be read; Fremspace looked once, a second after a window
+  appeared, did not know it, left it on the desktop where the browser had put it and remembered it
+  there. It now looks again over the next minute and remembers nothing for that window meanwhile.
 - After a restart of the Mac the drawers stay closed. Each app comes to the front as it starts, and
   a window of a drawer's app in front was taken for you asking for it: the drawer opened by itself.
 - A Mac that wakes no longer scatters the desk. Waking, macOS shows the built-in display first and

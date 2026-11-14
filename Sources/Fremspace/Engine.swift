@@ -528,6 +528,13 @@ final class Engine {
         return identity
     }
 
+    /// The identity read anew, whatever was read before under the same title (a browser's tabs
+    /// come after its title).
+    func freshIdentity(of element: AXUIElement, info: WindowInfo) -> WindowIdentity {
+        identities[info.id] = nil
+        return identity(of: element, info: info)
+    }
+
     func adoptRemembered(_ entry: RememberedPlacement, as id: UInt32) {
         state.remembered.adopt(entry, as: id, idsSince: router.bootTime)
         scheduleStateSave()
