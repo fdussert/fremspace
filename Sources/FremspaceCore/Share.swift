@@ -334,7 +334,7 @@ extension SharedLayout {
                 layout.slots[s].fullScreenCalls = false
             }
             // Added as they are, two slots over each other would block every Save of the editor.
-            guard !anyOverlap(layout.slots.map(\.rect)) else { throw ShareError.invalid("two slots that overlap") }
+            guard layout.freeForm || !anyOverlap(layout.slots.map(\.rect)) else { throw ShareError.invalid("two slots that overlap") }
             display.desktops[d].layout = layout
             if let focus = display.desktops[d].focusSlot, !ids.contains(focus) { display.desktops[d].focusSlot = nil }
         }

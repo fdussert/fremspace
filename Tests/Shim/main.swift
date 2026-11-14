@@ -507,6 +507,9 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
     ]),
     ("CaptureTests", { CaptureTests() }, [
         ("testCaptureRoundsToCleanFractions", { ($0 as! CaptureTests).testCaptureRoundsToCleanFractions() }),
+        ("testFreeFormCaptureKeepsWindowsWhereTheyAreOverOneAnother", { ($0 as! CaptureTests).testFreeFormCaptureKeepsWindowsWhereTheyAreOverOneAnother() }),
+        ("testFreeFormCaptureKeepsWhatShowsOfAWindowAndSharesASlotOnlyAtTheSamePlace", { ($0 as! CaptureTests).testFreeFormCaptureKeepsWhatShowsOfAWindowAndSharesASlotOnlyAtTheSamePlace() }),
+        ("testAFreeFormLayoutHasNoNeighboursAndIsReadBackFromItsFile", { try ($0 as! CaptureTests).testAFreeFormLayoutHasNoNeighboursAndIsReadBackFromItsFile() }),
         ("testCaptureStacksSameAppSameRect", { ($0 as! CaptureTests).testCaptureStacksSameAppSameRect() }),
         ("testCaptureSkipsUnmanageableAndNeverOverlaps", { ($0 as! CaptureTests).testCaptureSkipsUnmanageableAndNeverOverlaps() }),
     ]),

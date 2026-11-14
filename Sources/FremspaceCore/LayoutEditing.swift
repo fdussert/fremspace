@@ -24,10 +24,12 @@ public func split(_ layout: Layout, slot id: String, along axis: Axis, newID: St
 
 /// Removes slot `id`; a neighbour sharing one of its whole edges grows into the space (left, right,
 /// top, then bottom neighbour). Without one, the space stays empty.
+/// In a free-form layout nothing grows: the other slots are windows where they were.
 public func remove(_ layout: Layout, slot id: String) -> Layout {
     var out = layout
     guard let i = out.slots.firstIndex(where: { $0.id == id }) else { return layout }
     let r = out.slots.remove(at: i).rect
+    if layout.freeForm { return out }
     if let j = out.slots.firstIndex(where: { same($0.rect.y, r.y) && same($0.rect.h, r.h) && same($0.rect.x + $0.rect.w, r.x) }) {
         out.slots[j].rect.w += r.w
     } else if let j = out.slots.firstIndex(where: { same($0.rect.y, r.y) && same($0.rect.h, r.h) && same($0.rect.x, r.x + r.w) }) {
@@ -58,6 +60,8 @@ public struct Divider: Equatable {
 }
 
 public func dividers(_ layout: Layout) -> [Divider] {
+    // The slots of a free-form layout share no edge to drag: they are not cut out of the screen.
+    guard !layout.freeForm else { return [] }
     var result: [Divider] = []
     for axis in [Axis.vertical, .horizontal] {
         let start: (Slot) -> Double = { axis == .vertical ? $0.rect.x : $0.rect.y }
@@ -194,7 +198,8 @@ public func isValid(_ layout: Layout) -> String? {
             return "Slot \"\(slot.id)\" is outside the display."
         }
     }
-    for (i, a) in layout.slots.enumerated() {
+    // A free-form layout is windows as they were found, over one another when they were.
+    for (i, a) in layout.slots.enumerated() where !layout.freeForm {
         for b in layout.slots[(i + 1)...] where overlaps(a.rect, b.rect) {
             return "Slots \"\(a.id)\" and \"\(b.id)\" overlap."
         }

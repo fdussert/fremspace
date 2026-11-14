@@ -22,8 +22,9 @@ public func lockHere(layout: Layout?, window: WindowInfo, frame: CGRect, visible
         if !layout.slots[overlapped.index].rules.contains(rule) { layout.slots[overlapped.index].rules.append(rule) }
         return (layout, layout.slots[overlapped.index].id)
     }
+    // (A free-form layout takes the slot over the others: its slots may overlap.)
     guard let rect = snappedRect(frame, visible: visible),
-          !layout.slots.contains(where: { overlaps($0.rect, rect) }) else { return nil }
+          layout.freeForm || !layout.slots.contains(where: { overlaps($0.rect, rect) }) else { return nil }
     let id = uniqueID(for: window.bundleID, among: layout.slots.map(\.id))
     layout.slots.append(Slot(id: id, rect: rect, rule: rule, locked: true))
     return (layout, id)

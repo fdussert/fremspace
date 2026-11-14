@@ -302,10 +302,32 @@ public enum UnmatchedPolicy: Codable, Equatable {
 
 /// A set of slots on one display.
 public struct Layout: Codable, Equatable {
+    /// In a free-form layout, front to back: the first slot's window is the one on top.
     public var slots: [Slot]
+    /// A free-form layout keeps windows where the owner put them, over one another if they were:
+    /// captured from a desktop, not cut out of the screen (a colleague of the owner, 2026-11-14:
+    /// the mail window with Messages under it, back at their places whenever a display is plugged
+    /// in again). Its slots may overlap, and none of them is a neighbour that grows when one goes.
+    public var freeForm: Bool
 
-    public init(slots: [Slot]) {
+    public init(slots: [Slot], freeForm: Bool = false) {
         self.slots = slots
+        self.freeForm = freeForm
+    }
+
+    private enum CodingKeys: String, CodingKey { case slots, freeForm }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        slots = try c.decode([Slot].self, forKey: .slots)
+        freeForm = try c.decodeIfPresent(Bool.self, forKey: .freeForm) ?? false
+    }
+
+    /// Written only when set: the files of the layouts cut out of the screen stay as they were.
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(slots, forKey: .slots)
+        if freeForm { try c.encode(true, forKey: .freeForm) }
     }
 }
 

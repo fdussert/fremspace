@@ -36,9 +36,13 @@ public func axRect(fromAppKit r: CGRect, primaryHeight: CGFloat) -> CGRect {
 /// coordinates). Slots keep `gap` from the screen edges and `gap / 2` from each other on every
 /// inner side, so neighbours are `gap` apart. The focus slot, when set, takes the whole visible
 /// frame inset by `gap`. Frames are rounded to whole points.
+///
+/// A free-form layout has no gap between its slots: each is the frame a window had, and a gap
+/// taken off it would shrink the window a little more at every capture. Its focus slot keeps
+/// the gap from the screen edges, as everywhere.
 public func slotFrames(layout: Layout, focus: String?, visible: CGRect, gap: CGFloat) -> [String: CGRect] {
     var frames = unitFrames(layout.slots.filter { $0.id != focus }.map { (id: $0.id, rect: $0.rect) },
-                            in: visible, gap: gap)
+                            in: visible, gap: layout.freeForm ? 0 : gap)
     if let focus, layout.slots.contains(where: { $0.id == focus }) {
         frames[focus] = rounded(visible.insetBy(dx: gap, dy: gap))
     }
