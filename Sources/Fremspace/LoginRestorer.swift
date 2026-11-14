@@ -36,6 +36,7 @@ final class LoginRestorer {
     func restoreNow() {
         guard engine.mayRoute, let configuration = engine.activeConfiguration else { return }
         engine.router.restoring(until: Date().addingTimeInterval(Self.restoreWindow))
+        engine.drawers.appsAreStarting(until: Date().addingTimeInterval(Self.restoreWindow))
         engine.router.sortAll(reason: .login)
         let running = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
         launched = appsToLaunch(configuration: configuration, running: running)

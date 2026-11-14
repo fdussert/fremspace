@@ -226,6 +226,17 @@ final class DrawerController {
     private var systemPicksUntil = Date.distantPast
     private static let systemPickTime: TimeInterval = 1.5
 
+    /// Until when the apps are starting by themselves (a login): each comes to the front as it
+    /// starts, and a window of a drawer's app in front was taken for the owner asking for it
+    /// (owner, 2026-11-14: after a reboot the drawer was open).
+    private var appsStartUntil = Date.distantPast
+
+    /// The apps of the session are starting: until `date`, a drawer window that comes to the front
+    /// does not open its drawer.
+    func appsAreStarting(until date: Date) {
+        appsStartUntil = date
+    }
+
     /// A display changed desktop.
     func desktopChanged() {
         systemPicksUntil = Date().addingTimeInterval(Self.systemPickTime)
@@ -280,7 +291,8 @@ final class DrawerController {
         guard isActive(), members[info.id] == nil, takenOut[info.id] == nil, !draggedOthers.contains(info.id) else { return }
         let edge = drawerEdge(ofSlotKey: slot)
         join(info.id, element: element, pid: info.pid, bundleID: info.bundleID, display: display, slot: slot)
-        let inFront = windows.focusedWindow().flatMap(AXWindows.windowID) == info.id
+        // In front because its app just started with the session is not the owner being on it.
+        let inFront = Date() >= appsStartUntil && windows.focusedWindow().flatMap(AXWindows.windowID) == info.id
         whenMouseUp { [weak self] in
             guard let self, self.members[info.id] != nil else { return }
             if inFront || self.state.isOpen(display, edge: edge) {
@@ -363,6 +375,11 @@ final class DrawerController {
                 // Not the owner's choice: the drawer stays closed and the keyboard goes to a window
                 // that can be seen, not to one parked off screen.
                 Log.engine.notice("window \(id) of the \(edge, privacy: .public) drawer of \(display.name, privacy: .public) became active as the display changed desktop: the drawer stays closed")
+                if let space = shown(display) { focusMainLayout(space) }
+                break
+            }
+            if Date() < appsStartUntil {
+                Log.engine.notice("window \(id) of the \(edge, privacy: .public) drawer of \(display.name, privacy: .public) became active as its app started with the session: the drawer stays closed")
                 if let space = shown(display) { focusMainLayout(space) }
                 break
             }

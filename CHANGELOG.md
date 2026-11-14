@@ -18,6 +18,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   kept for that set of displays, and "Let Fremspace choose" gives it back.
 - Renaming a configuration shows a real text field. The name was typed in white on the selected
   row's colour, with an insertion point of that same colour.
+- After a restart of the Mac the drawers stay closed. Each app comes to the front as it starts, and
+  a window of a drawer's app in front was taken for you asking for it: the drawer opened by itself.
 - A Mac that wakes no longer scatters the desk. Waking, macOS shows the built-in display first and
   the others seconds later, and Fremspace took each step for a change of displays: the drawers came
   out, and windows stayed where macOS had dropped them. It now waits for the displays to hold still;
