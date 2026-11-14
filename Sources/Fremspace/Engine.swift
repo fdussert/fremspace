@@ -141,8 +141,23 @@ final class Engine {
     private var unsupportedPolicyLogged: Set<String> = []
     private var trustTimer: Timer?
     private var screenToken: NSObjectProtocol?
-    /// The displays as they were at the last notice from macOS (see `displaysChange`).
+    /// The displays Fremspace last acted on (see `displaysChange`).
     private var knownDisplays: [DisplayArea] = []
+    /// macOS said the displays changed and they may still be changing (a Mac that wakes shows its
+    /// own display, then the others): until they hold still nothing is placed, routed or taken for
+    /// a move by hand, and no drawer moves (see `displaySettleDelay`).
+    private var displaysSettling = false
+    /// The latest notice of a change of displays: only its wait ends the settling.
+    private var settleRound = 0
+    /// The displays held still behind the lock screen, where no window can be read: what follows
+    /// a change of displays runs at the unlock.
+    private var displaysOwed = false
+    /// The Mac or its displays went to sleep, and when they last woke.
+    private var asleep = false
+    private var lastWake = Date.distantPast
+    private var sleepTokens: [NSObjectProtocol] = []
+    /// For this long after a wake, a change of displays is taken for a step of the wake.
+    private static let wakeTime: TimeInterval = 30
 
     private static func displayAreas() -> [DisplayArea] {
         Displays.connected().map { DisplayArea(identity: $0.identity, frame: $0.frameAX, visible: $0.visibleAX) }
@@ -245,7 +260,10 @@ final class Engine {
             self?.scheduleApply()
         }
         drawers.focusMainLayout = { [weak self] space in self?.focusMainLayout(space) }
-        drawers.isActive = { [weak self] in self?.isRunning ?? false }
+        drawers.isActive = { [weak self] in
+            guard let self else { return false }
+            return self.isRunning && !self.displaysSettling
+        }
         drawers.layoutOf = { [weak self] space in self?.spaceSpec(space)?.layout }
         drawers.raiseMainLayout = { [weak self] space, tabs in
             guard let self else { return }
@@ -482,7 +500,7 @@ final class Engine {
     var activeConfigurationID: UUID? { configuration?.id }
 
     /// Windows may be sent to other desktops now.
-    var mayRoute: Bool { isRunning && !paused && !suspended }
+    var mayRoute: Bool { isRunning && !paused && !suspended && !displaysSettling }
 
     /// The real desktop of a configured desktop, when it is there.
     func realSpace(_ desktop: ConfiguredDesktop) -> SpaceKey? {
@@ -875,31 +893,24 @@ final class Engine {
         screenToken = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            let now = Self.displayAreas()
-            let change = displaysChange(from: self.knownDisplays, to: now)
-            self.knownDisplays = now
-            switch change {
-            case .none:
-                break
-            case .visibleArea:
-                // The Dock or a menu bar took or gave room: the slots have other frames, and the
-                // open drawers too. The closed ones stay parked.
-                Log.engine.notice("the room left by the Dock or the menu bar changed on a display: layouts re-applied")
-                self.resetPlacements()
-                self.scheduleApply()
-                self.drawers.visibleAreaChanged()
-            case .displays:
-                // Every placement may point at a display that is gone, and no drawer member may
-                // stay parked.
-                Log.engine.notice("the displays changed (\(now.count) connected): drawer members back on screen, configuration chosen again")
-                self.drawers.restoreAll()
-                self.resetPlacements()
-                self.chooseConfiguration()
-                self.scheduleApply()
-            }
+            self?.screensChanged()
         }
         knownDisplays = Self.displayAreas()
+        let workspace = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.willSleepNotification, NSWorkspace.screensDidSleepNotification] {
+            sleepTokens.append(workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                self?.asleep = true
+            })
+        }
+        for name in [NSWorkspace.didWakeNotification, NSWorkspace.screensDidWakeNotification] {
+            sleepTokens.append(workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                guard let self else { return }
+                self.asleep = false
+                self.lastWake = Date()
+                // A change of displays seen while asleep was waiting for this.
+                if self.displaysSettling { self.screensChanged() }
+            })
+        }
         // While the session is locked no app shows its windows: what start could not read is read
         // when the owner is back (seen 2026-11-10: a start behind the lock screen sorted 0 windows
         // and forgot who was in the drawers).
@@ -922,6 +933,70 @@ final class Engine {
             waitForTrust(startObserver: true)
         }
         refreshStatus()
+    }
+
+    /// macOS says the screens changed (or the Mac woke while they were changing).
+    private func screensChanged() {
+        let now = Self.displayAreas()
+        if !displaysSettling {
+            switch displaysChange(from: knownDisplays, to: now) {
+            case .none:
+                return
+            case .visibleArea:
+                // The Dock or a menu bar took or gave room: the slots have other frames, and the
+                // open drawers too. The closed ones stay parked.
+                knownDisplays = now
+                Log.engine.notice("the room left by the Dock or the menu bar changed on a display: layouts re-applied")
+                resetPlacements()
+                scheduleApply()
+                drawers.visibleAreaChanged()
+                return
+            case .displays:
+                displaysSettling = true
+            }
+        }
+        let waking = asleep || Date().timeIntervalSince(lastWake) < Self.wakeTime
+        let delay = displaySettleDelay(before: knownDisplays, now: now, waking: waking)
+        Log.engine.notice("the displays are changing (\(now.count) connected\(waking ? ", the Mac is waking" : "", privacy: .public)): nothing moves until they hold still for \(delay, format: .fixed(precision: 1)) s")
+        settleRound += 1
+        let round = settleRound
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, round == self.settleRound else { return }
+            self.displaysHeldStill()
+        }
+    }
+
+    /// The displays stopped changing. The same ones as before (the Mac woke up, a display blinked):
+    /// macOS moved windows about while some were away, so the drawers go back as they were and
+    /// every window is sorted again (owner, 2026-11-14: after a wake the drawers were out and
+    /// browser windows sat on another display until ⌃⌥⌘R). Other displays: another desk.
+    private func displaysHeldStill() {
+        // Asleep the displays may come and go, and behind the lock screen no window can be read:
+        // the wake and the unlock come back here.
+        guard !asleep, !Self.sessionIsLocked else {
+            displaysOwed = true
+            return
+        }
+        displaysOwed = false
+        displaysSettling = false
+        let now = Self.displayAreas()
+        let returned = displaysChange(from: knownDisplays, to: now) != .displays
+        knownDisplays = now
+        if returned {
+            Log.engine.notice("the displays are back as they were (\(now.count) connected): drawers put back, windows sorted again")
+        } else {
+            // Every placement may point at a display that is gone, and no drawer member may
+            // stay parked.
+            Log.engine.notice("the displays changed (\(now.count) connected): drawer members back on screen, configuration chosen again")
+            drawers.restoreAll()
+        }
+        resetPlacements()
+        chooseConfiguration()
+        if returned { drawers.displaysReturned() }
+        // macOS put the windows where they are: none of them was moved by hand.
+        router.reset()
+        scheduleApply()
+        router.sortAll(reason: .reapply)
     }
 
     /// A drawer window that could not be read at start (its app was busy, the Mac loaded, its
@@ -960,6 +1035,7 @@ final class Engine {
         } else if waiting {
             scheduleApply()
         }
+        if displaysOwed { displaysHeldStill() }
     }
 
     /// Polls until Accessibility is granted (again), then resumes. `startObserver`: first grant at
@@ -1436,10 +1512,19 @@ final class Engine {
 
     private func handle(_ event: WindowEvent) {
         // Should the unlock notice not come: the first window event after the lock screen does it.
-        if startedLocked || drawers.hasWaitingMembers, Date().timeIntervalSince(lastUnlockTry) > 10, !Self.sessionIsLocked {
+        if startedLocked || drawers.hasWaitingMembers || displaysOwed, Date().timeIntervalSince(lastUnlockTry) > 10, !Self.sessionIsLocked {
             sessionUnlocked()
         }
         scheduleGlyph()
+        // While the displays change, macOS moves windows and desktops about: none of it is the
+        // owner's doing, and what it leaves is put right once they hold still. Windows that go are
+        // still forgotten.
+        if displaysSettling {
+            switch event {
+            case .destroyed, .appTerminated: break
+            default: return
+            }
+        }
         switch event {
         case .spaceChanged:
             refreshDesktopMap()
@@ -1534,7 +1619,7 @@ final class Engine {
     /// `force`: also put back windows of unlocked slots, which are otherwise placed only once and
     /// then left where the user puts them. `only`: limit the pass to one Space (Focus toggles).
     private func apply(force: Bool, only: SpaceKey? = nil) {
-        guard !suspended else { return }
+        guard !suspended, !displaysSettling else { return }
         guard AXIsProcessTrusted() else {
             // Revoked while running: say so (the menu showed "Running") and resume when granted.
             refreshStatus()

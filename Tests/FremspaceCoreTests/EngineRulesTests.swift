@@ -28,6 +28,27 @@ final class EngineRulesTests: XCTestCase {
         XCTAssertEqual(displaysChange(from: before, to: [area(laptop, x: 0, dock: 60), area(right, x: 1000)]), .displays)
     }
 
+    func testAWakingMacIsGivenTimeToShowAllItsDisplays() {
+        func area(_ identity: DisplayIdentity, x: CGFloat, dock: CGFloat = 0) -> DisplayArea {
+            DisplayArea(identity: identity, frame: CGRect(x: x, y: 0, width: 1000, height: 800),
+                        visible: CGRect(x: x, y: 30, width: 1000, height: 770 - dock))
+        }
+        let desk = [area(laptop, x: 0), area(left, x: 1000), area(right, x: 2000)]
+        // Waking, the laptop's display comes first: the others may follow, seconds later.
+        let alone = displaySettleDelay(before: desk, now: [area(laptop, x: 0)], waking: true)
+        XCTAssertEqual(alone, 8)
+        // The displays are back as they were: only the time macOS takes to hand the windows back.
+        let back = displaySettleDelay(before: desk, now: desk, waking: true)
+        XCTAssertEqual(back, 1.5)
+        // The same displays with the Dock elsewhere are the same displays.
+        let dock = displaySettleDelay(before: desk, now: [area(laptop, x: 0, dock: 60), area(left, x: 1000), area(right, x: 2000)],
+                                      waking: true)
+        XCTAssertEqual(dock, 1.5)
+        // A display unplugged while the Mac is awake: no steps to wait for.
+        let unplugged = displaySettleDelay(before: desk, now: [area(laptop, x: 0), area(left, x: 1000)], waking: false)
+        XCTAssertEqual(unplugged, 2)
+    }
+
     func testPicksConfigurationWithMostMatchingDisplays() {
         let config = Config(configurations: [configuration("Train", [laptop]),
                                              configuration("Desk", [laptop, left, right])])

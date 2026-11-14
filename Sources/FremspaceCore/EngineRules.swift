@@ -50,6 +50,18 @@ public func displaysChange(from old: [DisplayArea], to new: [DisplayArea]) -> Di
     return old.allSatisfy(new.contains) ? .none : .visibleArea
 }
 
+/// How long the displays must stay as they are before Fremspace acts on a change of displays.
+/// A Mac that wakes says so in steps: its own display alone, then the others, seconds apart
+/// (owner, 2026-11-14: one display, and the four of them 4.3 s later; acting on each step brought
+/// the drawers out and left the windows where macOS had dropped them). `before` is what Fremspace
+/// last acted on, `now` what macOS says, `waking` whether the Mac or its displays slept since.
+/// Displays that are back as they were need no more waiting than macOS takes to hand the windows
+/// back; other displays may be a step on the way, and a waking Mac takes longer between steps.
+public func displaySettleDelay(before: [DisplayArea], now: [DisplayArea], waking: Bool) -> TimeInterval {
+    if displaysChange(from: before, to: now) != .displays { return 1.5 }
+    return waking ? 8 : 2
+}
+
 /// The slot whose frame centre is closest to the centre of `frame`: where the user dropped a window.
 public func nearestSlot(to frame: CGRect, among frames: [String: CGRect]) -> String? {
     func distance(_ r: CGRect) -> CGFloat {

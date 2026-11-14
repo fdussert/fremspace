@@ -526,6 +526,20 @@ final class DrawerController {
         retryBringBack(after: [1, 3, 10, 30], round: bringBackRound)
     }
 
+    /// The displays are back as they were (the Mac woke up): macOS may have moved the members while
+    /// some displays were away. Each goes back where its drawer is: parked when it is closed, at its
+    /// slot when it is open. Nothing opens or closes.
+    func displaysReturned() {
+        guard isActive() else { return }
+        for display in Set(state.allMembers.compactMap { state.display(of: $0) }) {
+            let open = state.openEdges(display)
+            let closed = Set(drawerSpecs(display).map(\.edge.rawValue)).subtracting(open)
+                .filter { !state.stacks(display, edge: $0).isEmpty }
+            if !closed.isEmpty { close(display, edges: closed) }
+            if !open.isEmpty { place(display) }
+        }
+    }
+
     /// The Dock or a menu bar took or gave room on a display: the open drawers are placed again in
     /// the room there is now. The closed ones stay parked.
     func visibleAreaChanged() {

@@ -9,6 +9,12 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- A Mac that wakes no longer scatters the desk. Waking, macOS shows the built-in display first and
+  the others seconds later, and Fremspace took each step for a change of displays: the drawers came
+  out, and windows stayed where macOS had dropped them. It now waits for the displays to hold still;
+  when they are the same as before, the drawers stay as they were and every window is sent back to
+  its desktop and slot, as ⌃⌥⌘R does. After a real change of displays the windows are sorted too.
+
 ## 0.1.2
 
 - A desktop taken out of the configuration can be removed from the Mac too. The editor says, under
