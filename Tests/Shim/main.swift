@@ -90,6 +90,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
     ]),
     ("WindowIdentityTests", { WindowIdentityTests() }, [
         ("testProfileFromBraveTitle", { ($0 as! WindowIdentityTests).testProfileFromBraveTitle() }),
+        ("testProfileFromATitleInAnotherLanguageOrChannel", { ($0 as! WindowIdentityTests).testProfileFromATitleInAnotherLanguageOrChannel() }),
+        ("testTabTitleNoiseIsRemovedInFrench", { ($0 as! WindowIdentityTests).testTabTitleNoiseIsRemovedInFrench() }),
         ("testTabTitleNoiseIsRemoved", { ($0 as! WindowIdentityTests).testTabTitleNoiseIsRemoved() }),
         ("testAWindowIsRecognisedWhateverItsTabsSleep", { ($0 as! WindowIdentityTests).testAWindowIsRecognisedWhateverItsTabsSleep() }),
         ("testSameProfileWindowsKeepTheirPlaceAfterRelaunch", { ($0 as! WindowIdentityTests).testSameProfileWindowsKeepTheirPlaceAfterRelaunch() }),

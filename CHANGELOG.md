@@ -9,6 +9,12 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- Browser profiles are read whatever the browser's language. Fremspace took the profile from a
+  window title written the English way, "Page - Brave – Work"; a French Brave writes "Page – Brave
+  – Work", and none of its profiles was seen. A profile whose name holds a dash ("Client - Work")
+  is read whole. The Beta, Dev, Nightly and Canary versions of Brave, Chrome and Edge are known
+  too, and the tab suffixes of a French browser ("Onglet inactif", "Utilisation de la mémoire") are
+  removed like the English ones.
 - You choose which configuration applies. When several fit the connected displays, Fremspace took
   the one that arranges the most of them, with no way to say otherwise: a copy made to try one
   more display took over, and going back meant deleting it. "Use on these displays" is now in a

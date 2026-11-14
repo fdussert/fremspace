@@ -19,6 +19,42 @@ final class WindowIdentityTests: XCTestCase {
         XCTAssertNil(browserProfile(fromTitle: "Documents – Perso", bundleID: "com.apple.finder"))
     }
 
+    func testProfileFromATitleInAnotherLanguageOrChannel() {
+        let chrome = "com.google.Chrome"
+        // French Brave puts an en dash before its name; French Chrome keeps the hyphen.
+        XCTAssertEqual(browserProfile(fromTitle: "Réglages du compte – Brave – Perso", bundleID: brave), "Perso")
+        XCTAssertEqual(browserProfile(fromTitle: "Boîte de réception - Google Chrome – Travail", bundleID: chrome), "Travail")
+        XCTAssertNil(browserProfile(fromTitle: "Réglages du compte – Brave", bundleID: brave))
+        XCTAssertNil(browserProfile(fromTitle: "Boîte de réception - Google Chrome", bundleID: chrome))
+        // Whatever dash stands before the profile.
+        XCTAssertEqual(browserProfile(fromTitle: "Inbox - Google Chrome - Work", bundleID: chrome), "Work")
+        // The channels have their own names and their own apps.
+        XCTAssertEqual(browserProfile(fromTitle: "Docs - Brave Beta – Work", bundleID: "com.brave.Browser.beta"), "Work")
+        XCTAssertEqual(browserProfile(fromTitle: "Docs \u{2011} Brave Nightly – Work", bundleID: "com.brave.Browser.nightly"), "Work")
+        XCTAssertEqual(browserProfile(fromTitle: "Docs - Google Chrome Canary – Work", bundleID: "com.google.Chrome.canary"), "Work")
+        // A page named after the browser is not a profile: the title ends with the browser's name.
+        XCTAssertNil(browserProfile(fromTitle: "Review - Brave - Brave", bundleID: brave))
+        XCTAssertNil(browserProfile(fromTitle: "Accueil – Brave – Wikipédia – Brave", bundleID: brave))
+        XCTAssertEqual(browserProfile(fromTitle: "Review - Brave - Brave – Work", bundleID: brave), "Work")
+        // A profile's own name may hold a dash.
+        XCTAssertEqual(browserProfile(fromTitle: "Inbox - Google Chrome – Client - Work", bundleID: chrome), "Client - Work")
+        XCTAssertEqual(browserProfile(fromTitle: "Download - Brave - Fast - Brave – Client - Work", bundleID: brave), "Client - Work")
+        XCTAssertNil(browserProfile(fromTitle: "Download - Brave - Fast - Brave", bundleID: brave))
+        // The browser's name inside a word, or without a dash after it, starts no profile.
+        XCTAssertNil(browserProfile(fromTitle: "Inbox - Google Chrome (Incognito)", bundleID: chrome))
+        XCTAssertNil(browserProfile(fromTitle: "Bravest - Hearts", bundleID: brave))
+        // A profile is a name, not the browser's.
+        XCTAssertEqual(browserProfile(fromTitle: "Brave – Work", bundleID: brave), "Work")
+        XCTAssertNil(browserProfile(fromTitle: "Work - Brave", bundleID: brave))
+    }
+
+    func testTabTitleNoiseIsRemovedInFrench() {
+        XCTAssertEqual(normalizedTabTitle("Boîte de réception - Onglet inactif - 123\u{00a0}Mo libérés"), "Boîte de réception")
+        XCTAssertEqual(normalizedTabTitle("Boîte de réception - Utilisation de la mémoire - 169 Mo"), "Boîte de réception")
+        XCTAssertEqual(normalizedTabTitle("Boîte de réception - Onglet inactif"), "Boîte de réception")
+        XCTAssertEqual(normalizedTabTitle("Docs - High memory usage - 1.2 GB"), "Docs")
+    }
+
     func testTabTitleNoiseIsRemoved() {
         XCTAssertEqual(normalizedTabTitle("App Store Connect - Memory usage - 169 MB"), "App Store Connect")
         XCTAssertEqual(normalizedTabTitle("App Store Connect - Inactive tab - 61.9 MB"), "App Store Connect")

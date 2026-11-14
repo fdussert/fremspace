@@ -45,8 +45,10 @@ public struct WindowInfo: Equatable {
 /// Chromium browsers: their normal windows have a tab strip (`AXTabGroup`), their popups do not.
 /// Only these apps are checked; other apps may have no tab strip in normal windows.
 public func isTabbedBrowser(_ bundleID: String) -> Bool {
-    ["com.brave.Browser", "com.brave.Browser.beta", "com.google.Chrome", "com.google.Chrome.canary",
-     "com.microsoft.edgemac", "org.chromium.Chromium", "com.vivaldi.Vivaldi", "company.thebrowser.Browser"]
+    ["com.brave.Browser", "com.brave.Browser.beta", "com.brave.Browser.dev", "com.brave.Browser.nightly",
+     "com.google.Chrome", "com.google.Chrome.beta", "com.google.Chrome.dev", "com.google.Chrome.canary",
+     "com.microsoft.edgemac", "com.microsoft.edgemac.Beta", "com.microsoft.edgemac.Dev", "com.microsoft.edgemac.Canary",
+     "org.chromium.Chromium", "com.vivaldi.Vivaldi", "company.thebrowser.Browser"]
         .contains(bundleID)
 }
 

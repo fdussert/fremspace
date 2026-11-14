@@ -2,22 +2,62 @@ import CoreGraphics
 import Foundation
 
 /// Window titles of Chromium browsers end with the browser's name, then the profile when there are
-/// several: "<page> - Brave – Work" (en dash before the profile).
-private let browserNames = ["Brave", "Google Chrome", "Microsoft Edge", "Chromium", "Vivaldi", "Arc"]
+/// several: "<page> - Brave – Work". The dashes are the translators': English writes a hyphen
+/// before the name and an en dash before the profile, French an en dash before "Brave" and a
+/// hyphen before "Google Chrome", Spanish a non-breaking hyphen before "Brave Beta" (read in the
+/// browsers' own strings, 2026-11-14, after a French Brave showed no profile at all).
+private let browserNames = ["Brave", "Brave Beta", "Brave Dev", "Brave Nightly",
+                            "Google Chrome", "Google Chrome Beta", "Google Chrome Dev", "Google Chrome Canary",
+                            "Microsoft Edge", "Microsoft Edge Beta", "Microsoft Edge Dev", "Microsoft Edge Canary",
+                            "Chromium", "Vivaldi", "Arc"]
 
-/// The browser profile in a tabbed browser's window title, nil when the title names none.
+/// Hyphen, en dash, em dash, non-breaking hyphen: what stands between the parts of a title.
+private let titleDashes: Set<Character> = ["-", "\u{2013}", "\u{2014}", "\u{2011}"]
+
+/// Whether `text` ends with " <dash> ", and the text before it.
+private func droppingDash(atEndOf text: Substring) -> Substring? {
+    let characters = Array(text.suffix(3))
+    guard characters.count == 3, characters[0].isWhitespace, titleDashes.contains(characters[1]), characters[2].isWhitespace
+    else { return nil }
+    return text.dropLast(3)
+}
+
+/// The browser profile in a tabbed browser's window title, nil when the title names none: what
+/// follows the browser's name and a dash, from the last place where that name stands as a part of
+/// the title. A profile's own name may hold a dash ("Work - Client"). A title that ends with the
+/// browser's name has no profile, whatever its page is called.
 public func browserProfile(fromTitle title: String, bundleID: String) -> String? {
-    guard isTabbedBrowser(bundleID), let separator = title.range(of: " – ", options: .backwards) else { return nil }
-    let head = title[..<separator.lowerBound]
-    let profile = title[separator.upperBound...].trimmingCharacters(in: .whitespaces)
-    guard !profile.isEmpty, !profile.contains(" - "),
-          browserNames.contains(where: { head == $0 || head.hasSuffix(" - " + $0) }) else { return nil }
+    guard isTabbedBrowser(bundleID) else { return nil }
+    // The longest names first: "Brave Beta" is not "Brave" followed by something.
+    let names = browserNames.sorted { $0.count > $1.count }
+    let whole = title.trimmingCharacters(in: .whitespaces)
+    if names.contains(where: { whole == $0 || (whole.hasSuffix($0) && droppingDash(atEndOf: whole.dropLast($0.count)) != nil) }) {
+        return nil
+    }
+    var best: (start: String.Index, profile: Substring)?
+    for name in names {
+        var search = whole.startIndex..<whole.endIndex
+        while let found = whole.range(of: name, options: .backwards, range: search) {
+            search = whole.startIndex..<found.lowerBound
+            // A part of the title: at its start or after a dash, and followed by a dash.
+            let before = whole[..<found.lowerBound]
+            guard before.isEmpty || droppingDash(atEndOf: before) != nil else { continue }
+            let after = whole[found.upperBound...]
+            let lead = Array(after.prefix(3))
+            guard lead.count == 3, lead[0].isWhitespace, titleDashes.contains(lead[1]), lead[2].isWhitespace else { continue }
+            if best.map({ found.lowerBound > $0.start }) ?? true { best = (found.lowerBound, after.dropFirst(3)) }
+            break
+        }
+    }
+    guard let profile = best?.profile.trimmingCharacters(in: .whitespaces), !profile.isEmpty else { return nil }
     return profile
 }
 
 private let tabNoise = try! NSRegularExpression(
-    pattern: #"(\s-\s(Memory usage|Inactive tab|Audio playing|Network error)(\s-\s[\d.,]+\s?[KMGT]?B(\s\p{L}+)*)?)+$"#)
+    pattern: #"(\s[-\u2013]\s(Memory usage|High memory usage|Inactive tab|Audio playing|Audio muted|Network error|Utilisation de la mémoire|Utilisation élevée de la mémoire|Onglet inactif)(\s[-\u2013]\s[\d.,]+\s?[KMGT]?[Bo](\s\p{L}+)*)?)+$"#)
 
+/// In English and in French, as the browsers' strings have them; a browser in another language
+/// keeps these suffixes, and its windows are recognised less well after a restart of the Mac.
 /// A tab title without what Brave appends to it (memory use, "Inactive tab"). A size may be
 /// followed by a word: a tab put to sleep reads "Inactive tab - 123 MB freed", which was left on
 /// (owner, 2026-11-14: after a restart of the Mac no tab is asleep yet, 18 of a window's 47 tabs
