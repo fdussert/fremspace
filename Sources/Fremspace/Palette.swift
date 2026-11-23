@@ -19,6 +19,8 @@ struct PaletteRow: Identifiable {
     /// On the right: a command's shortcut, or what the row is when its icon does not say.
     var tag: String
     var action: PaletteAction
+    /// Pinned by the owner: it heads the list when nothing is typed.
+    var pinned = false
     var id: String { item.id }
 }
 
@@ -63,6 +65,9 @@ final class PaletteModel: ObservableObject {
     @Published var showsPreviews = false
     /// The arrow keys move on the map (the chosen desktop) and no longer in the list.
     @Published var inMap = false
+    /// Counts the times the palette was opened: the map's carousels come back to the desktop
+    /// shown, wherever a swipe left them the time before.
+    @Published var openings = 0
 
     var onQuery: () -> Void = {}
     var onMove: (Int) -> Void = { _ in }
@@ -108,7 +113,19 @@ final class PaletteModel: ObservableObject {
 }
 
 private final class PalettePanel: NSPanel {
+    /// ⌘P: pins the selected row, or unpins it.
+    var onPin: () -> Void = {}
+
     override var canBecomeKey: Bool { true }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.type == .keyDown, event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+           event.charactersIgnoringModifiers?.lowercased() == "p" {
+            onPin()
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
 }
 
 /// The palette: one field that finds an open window on any desktop, an app to launch, a desktop by
@@ -199,6 +216,7 @@ final class Palette: NSObject, NSWindowDelegate {
         model.desktop = nil
         model.inMap = false
         model.showsPreviews = WindowPreviews.shared.check()
+        model.openings += 1
         catalog.refresh()
         refreshSources()
         rebuild(keepSelection: false)
@@ -230,6 +248,7 @@ final class Palette: NSObject, NSWindowDelegate {
         panel.collectionBehavior = [.canJoinAllSpaces, .transient, .ignoresCycle, .fullScreenAuxiliary]
         panel.delegate = self
         panel.contentView = PaletteHost.view(model)
+        panel.onPin = { [weak self] in self?.togglePin() }
         return panel
     }
 
@@ -262,11 +281,30 @@ final class Palette: NSObject, NSWindowDelegate {
             items = items.filter { there.contains($0.id) }
         }
         let byID = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        model.rows = paletteResults(model.query, items: items, uses: engine.paletteUses).compactMap { byID[$0.id] }.map(withIcon)
+        let pins = engine.palettePins
+        model.rows = paletteResults(model.query, items: items, uses: engine.paletteUses, pins: pins).compactMap { byID[$0.id] }.map { row in
+            var row = withIcon(row)
+            row.pinned = pins.contains(row.id)
+            return row
+        }
         // Without a query the first window is the one in front: the one before it is what the owner
-        // most likely wants back.
-        model.selected = model.query.isEmpty && model.desktop == nil && model.rows.count > 1 ? 1 : 0
+        // most likely wants back. The pinned rows stand above both.
+        model.selected = model.query.isEmpty && model.desktop == nil ? paletteFirstChoice(model.rows.map(\.item)) : 0
         resize()
+    }
+
+    /// ⌘P: the selected row is pinned at the head of the list shown when nothing is typed, or
+    /// taken off it. A window cannot be (its row does not outlive it), nor one row too many.
+    private func togglePin() {
+        guard !model.inMap, model.rows.indices.contains(model.selected) else { return NSSound.beep() }
+        let row = model.rows[model.selected]
+        guard let pins = palettePins(engine.palettePins, toggling: row.item) else { return NSSound.beep() }
+        engine.setPalettePins(pins)
+        filter()
+        // The row stays the chosen one where it is still listed (with nothing typed, a row that
+        // was just unpinned leaves the list).
+        if let index = model.rows.firstIndex(where: { $0.id == row.id }) { model.selected = index }
+        Log.app.info("palette: \(pins.count) rows pinned")
     }
 
     private func move(_ step: Int) {

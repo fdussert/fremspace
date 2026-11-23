@@ -115,4 +115,14 @@ final class PreviewsTests: XCTestCase {
         XCTAssertEqual(slotFront([minimised]), minimised)
         XCTAssertNil(slotFront([]))
     }
+
+    func testASliceOfAWindowIsNotItsPicture() {
+        let window = CGSize(width: 1781, height: 533)
+        // Scaled down, with a point lost to rounding: the window's picture.
+        XCTAssertTrue(pictureFitsWindow(picture: CGSize(width: 600, height: 180), window: window))
+        // What the window server gives of a window parked off the side of its display.
+        XCTAssertFalse(pictureFitsWindow(picture: CGSize(width: 50, height: 533), window: window))
+        XCTAssertFalse(pictureFitsWindow(picture: CGSize(width: 1781, height: 200), window: window))
+        XCTAssertFalse(pictureFitsWindow(picture: .zero, window: window))
+    }
 }

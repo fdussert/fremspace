@@ -42,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The settings of the notch and of the previews are in the config file too.
         notch.refresh()
         WindowPreviews.shared.set(enabled: engine.windowPreviews)
+        WindowPreviews.shared.isParked = { [weak self] id in self?.engine.drawers.isParked(id) ?? false }
     }
 
     /// The Hyper key follows the general setting, and runs the commands whose shortcut is ⌃⌥⌘ + key.

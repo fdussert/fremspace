@@ -57,6 +57,9 @@ final class WindowPreviews: ObservableObject {
     private var askedThisLaunch = false
 
     /// Reads the permission again (it can be given while Fremspace runs). True when pictures are on.
+    /// Whether a window is parked in a closed drawer (set by the app: the drawers know).
+    var isParked: (UInt32) -> Bool = { _ in false }
+
     @discardableResult
     func check() -> Bool {
         let on = enabled && Self.allowed
@@ -93,7 +96,9 @@ final class WindowPreviews: ObservableObject {
         // Behind the lock screen every window is the lock screen.
         guard isOn, !Engine.sessionIsLocked else { return }
         let now = Date()
-        let due = ledger.due(ids, now: now).filter { !pending.contains($0) }
+        // A window parked in a closed drawer keeps the picture taken while its drawer was open:
+        // off screen, the window server gives a slice of it.
+        let due = ledger.due(ids.filter { !isParked($0) }, now: now).filter { !pending.contains($0) }
         guard !due.isEmpty else { return }
         pending.formUnion(due)
         queue.async { [weak self] in
@@ -149,7 +154,20 @@ final class WindowPreviews: ObservableObject {
         var window = id
         guard let list = captureFunction(connection, &window, 1, captureOptions)?.takeRetainedValue() as? [CGImage],
               let image = list.first, image.width > 1, image.height > 1 else { return nil }
+        // A slice of the window (it lies partly off screen) is no picture of it: the other way
+        // of taking one is tried, and without one the row shows its icon.
+        if let size = windowSize(id), !pictureFitsWindow(picture: CGSize(width: image.width, height: image.height), window: size) {
+            return nil
+        }
         return scaled(image)
+    }
+
+    /// The size the window server gives for a window.
+    private static func windowSize(_ id: UInt32) -> CGSize? {
+        guard let info = (CGWindowListCopyWindowInfo([.optionIncludingWindow], id) as? [[String: Any]])?.first,
+              let bounds = (info[kCGWindowBounds as String] as? NSDictionary).flatMap({ CGRect(dictionaryRepresentation: $0) })
+        else { return nil }
+        return bounds.size
     }
 
     private static func scaled(_ image: CGImage) -> NSImage? {

@@ -21,6 +21,9 @@ public struct FremspaceState: Codable, Equatable {
     /// How often each thing was opened from the palette (by `PaletteItem.useKey`): what the owner
     /// opens most comes first.
     public var paletteUses: [String: Int]
+    /// The rows the owner pinned in the palette (by `PaletteItem.id`), in the order they were
+    /// pinned: they head the list when nothing is typed.
+    public var palettePins: [String]
     /// The pairs of windows side by side in a slot, so that a restart of Fremspace does not stack
     /// them again (owner, 2026-11-12).
     public var splits: [SavedSplit]
@@ -33,7 +36,7 @@ public struct FremspaceState: Codable, Equatable {
     public init(desktopLinks: DesktopLinks = DesktopLinks(), remembered: Remembered = Remembered(),
                 focused: [FocusedSlot] = [], drawerMembers: [SavedDrawerMember] = [],
                 takenOutOfDrawers: [SavedWindow] = [], paletteUses: [String: Int] = [:], splits: [SavedSplit] = [],
-                hyperMapping: HyperMapping? = nil, chosenConfigurations: [String: UUID] = [:]) {
+                hyperMapping: HyperMapping? = nil, chosenConfigurations: [String: UUID] = [:], palettePins: [String] = []) {
         self.desktopLinks = desktopLinks
         self.remembered = remembered
         self.focused = focused
@@ -43,11 +46,12 @@ public struct FremspaceState: Codable, Equatable {
         self.splits = splits
         self.hyperMapping = hyperMapping
         self.chosenConfigurations = chosenConfigurations
+        self.palettePins = palettePins
     }
 
     private enum CodingKeys: String, CodingKey {
         case version, desktopLinks, remembered, focused, drawerMembers, takenOutOfDrawers, paletteUses, splits, hyperMapping
-        case chosenConfigurations
+        case chosenConfigurations, palettePins
     }
 
     /// Each part is read on its own, and each list entry by entry: one entry with a key missing
@@ -64,6 +68,7 @@ public struct FremspaceState: Codable, Equatable {
         splits = c.readable([SavedSplit].self, forKey: .splits)
         hyperMapping = (try? c.decodeIfPresent(HyperMapping.self, forKey: .hyperMapping)).flatMap { $0 }
         chosenConfigurations = (try? c.decodeIfPresent([String: UUID].self, forKey: .chosenConfigurations)).flatMap { $0 } ?? [:]
+        palettePins = (try? c.decodeIfPresent([String].self, forKey: .palettePins)).flatMap { $0 } ?? []
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -78,6 +83,7 @@ public struct FremspaceState: Codable, Equatable {
         try c.encode(splits, forKey: .splits)
         try c.encodeIfPresent(hyperMapping, forKey: .hyperMapping)
         if !chosenConfigurations.isEmpty { try c.encode(chosenConfigurations, forKey: .chosenConfigurations) }
+        if !palettePins.isEmpty { try c.encode(palettePins, forKey: .palettePins) }
     }
 }
 

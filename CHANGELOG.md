@@ -9,6 +9,15 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- Pinned rows in the palette: ⌘P pins the selected row (an app, a desktop, a scene, a command or
+  a row of one of your sources), and ⌘P again takes it off. Pinned rows head the list when nothing
+  is typed, above the windows; Return still goes back to the window you had before.
+- With many desktops on a display, the palette's map of that display is a carousel: the desktop
+  the keyboard is on stands in the middle and the others lean away on both sides; a swipe or the
+  arrow keys turn it. Before, the row outgrew the panel and was cut on both sides.
+- With one display, the map no longer names it.
+- A window in a closed drawer keeps the picture taken while its drawer was open. Parked off the
+  side of the display, it was pictured as a sliver of itself.
 ## 0.1.4
 
 - Palette sources: the palette can list rows that come from your own scripts, next to the

@@ -95,13 +95,37 @@ public func paletteScore(_ query: String, item: PaletteItem) -> Int? {
     return total / words.count
 }
 
+/// How many rows can be pinned: they stand above the windows, and the window the owner had before
+/// has to stay in sight under them.
+public let palettePinLimit = 8
+
+/// The pins after the owner pinned or unpinned `item`: taken out when it was pinned, added at the
+/// end otherwise. nil when it cannot be pinned: a window (its id does not outlive it), or one pin
+/// too many.
+public func palettePins(_ pins: [String], toggling item: PaletteItem) -> [String]? {
+    if pins.contains(item.id) { return pins.filter { $0 != item.id } }
+    guard item.kind != .window, pins.count < palettePinLimit else { return nil }
+    return pins + [item.id]
+}
+
+/// The row chosen when the palette opens with nothing typed: the second window, the one the owner
+/// had before the one in front (open, Return: back to it), under the pinned rows; the only
+/// window when there is one; else the first row.
+public func paletteFirstChoice(_ rows: [PaletteItem]) -> Int {
+    guard let first = rows.firstIndex(where: { $0.kind == .window }) else { return 0 }
+    return rows.indices.contains(first + 1) && rows[first + 1].kind == .window ? first + 1 : first
+}
+
 /// The rows for `query`, best first. `items` come in the order to show without a query (windows,
-/// the most recent first); without a query only the windows are listed. Among equal matches the item
+/// the most recent first); without a query only the pinned rows (`pins`, in their order, those
+/// that are there now) and then the windows are listed. Among equal matches the item
 /// opened most often wins (`uses`, by `useKey`), then a window over a row of a source, an app, a
 /// desktop and a command, then the order given.
-public func paletteResults(_ query: String, items: [PaletteItem], uses: [String: Int] = [:], limit: Int = 30) -> [PaletteItem] {
+public func paletteResults(_ query: String, items: [PaletteItem], uses: [String: Int] = [:], pins: [String] = [],
+                           limit: Int = 30) -> [PaletteItem] {
     guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
-        return Array(items.filter { $0.kind == .window }.prefix(limit))
+        let pinned = pins.compactMap { id in items.first { $0.id == id && $0.kind != .window } }
+        return Array((pinned + items.filter { $0.kind == .window }).prefix(limit))
     }
     var scored: [(item: PaletteItem, score: Int, order: Int)] = []
     for (order, item) in items.enumerated() {

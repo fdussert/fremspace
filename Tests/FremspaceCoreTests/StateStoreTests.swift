@@ -42,6 +42,16 @@ final class StateStoreTests: XCTestCase {
         XCTAssertEqual(odd.paletteUses, ["app": 3])
     }
 
+    func testThePinnedRowsAreKeptAndOlderStatesHaveNone() throws {
+        let store = StateStore(url: try temporaryURL())
+        var state = FremspaceState()
+        state.palettePins = ["x:agents:12", "a:notes"]
+        try store.save(state)
+        XCTAssertEqual(store.load().palettePins, ["x:agents:12", "a:notes"])
+        let older = try JSONDecoder().decode(FremspaceState.self, from: Data(#"{"paletteUses":{"app":3}}"#.utf8))
+        XCTAssertTrue(older.palettePins.isEmpty)
+    }
+
     func testCorruptFileLoadsEmptyAndIsKept() throws {
         let url = try temporaryURL()
         try Data("{ nope".utf8).write(to: url)

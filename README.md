@@ -25,7 +25,8 @@ in their slot, stay there, and are all back where they were after a restart.
   that matches the connected displays is applied. A travel version turns the slots of the big
   displays into desktops of the laptop. Displays take the name you give them ("Main", "Right").
 - **A palette** (⌃⌥⌘K) that finds an open window on any desktop, an app, a desktop, a scene or a
-  command, over a map of every desktop that the arrow keys go through. With **palette sources**
+  command, over a map of every desktop that the arrow keys go through. ⌘P pins a row at the head
+  of the list. With **palette sources**
   switched on it also lists what your own scripts list: agent sessions, terminal tabs, anything
   with a name. A few ready-made ones are added with a button on the General page
   ([how to write your own](extras/palette-sources/README.md)).

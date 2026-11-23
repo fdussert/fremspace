@@ -123,6 +123,12 @@ final class DrawerController {
         members[id] != nil
     }
 
+    /// Whether a window sits in a closed drawer: off the side of its display, where no picture of
+    /// it can be taken.
+    func isParked(_ id: UInt32) -> Bool {
+        members[id] != nil && !state.isShown(id)
+    }
+
     // MARK: - Across a restart
 
     /// Who is in which drawer and which windows were taken out, to keep across a restart.

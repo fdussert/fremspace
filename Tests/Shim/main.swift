@@ -71,6 +71,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testOldStateWithoutRememberedLoads", { try ($0 as! StateStoreTests).testOldStateWithoutRememberedLoads() }),
         ("testRoundTripAndMissingFile", { try ($0 as! StateStoreTests).testRoundTripAndMissingFile() }),
         ("testTheChosenConfigurationIsKeptAndOlderStatesHaveNone", { try ($0 as! StateStoreTests).testTheChosenConfigurationIsKeptAndOlderStatesHaveNone() }),
+        ("testThePinnedRowsAreKeptAndOlderStatesHaveNone", { try ($0 as! StateStoreTests).testThePinnedRowsAreKeptAndOlderStatesHaveNone() }),
         ("testCorruptFileLoadsEmptyAndIsKept", { try ($0 as! StateStoreTests).testCorruptFileLoadsEmptyAndIsKept() }),
         ("testAnEntryThatCannotBeReadDoesNotLoseTheRest", { try ($0 as! StateStoreTests).testAnEntryThatCannotBeReadDoesNotLoseTheRest() }),
         ("testTheFileSaysItsVersionAndALaterOneIsKeptBeforeItIsRewritten", { try ($0 as! StateStoreTests).testTheFileSaysItsVersionAndALaterOneIsKeptBeforeItIsRewritten() }),
@@ -184,6 +185,8 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testASourceRunsWithTheUsualPlacesOfTools", { ($0 as! PaletteSourcesTests).testASourceRunsWithTheUsualPlacesOfTools() }),
     ]),
     ("PaletteTests", { PaletteTests() }, [
+        ("testPinnedRowsHeadTheListWhenNothingIsTyped", { ($0 as! PaletteTests).testPinnedRowsHeadTheListWhenNothingIsTyped() }),
+        ("testARowIsPinnedAndUnpinnedButNotAWindow", { ($0 as! PaletteTests).testARowIsPinnedAndUnpinnedButNotAWindow() }),
         ("testAWordMatchesBestAtTheStartThenAWordThenInitialsThenTheMiddle", { ($0 as! PaletteTests).testAWordMatchesBestAtTheStartThenAWordThenInitialsThenTheMiddle() }),
         ("testAccentsAndCaseDoNotCount", { ($0 as! PaletteTests).testAccentsAndCaseDoNotCount() }),
         ("testAnAppAnswersToItsFileNameToo", { ($0 as! PaletteTests).testAnAppAnswersToItsFileNameToo() }),
@@ -217,6 +220,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testTheTwoSettingsAreOnUnlessSwitchedOffAndOnlyThenWritten", { try ($0 as! NotchTests).testTheTwoSettingsAreOnUnlessSwitchedOffAndOnlyThenWritten() }),
     ]),
     ("PreviewsTests", { PreviewsTests() }, [
+        ("testASliceOfAWindowIsNotItsPicture", { ($0 as! PreviewsTests).testASliceOfAWindowIsNotItsPicture() }),
         ("testAWindowIsCapturedOnceWhileItsPictureIsFresh", { ($0 as! PreviewsTests).testAWindowIsCapturedOnceWhileItsPictureIsFresh() }),
         ("testTheWindowsThatAreGoneAreForgotten", { ($0 as! PreviewsTests).testTheWindowsThatAreGoneAreForgotten() }),
         ("testAClosedWindowIsForgottenOnItsOwn", { ($0 as! PreviewsTests).testAClosedWindowIsForgottenOnItsOwn() }),

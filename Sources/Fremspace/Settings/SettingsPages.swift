@@ -290,6 +290,7 @@ struct SettingsPageView: View {
                 .modifier(marked(.fullScreenCalls))
             }
             PageSection(.generalPalette) {
+                HelpText("In the palette, ⌘P pins the selected row: an app, a desktop, a scene, a command or a row of a source. Pinned rows head the list when nothing is typed; ⌘P again takes one off.")
                 SwitchRow(title: SettingRow.paletteSources.title,
                           detail: "The palette also lists what your own scripts list: agent sessions, terminal tabs, anything with a name. Fremspace then runs the scripts of the sources folder.",
                           more: "A source is an executable file of that folder. Each time the palette opens it is asked for its rows; choosing a row opens its link or hands it back to the source. Only files that are yours and that nobody else may write are run, and never while this is off. The format and ready-made sources are in the project's extras/palette-sources.",

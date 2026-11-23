@@ -85,3 +85,13 @@ public struct SlotWindow: Equatable {
 public func slotFront(_ windows: [SlotWindow]) -> SlotWindow? {
     windows.first { $0.onScreen && !$0.minimized } ?? windows.first { !$0.minimized } ?? windows.first
 }
+
+/// Whether a picture has the shape of the window it was taken of. The window server gives only a
+/// slice of a window that lies mostly off screen (a drawer's parked window): a slice drawn as the
+/// window would show a sliver of it (owner, 2026-11-23). A fifth of difference in the ratio is
+/// more than rounding and shadows ever make.
+public func pictureFitsWindow(picture: CGSize, window: CGSize) -> Bool {
+    guard picture.width > 0, picture.height > 0, window.width > 0, window.height > 0 else { return false }
+    let ratio = (picture.width / picture.height) / (window.width / window.height)
+    return ratio > 0.8 && ratio < 1.25
+}

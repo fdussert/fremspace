@@ -24,7 +24,7 @@ struct PaletteView: View {
             .frame(height: Palette.fieldHeight)
             if hasMap {
                 Divider()
-                PaletteMap(model: model)
+                PaletteMap(model: model, width: Palette.width(model))
                     .frame(height: Palette.mapHeight(model))
             }
             if !model.rows.isEmpty {
@@ -100,6 +100,11 @@ private struct PaletteRowView: View {
                 }
             }
             Spacer(minLength: 8)
+            if row.pinned {
+                Image(systemName: "pin.fill").font(.system(size: 9.5))
+                    .foregroundStyle(selected ? AnyShapeStyle(Color.white.opacity(0.8)) : AnyShapeStyle(.tertiary))
+                    .accessibilityHidden(true)
+            }
             if !row.tag.isEmpty {
                 Text(row.tag).font(.system(size: 11.5)).lineLimit(1).fixedSize()
                     .foregroundStyle(selected ? AnyShapeStyle(Color.white.opacity(0.8)) : AnyShapeStyle(.secondary))
@@ -110,7 +115,7 @@ private struct PaletteRowView: View {
         .foregroundStyle(selected ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
         .background(selected ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel([row.item.title, row.item.subtitle, row.tag].filter { !$0.isEmpty }.joined(separator: ", "))
+        .accessibilityLabel([row.item.title, row.item.subtitle, row.tag, row.pinned ? "pinned" : ""].filter { !$0.isEmpty }.joined(separator: ", "))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
@@ -146,34 +151,138 @@ private struct PalettePreview: View {
 
 /// The desktops of every display, drawn as their layout with the apps in the slots. The desktop
 /// each display shows has its name in full ink; ⇥ or the arrow keys go through them and narrow the
-/// list.
+/// list. In a panel of a given width (the palette) each display's desktops are a carousel; where
+/// the panel takes the map's own width (under the notch) they stand side by side.
 struct PaletteMap: View {
     @ObservedObject var model: PaletteModel
+    /// The width the map has to fit in; nil when the panel is as wide as the map.
+    var width: CGFloat?
+
+    private static let margin: CGFloat = 18
+    private static let nameWidth: CGFloat = 104
+    private static let spacing: CGFloat = 10
 
     var body: some View {
+        // One display needs no name: there is nothing to tell it from. (It was also the first
+        // thing pushed out of sight when its desktops outgrew the panel.)
+        let named = model.map.count > 1
         VStack(alignment: .leading, spacing: 0) {
             ForEach(model.map) { display in
-                HStack(spacing: 10) {
-                    Text(display.name)
-                        .font(.system(size: 11.5)).foregroundStyle(.secondary)
-                        .lineLimit(2).multilineTextAlignment(.leading)
-                        .frame(width: 104, alignment: .leading)
-                    ForEach(display.desktops) { desktop in
-                        PaletteTile(desktop: desktop, chosen: model.desktop == desktop.desktop)
-                            .contentShape(Rectangle())
-                            .onTapGesture { model.onPickDesktop(desktop.desktop) }
-                            .onHover { inside in
-                                guard model.hoverSelects else { return }
-                                if inside { model.desktop = desktop.desktop } else if model.desktop == desktop.desktop { model.desktop = nil }
-                            }
+                HStack(spacing: Self.spacing) {
+                    if named {
+                        Text(display.name)
+                            .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                            .lineLimit(2).multilineTextAlignment(.leading)
+                            .frame(width: Self.nameWidth, alignment: .leading)
                     }
-                    Spacer(minLength: 0)
+                    if let width {
+                        PaletteCarousel(display: display, model: model,
+                                        width: width - 2 * Self.margin - (named ? Self.nameWidth + Self.spacing : 0))
+                    } else {
+                        ForEach(display.desktops) { desktop in
+                            PaletteTile(desktop: desktop, chosen: model.desktop == desktop.desktop)
+                                .contentShape(Rectangle())
+                                .onTapGesture { model.onPickDesktop(desktop.desktop) }
+                                .onHover { inside in
+                                    guard model.hoverSelects else { return }
+                                    if inside { model.desktop = desktop.desktop } else if model.desktop == desktop.desktop { model.desktop = nil }
+                                }
+                        }
+                        Spacer(minLength: 0)
+                    }
                 }
                 .frame(height: Palette.mapRowHeight)
             }
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, Self.margin)
         .padding(.vertical, 8)
+    }
+}
+
+/// The desktops of one display in a row that turns: the desktop the keyboard is on (else the one
+/// the display shows) stands in the middle, flat and a little larger, and the others lean away on
+/// both sides like the faces of a drum. A swipe or the arrow keys turn it. A few desktops that
+/// fit with room to spare stand side by side in the middle instead: a drum of three is a gimmick.
+private struct PaletteCarousel: View {
+    let display: PaletteDisplay
+    @ObservedObject var model: PaletteModel
+    let width: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let spacing: CGFloat = 10
+    private static let tileWidth = PaletteTile.size.width + 8
+    private static let space = "palette-carousel"
+
+    private var turns: Bool {
+        let count = CGFloat(display.desktops.count)
+        return count * Self.tileWidth + max(count - 1, 0) * Self.spacing > width * 0.75
+    }
+
+    /// The desktop that stands in the middle: the chosen one when it is on this display, the one
+    /// shown when no desktop is chosen. nil: the row stays as it is (the choice is elsewhere).
+    private var middle: String? {
+        if let chosen = model.desktop { return display.desktops.first { $0.desktop == chosen }?.id }
+        return display.desktops.first(where: \.shown)?.id
+    }
+
+    var body: some View {
+        if turns {
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Self.spacing) {
+                        ForEach(display.desktops) { desktop in
+                            GeometryReader { geometry in
+                                tile(desktop, at: geometry.frame(in: .named(Self.space)).midX)
+                            }
+                            .frame(width: Self.tileWidth, height: Palette.mapRowHeight)
+                            .id(desktop.id)
+                        }
+                    }
+                    // Room on both sides, so that the first and the last desktop can stand in the middle.
+                    .padding(.horizontal, max((width - Self.tileWidth) / 2, 0))
+                }
+                .coordinateSpace(name: Self.space)
+                .frame(width: width, height: Palette.mapRowHeight)
+                // The row runs out under the edges instead of being cut by them.
+                .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.06),
+                                             .init(color: .black, location: 0.94), .init(color: .clear, location: 1)],
+                                     startPoint: .leading, endPoint: .trailing))
+                .onAppear { if let middle { proxy.scrollTo(middle, anchor: .center) } }
+                .onChange(of: model.openings) { _ in if let middle { proxy.scrollTo(middle, anchor: .center) } }
+                .onChange(of: middle) { id in
+                    guard let id else { return }
+                    if reduceMotion {
+                        proxy.scrollTo(id, anchor: .center)
+                    } else {
+                        withAnimation(.interpolatingSpring(stiffness: 190, damping: 24)) { proxy.scrollTo(id, anchor: .center) }
+                    }
+                }
+            }
+        } else {
+            HStack(spacing: Self.spacing) {
+                ForEach(display.desktops) { desktop in plain(desktop) }
+            }
+            .frame(width: width, height: Palette.mapRowHeight)
+        }
+    }
+
+    private func plain(_ desktop: PaletteDesktop) -> some View {
+        PaletteTile(desktop: desktop, chosen: model.desktop == desktop.desktop)
+            .contentShape(Rectangle())
+            .onTapGesture { model.onPickDesktop(desktop.desktop) }
+    }
+
+    /// A desktop of the drum, `x` being its middle in the row. How far it is from the middle of
+    /// the row, squared, so that the three or four desktops around the middle stay nearly flat
+    /// and readable and only the far ones lean.
+    private func tile(_ desktop: PaletteDesktop, at x: CGFloat) -> some View {
+        let offset = max(-1, min(1, (x - width / 2) / (width / 2)))
+        let lean = offset * abs(offset)
+        return plain(desktop)
+            .frame(width: Self.tileWidth, height: Palette.mapRowHeight)
+            .scaleEffect(1.06 - 0.2 * abs(lean))
+            .rotation3DEffect(.degrees(reduceMotion ? 0 : Double(-lean) * 46), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
+            .opacity(1 - 0.45 * Double(abs(lean)))
     }
 }
 

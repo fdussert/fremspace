@@ -66,4 +66,35 @@ final class PaletteTests: XCTestCase {
     func testTheLimitCutsTheList() {
         XCTAssertEqual(paletteResults("", items: items, limit: 1).map(\.id), ["w:1"])
     }
+
+    func testPinnedRowsHeadTheListWhenNothingIsTyped() {
+        let front = PaletteItem(id: "w:1", kind: .window, title: "Editor")
+        let before = PaletteItem(id: "w:2", kind: .window, title: "Browser")
+        let session = PaletteItem(id: "x:agents:12", kind: .extra, title: "Billing fixes")
+        let app = PaletteItem(id: "a:notes", kind: .app, title: "Notes")
+        let items = [front, before, app, session]
+        // In the order they were pinned; a pin whose row is not there now takes no place.
+        let rows = paletteResults("", items: items, pins: ["x:agents:12", "x:agents:gone", "a:notes"])
+        XCTAssertEqual(rows.map(\.id), ["x:agents:12", "a:notes", "w:1", "w:2"])
+        // The window the owner had before stays the one chosen, under the pins.
+        XCTAssertEqual(paletteFirstChoice(rows), 3)
+        XCTAssertEqual(paletteFirstChoice([front, before]), 1)
+        XCTAssertEqual(paletteFirstChoice([session, front]), 1)
+        XCTAssertEqual(paletteFirstChoice([session, app]), 0)
+        XCTAssertEqual(paletteFirstChoice([]), 0)
+        // A query ranks as before: the pins change nothing in it.
+        XCTAssertEqual(paletteResults("bro", items: items, pins: ["a:notes"]).map(\.id), ["w:2"])
+    }
+
+    func testARowIsPinnedAndUnpinnedButNotAWindow() {
+        let session = PaletteItem(id: "x:agents:12", kind: .extra, title: "Billing fixes")
+        let window = PaletteItem(id: "w:1", kind: .window, title: "Editor")
+        XCTAssertEqual(palettePins([], toggling: session), ["x:agents:12"])
+        XCTAssertEqual(palettePins(["a:notes", "x:agents:12"], toggling: session), ["a:notes"])
+        XCTAssertNil(palettePins([], toggling: window))
+        let full = (0..<palettePinLimit).map { "c:\($0)" }
+        XCTAssertNil(palettePins(full, toggling: session))
+        // One of a full list can still be taken out.
+        XCTAssertEqual(palettePins(full, toggling: PaletteItem(id: "c:0", kind: .command, title: "First"))?.count, palettePinLimit - 1)
+    }
 }

@@ -541,6 +541,14 @@ final class Engine {
         saveState()
     }
 
+    /// The rows pinned in the palette, in the order they were pinned.
+    var palettePins: [String] { state.palettePins }
+
+    func setPalettePins(_ pins: [String]) {
+        state.palettePins = pins
+        scheduleStateSave()
+    }
+
     func notePaletteUse(_ key: String) {
         state.paletteUses[key, default: 0] += 1
         scheduleStateSave()
