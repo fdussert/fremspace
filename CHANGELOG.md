@@ -9,6 +9,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+## 0.1.4
+
 - Palette sources: the palette can list rows that come from your own scripts, next to the
   windows, apps, desktops and commands. A source is an executable file in
   `~/Library/Application Support/Fremspace/Palette Sources/`; it lists rows (a title, and a link
@@ -27,6 +29,7 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 - The folder a slot asks for is also opened when you save the slot with it, and when you open a
   drawer that is empty: it then opens with the folder in it. Before, a new drawer whose only slot
   asked for a folder did nothing until the next login.
+
 ## 0.1.3
 
 - A Finder slot can ask for a folder. Choose it in the slot's settings ("Folder to open"): at login
