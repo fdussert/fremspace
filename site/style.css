@@ -806,6 +806,15 @@ kbd.is-down { transform: translateY(2px); background: var(--blue); color: #04102
 .pal-list .is-sel small, .pal-list .is-sel .pal-k { color: #fff; }
 .pal-k { margin-left: auto; color: #a9aebb; font-size: 0.875rem; letter-spacing: 0.1em; white-space: nowrap; }
 .pal-none { color: #a9aebb; }
+/* A word of state ("working") where a command has its keys: not spaced like keys. */
+.pal-k.is-word { letter-spacing: 0; }
+.pal-own {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(32px, 6vw, 96px); align-items: start;
+  margin-top: clamp(48px, 6vw, 96px); padding-top: clamp(32px, 4vw, 56px); border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
+.pal-own-copy { display: grid; gap: 14px; }
+.pal-own-copy p { max-width: 34em; margin: 0; color: rgba(255, 255, 255, 0.9); }
+.pal-own-code { margin: 0; padding: 18px 20px; overflow-x: auto; border-radius: 14px; background: var(--ink); color: var(--paper); font: 0.8125rem/1.7 var(--mono); }
 .pal-note { min-height: 3.4em; margin: 18px 4px 0; color: rgba(255, 255, 255, 0.92); font: 400 0.8125rem/1.6 var(--mono); }
 
 /* --- Scenes: three displays, and the key that sets them all -------------------------------------- */
@@ -1002,7 +1011,7 @@ html:not(.js) .kb, html:not(.js) .kb-hint, html:not(.js) .switch, html:not(.js) 
 /* --- Narrower ----------------------------------------------------------------------------------- */
 @media (max-width: 900px) {
   h1 { font-size: 11.6vw; }
-  .hero-top, .pal-grid, .keys-grid, .editor-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-top, .pal-grid, .pal-own, .keys-grid, .editor-grid { grid-template-columns: minmax(0, 1fr); }
   .cols, .facts, .get-slots { grid-template-columns: minmax(0, 1fr); }
   .get-main { grid-row: auto; }
   .editor-shot img { width: 100%; }

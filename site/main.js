@@ -1125,6 +1125,10 @@
       { kind: 'desktop', icon: 'desktop', title: 'Everything else', sub: 'Desktop · Main', desk: 'Everything else' },
       { kind: 'scene', icon: 'scene', title: 'Spice run', sub: 'Scene' },
       { kind: 'scene', icon: 'scene', title: 'Storm watch', sub: 'Scene' },
+      // Rows of a palette source: what a script of the owner's lists, here agent sessions.
+      { kind: 'source', icon: 'terminal', title: 'Harvester telemetry', sub: 'Agent session · thumper', word: 'working' },
+      { kind: 'source', icon: 'terminal', title: 'Water ledger', sub: 'Agent session · stillsuit', word: 'done' },
+      { kind: 'source', icon: 'terminal', title: 'Shield wall survey', sub: 'Agent session · ornithopter', word: 'working' },
       { kind: 'command', icon: 'command', title: 'Focus a slot, and back', sub: 'Command', keys: HYPER + 'Space' },
       { kind: 'command', icon: 'command', title: 'Put every window back', sub: 'Command', keys: HYPER + 'R' },
       { kind: 'command', icon: 'command', title: 'Next window of a stack', sub: 'Command', keys: HYPER + '⇥' },
@@ -1172,7 +1176,7 @@
       list.innerHTML = shown.length ? shown.map(function (it, i) {
         return '<li' + (i === sel ? ' class="is-sel"' : '') + ' data-i="' + i + '">' + ico(it.icon) +
           '<span class="pal-t"><b>' + it.title + '</b><small>' + it.sub + '</small></span>' +
-          (it.keys ? '<span class="pal-k">' + it.keys + '</span>' : '') + '</li>';
+          (it.keys ? '<span class="pal-k">' + it.keys + '</span>' : it.word ? '<span class="pal-k is-word">' + it.word + '</span>' : '') + '</li>';
       }).join('') : '<li class="pal-none">Nothing by that name.</li>';
       map.outline(shown[sel] ? shown[sel].desk : null);
     }
@@ -1194,7 +1198,8 @@
       { q: 'saf', note: 'An app, and its windows on two desktops.' },
       { q: 'arr', note: 'A desktop by its name, and the windows that are on it.' },
       { q: 'foc', note: 'A command, with its shortcut.' },
-      { q: 'sto', note: 'A scene: several displays change desktop at once.' }
+      { q: 'sto', note: 'A scene: several displays change desktop at once.' },
+      { q: 'har', note: 'A row from a script of yours: here an agent session, by the name you gave it.' }
     ];
     var tl = new Timeline(), auto = !still, at = 0;
     function type(text, i, then) {
@@ -1235,6 +1240,7 @@
           : it.kind === 'app' ? 'In Fremspace, Return would open ' + it.title + ', or bring it forward.'
           : it.kind === 'scene' ? 'In Fremspace, Return would show the scene ' + it.title + ' on every display.'
           : it.kind === 'desktop' ? 'In Fremspace, Return would show the desktop ' + it.title + '.'
+          : it.kind === 'source' ? 'In Fremspace, Return would hand “' + it.title + '” back to its script, which shows that session.'
           : 'In Fremspace, Return would give ' + it.title + ' the keyboard, and show its desktop.';
       }
     });

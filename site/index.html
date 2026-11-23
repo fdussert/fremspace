@@ -136,6 +136,7 @@
           <div><dt>Apps</dt><dd>to open, or bring forward when they run</dd></div>
           <div><dt>Desktops and scenes</dt><dd>by the name you gave them</dd></div>
           <div><dt>Commands</dt><dd>everything a shortcut can do</dd></div>
+          <div><dt>Your own lists</dt><dd>agent sessions, terminal windows, servers: what a script of yours lists</dd></div>
         </dl>
       </div>
       <div class="pal-side">
@@ -149,6 +150,21 @@
         </div>
         <p class="pal-note" id="pal-note">This one is a drawing, and it takes real typing: click the field.</p>
       </div>
+    </div>
+    <div class="wrap pal-own">
+      <div class="pal-own-copy">
+        <h3>And what your own scripts list</h3>
+        <p>A palette source is a small script of yours that prints a list. Its rows sit in the palette with the rest: the sessions of your coding agents, the windows of tmux, a server to reach, a page to open. Choosing a row opens its link, or hands the row back to the script.</p>
+        <p>Four sources come with Fremspace, each added with a button: Orca agents, Claude Code sessions, herdr and tmux. Nothing runs until you switch sources on.</p>
+      </div>
+      <pre class="pal-own-code" aria-label="A palette source: a shell script that lists two servers and opens the one that is chosen"><code>#!/bin/sh
+# Palette Sources/servers
+case "$1" in
+  list) echo '{"items": [
+    {"title": "Arrakeen", "subtitle": "ssh", "arg": "arrakeen"},
+    {"title": "Sietch Tabr", "subtitle": "ssh", "arg": "tabr"}]}' ;;
+  run)  open "ssh://$2" ;;
+esac</code></pre>
     </div>
   </section>
 
