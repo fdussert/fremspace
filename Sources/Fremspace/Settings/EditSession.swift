@@ -1011,7 +1011,13 @@ final class EditSession: ObservableObject {
     // MARK: - Drawers (of the display)
 
     static func starterDrawer(_ edge: DrawerEdge) -> DrawerSpec {
-        DrawerSpec(edge: edge, size: 0.375, layout: DrawerLayout(slots: [
+        // The top drawer starts as one panel over the upper half of the display (owner,
+        // 2026-11-23: a dashboard pulled down over a laptop's screen); it can be split like any other.
+        if edge == .top {
+            return DrawerSpec(edge: edge, size: 0.5, layout: DrawerLayout(slots: [
+                DrawerSlot(id: "main", rect: UnitRect(x: 0, y: 0, w: 1, h: 1))]))
+        }
+        return DrawerSpec(edge: edge, size: 0.375, layout: DrawerLayout(slots: [
             DrawerSlot(id: "top", rect: UnitRect(x: 0, y: 0, w: 1, h: 0.5)),
             DrawerSlot(id: "bottom", rect: UnitRect(x: 0, y: 0.5, w: 1, h: 0.5))]))
     }
@@ -1099,7 +1105,7 @@ final class EditSession: ObservableObject {
         guard let edge = selection.drawer, let drawer = displaySpec?.drawers.first(where: { $0.edge == edge }) else {
             return UnitRect(x: 0, y: 0, w: 1, h: 1)
         }
-        return UnitRect(x: edge == .left ? 0 : 1 - drawer.size, y: 0, w: drawer.size, h: 1)
+        return drawerUnitZone(drawer)
     }
 
     /// Whether the selected slot can be cut along `axis` (both halves stay at least the smallest stop).

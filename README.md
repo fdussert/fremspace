@@ -17,7 +17,8 @@ in their slot, stay there, and are all back where they were after a restart.
 - **Side by side.** One shortcut opens a second window of the app in front and puts the two half
   and half in its slot; the same shortcut stacks them again. The second window is asked of the app
   through its "New Window" menu item: an app without one is left alone.
-- **Drawers.** Windows parked off the side of a display, slid in when you need them.
+- **Drawers.** Windows parked off the side of a display, slid in when you need them: over its
+  left edge, its right edge, or down from the top.
 - **Back after a restart.** At login Fremspace opens the apps that have a slot and puts every window
   back on the right desktop.
 - **One setup per set of displays.** The desk, the laptop alone, another office: the configuration
@@ -107,8 +108,8 @@ as they are now. Every shortcut is on the Shortcuts page and can be changed; the
 | Swap two slots | ⌃⌥⇧⌘ ← → ↑ ↓ |
 | Next window of a stack | ⌃⌥⌘⇥ |
 | Two windows of the app side by side, and back | ⌃⌥⌘S |
-| Open the left, the right drawer | ⌃⌥⌘L, ⌃⌥⌘D |
-| Send the window to the left, the right drawer | ⌃⌥⇧⌘L, ⌃⌥⇧⌘D |
+| Open the left, the right, the top drawer | ⌃⌥⌘L, ⌃⌥⌘D, ⌃⌥⌘T |
+| Send the window to the left, the right, the top drawer | ⌃⌥⇧⌘L, ⌃⌥⇧⌘D, ⌃⌥⇧⌘T |
 | Show a scene | ⌃⌥⌘1 … 4 |
 | Put every window back | ⌃⌥⌘R |
 | Pause | ⌃⌥⌘P |

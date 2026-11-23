@@ -117,7 +117,7 @@ final class WindowCommands {
         notify("\(Self.appName(window.info.bundleID)) locked on \(label) (slot \(slotID)).")
     }
 
-    /// "Add to left / right drawer": parks the window in that drawer of its display.
+    /// "Add to left / right / top drawer": parks the window in that drawer of its display.
     func addToDrawer(_ edge: DrawerEdge) {
         guard let window = active() else { return NSSound.beep() }
         engine.drawers.send(window.element, edge: edge)

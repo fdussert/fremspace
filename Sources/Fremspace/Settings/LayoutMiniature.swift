@@ -34,7 +34,9 @@ struct LayoutMiniature: View {
         GeometryReader { geometry in
             // The room a drawer's bar takes on its edge.
             let left: CGFloat = drawers.contains(.left) ? 7 : 0, right: CGFloat = drawers.contains(.right) ? 7 : 0
-            let area = CGRect(x: 3 + left, y: 3, width: max(geometry.size.width - 6 - left - right, 1), height: max(geometry.size.height - 6, 1))
+            let top: CGFloat = drawers.contains(.top) ? 7 : 0
+            let area = CGRect(x: 3 + left, y: 3 + top, width: max(geometry.size.width - 6 - left - right, 1),
+                              height: max(geometry.size.height - 6 - top, 1))
             ZStack(alignment: .topLeading) {
                 CanvasView.screen
                 if let layout = desktop.layout {
@@ -50,6 +52,7 @@ struct LayoutMiniature: View {
                 }
                 if left > 0 { bar.offset(x: 3, y: 4).frame(height: max(geometry.size.height - 8, 1)) }
                 if right > 0 { bar.offset(x: geometry.size.width - 7, y: 4).frame(height: max(geometry.size.height - 8, 1)) }
+                if top > 0 { bar(along: max(geometry.size.width - 8, 1)).offset(x: 4, y: 3) }
             }
         }
         .aspectRatio(aspect, contentMode: .fit)
@@ -62,6 +65,11 @@ struct LayoutMiniature: View {
     /// A drawer, in the colour the editor gives its rail.
     private var bar: some View {
         Capsule().fill(Color.accentColor).frame(width: 4)
+    }
+
+    /// The top drawer's: the same bar, lying along the top.
+    private func bar(along width: CGFloat) -> some View {
+        Capsule().fill(Color.accentColor).frame(width: width, height: 4)
     }
 
     /// A free desktop: no slot, and it says so where there is room.

@@ -421,12 +421,12 @@ struct SlotInspector: View {
         let edges = (session.displaySpec?.drawers ?? []).filter { !$0.layout.slots.isEmpty }.map(\.edge)
         if !slot.rule.bundleID.isEmpty {
             if edges.isEmpty {
-                HelpText("To keep this app in a drawer instead, add one with the rails beside the screen.")
+                HelpText("To keep this app in a drawer instead, add one with the rails around the screen.")
             } else {
                 HStack(spacing: 6) {
                     ForEach(edges, id: \.self) { edge in
                         Button { session.moveToDrawer(slot: slot.id, edge: edge) } label: {
-                            Label("Move to \(edge.rawValue) drawer", systemImage: edge == .left ? "sidebar.left" : "sidebar.right")
+                            Label("Move to \(edge.rawValue) drawer", systemImage: edge.symbol)
                         }
                         .help("Takes \(appName(slot.rule.bundleID)) out of this layout and gives it to the \(edge.rawValue) drawer of this display")
                     }
@@ -498,8 +498,8 @@ struct DrawerSlotInspector: View {
                         update { $0.rules.append(Rule(bundleID: id)) }
                     }
                     HelpText(slot.rules.isEmpty
-                             ? "No app yet: this slot holds the windows you send to the drawer (\(session.shortcutLabel(edge == .left ? "drawerSendLeft" : "drawerSendRight")))."
-                             : "Their windows go to this slot by themselves, on every desktop of this display. Other windows can still be sent here (\(session.shortcutLabel(edge == .left ? "drawerSendLeft" : "drawerSendRight"))).")
+                             ? "No app yet: this slot holds the windows you send to the drawer (\(session.shortcutLabel(edge.sendCommand)))."
+                             : "Their windows go to this slot by themselves, on every desktop of this display. Other windows can still be sent here (\(session.shortcutLabel(edge.sendCommand))).")
                 }
                 if let display = session.displaySpec?.identity {
                     let guests = session.drawerGuests(on: display, edge: edge, slot: slot)
@@ -634,33 +634,53 @@ struct DesktopInspector: View {
     }
 }
 
-/// The drawer being edited: its width, how to use it, and its removal.
+/// The drawer being edited: how far it comes over the display, how to use it, and its removal.
 struct DrawerInspector: View {
     @ObservedObject var session: EditSession
     let edge: DrawerEdge
 
     var body: some View {
         if let drawer = session.displaySpec?.drawers.first(where: { $0.edge == edge }) {
-            let width = session.geometry(of: session.selection.display).visible.width
-            InspectorSection(edge == .left ? "Left drawer" : "Right drawer") {
-                HelpText("A panel of windows that slides over the \(edge.rawValue) edge of this display, the same on each of its desktops.")
-                Field("Width") {
-                    Picker("Width", selection: Binding(
+            let visible = session.geometry(of: session.selection.display).visible
+            // The top drawer is measured down the display, and may cover more of it than a side
+            // one: three quarters still leaves the windows under it something to be clicked on.
+            let across = edge == .top ? visible.height : visible.width
+            let most = edge == .top ? 0.75 : 0.5
+            let measure = edge == .top ? "Height" : "Width"
+            InspectorSection("\(edge.title) drawer") {
+                HelpText(edge == .top
+                         ? "A panel of windows that comes down from the top of this display, the same on each of its desktops."
+                         : "A panel of windows that slides over the \(edge.rawValue) edge of this display, the same on each of its desktops.")
+                Field(measure) {
+                    Picker(measure, selection: Binding(
                         get: { drawer.size },
                         set: { size in session.updateDisplay { d in
                             if let i = d.drawers.firstIndex(where: { $0.edge == edge }) { d.drawers[i].size = size }
                         } })) {
-                        let stops = Fractions.stops(forWidth: width).filter { $0 <= 0.5 }
+                        let stops = Fractions.stops(forWidth: across).filter { $0 <= most }
                         ForEach(stops, id: \.self) { stop in Text(fractionLabel(stop)).tag(stop) }
-                        // A width written by hand in the file stays selectable.
+                        // A size written by hand in the file stays selectable.
                         if !stops.contains(where: { abs($0 - drawer.size) < 0.001 }) { Text(fractionLabel(drawer.size)).tag(drawer.size) }
                     }
                     .labelsHidden().fixedSize()
                 }
+                if edge == .top {
+                    SwitchRow(title: "Fit the windows' height",
+                              detail: "A window here keeps the height it has, its app's or the one you drag it to, instead of the drawer's.",
+                              compact: true,
+                              isOn: Binding(
+                                get: { drawer.fitsContent },
+                                set: { on in
+                                    session.checkpoint()
+                                    session.updateDisplay { d in
+                                        if let i = d.drawers.firstIndex(where: { $0.edge == edge }) { d.drawers[i].fitsContent = on }
+                                    }
+                                }))
+                }
                 Field("Shortcuts") {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("\(session.shortcutLabel(edge == .left ? "drawerLeft" : "drawerRight"))  opens and closes it")
-                        Text("\(session.shortcutLabel(edge == .left ? "drawerSendLeft" : "drawerSendRight"))  sends the front window to it, or takes it out")
+                        Text("\(session.shortcutLabel(edge.toggleCommand))  opens and closes it")
+                        Text("\(session.shortcutLabel(edge.sendCommand))  sends the front window to it, or takes it out")
                     }
                     .font(.callout).fixedSize(horizontal: false, vertical: true)
                 }

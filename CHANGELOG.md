@@ -9,6 +9,13 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- A display can have a drawer on its top edge as well: a panel as wide as the display that comes
+  down over its upper half (or a third, two thirds, three quarters), added with the rail above
+  the screen in the editor. ⌃⌥⌘T opens and closes it, ⌃⌥⇧⌘T sends the window in front to it.
+  A configuration with a top drawer is not read by 0.1.3 and earlier.
+- The top drawer can fit the height of its windows ("Fit the windows' height"): Fremspace then
+  sets where a window of that drawer is and how wide, and the window keeps the height its app
+  gives it, or the one you drag it to.
 - A Finder slot of a drawer can ask for a folder too, as a slot of a layout can since 0.1.3: the
   folder is opened when the windows are restored and its window joins the drawer.
 - The folder a slot asks for is also opened when you save the slot with it, and when you open a

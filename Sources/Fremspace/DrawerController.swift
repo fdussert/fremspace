@@ -345,7 +345,7 @@ final class DrawerController {
     /// Whether the owner took this window out of a drawer.
     func wasTakenOut(_ id: UInt32) -> Bool { takenOut[id] != nil }
 
-    /// The drawer edges of the display a window is on ("Add to left / right drawer").
+    /// The drawer edges of the display a window is on ("Add to left / right / top drawer").
     func edges(forWindow id: UInt32) -> [DrawerEdge] {
         guard isActive(), members[id] == nil, let space = Spaces.spaceIndex(ofWindow: id) else { return [] }
         return drawerSpecs(space.display).map(\.edge)
@@ -480,9 +480,20 @@ final class DrawerController {
             state.send(id, to: identity, slot: target)
             Log.engine.info("window \(id) \(member.bundleID, privacy: .public) moved to drawer slot \(target, privacy: .public)")
         }
-        guard let slotID = state.slot(of: id), let frame = frames[slotID] else { return }
+        guard let slotID = state.slot(of: id), let slot = frames[slotID] else { return }
+        // In a drawer that fits its content, the height the owner just dragged the window to stays.
+        let frame = self.frame(of: id, in: slot, spec: drawer(ofSlotKey: slotID, in: drawerSpecs(identity)), visible: display.visibleAX)
         openFrames[id] = frame
         windows.setFrame(member.element, frame)
+    }
+
+    /// The frame member `id` takes in a drawer slot whose frame is `slot`: the slot's, or in a
+    /// drawer whose windows keep their height (`DrawerSpec.keepsWindowHeights`) the slot's place
+    /// and width with the height the window has now. A parked window keeps its size, so its
+    /// height can be read wherever it is.
+    private func frame(of id: UInt32, in slot: CGRect, spec: DrawerSpec?, visible: CGRect) -> CGRect {
+        guard spec?.keepsWindowHeights == true, let member = members[id] else { return slot }
+        return fittedFrame(slot: slot, windowHeight: windows.frame(member.element)?.height, visible: visible, gap: Engine.gap)
     }
 
     /// The slot frames of the open drawers of a display.
@@ -775,10 +786,11 @@ final class DrawerController {
         var fronts: [UInt32] = []
         for (slotID, stack) in state.stacks(identity) where open.contains(drawerEdge(ofSlotKey: slotID)) {
             guard let frame = frames[slotID] else { continue }
+            let spec = drawer(ofSlotKey: slotID, in: specs)
             // Back to front, so the front member ends on top of its stack.
             for id in stack.reversed() {
                 guard members[id] != nil else { continue }
-                openFrames[id] = frame
+                openFrames[id] = self.frame(of: id, in: frame, spec: spec, visible: display.visibleAX)
                 // One whose app does not answer stays parked: the parked file keeps it.
                 _ = bringBack(id)
             }
@@ -823,11 +835,14 @@ final class DrawerController {
         for spec in specs { state.setOpen(identity, edge: spec.edge.rawValue, false) }
         var tabs: [(id: UInt32, frame: CGRect)] = []
         for (frame, spec, stack) in stacks {
-            guard let parked = parkedFrame(frame, spec) else { continue }
             for id in stack {
                 guard let member = members[id] else { continue }
+                // Parked as high as it is: in a drawer that fits its content the window's height
+                // is its own, and parking must not give it the slot's.
+                let own = self.frame(of: id, in: frame, spec: spec, visible: display.visibleAX)
+                guard let parked = parkedFrame(own, spec) ?? parkedFrame(frame, spec) else { continue }
                 // A member that never opened comes back to its drawer slot.
-                if openFrames[id] == nil { openFrames[id] = frame }
+                if openFrames[id] == nil { openFrames[id] = own }
                 notBroughtBack.remove(id)
                 windows.setFrame(member.element, parked.frame)
                 if parked.isTab { tabs.append((id, parked.frame)) }
@@ -872,8 +887,9 @@ final class DrawerController {
         guard let member = members[id], let identity = state.display(of: id) else { return }
         if !state.isShown(id), let slotID = state.slot(of: id),
            let display = Displays.connected().first(where: { $0.identity == identity }),
-           let frame = drawerFrames(drawerSpecs(identity), visible: display.visibleAX, gap: Engine.gap)[slotID] {
-            windows.setFrame(member.element, frame)
+           let slot = drawerFrames(drawerSpecs(identity), visible: display.visibleAX, gap: Engine.gap)[slotID] {
+            let spec = drawer(ofSlotKey: slotID, in: drawerSpecs(identity))
+            windows.setFrame(member.element, frame(of: id, in: slot, spec: spec, visible: display.visibleAX))
         }
         members[id] = nil
         openFrames[id] = nil

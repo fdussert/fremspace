@@ -37,8 +37,10 @@ enum ShortcutCatalog {
             Entry(id: "splitNew", title: "A second window of the app beside this one, and back", group: "Slots", fallback: Hotkeys.splitNew),
             Entry(id: "drawerLeft", title: "Open or close the left drawer", group: "Drawers", fallback: Hotkeys.drawerLeft),
             Entry(id: "drawerRight", title: "Open or close the right drawer", group: "Drawers", fallback: Hotkeys.drawerRight),
+            Entry(id: "drawerTop", title: "Open or close the top drawer", group: "Drawers", fallback: Hotkeys.drawerTop),
             Entry(id: "drawerSendLeft", title: "Send to the left drawer, or take out", group: "Drawers", fallback: Hotkeys.drawerSendLeft),
             Entry(id: "drawerSendRight", title: "Send to the right drawer, or take out", group: "Drawers", fallback: Hotkeys.drawerSendRight),
+            Entry(id: "drawerSendTop", title: "Send to the top drawer, or take out", group: "Drawers", fallback: Hotkeys.drawerSendTop),
         ]
         list += Hotkeys.scenes.enumerated().map {
             Entry(id: "scene.\($0.offset + 1)", title: "Show scene \($0.offset + 1)", group: "Scenes", fallback: $0.element)

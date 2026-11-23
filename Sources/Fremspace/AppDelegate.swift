@@ -104,6 +104,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "windowMenu": { [weak menu] in menu?.popUpWindowMenu() },
             "drawerLeft": { [weak self] in self?.engine.drawers.toggleOnDisplayUnderMouse(.left) },
             "drawerRight": { [weak self] in self?.engine.drawers.toggleOnDisplayUnderMouse(.right) },
+            "drawerTop": { [weak self] in self?.engine.drawers.toggleOnDisplayUnderMouse(.top) },
+            "drawerSendTop": { [weak self] in self?.engine.drawers.sendOrTakeOutActiveWindow(.top) },
             "drawerSendLeft": { [weak self] in self?.engine.drawers.sendOrTakeOutActiveWindow(.left) },
             "drawerSendRight": { [weak self] in self?.engine.drawers.sendOrTakeOutActiveWindow(.right) },
             "stackNext": { [weak self] in self?.engine.showNextInStack(forward: true) },

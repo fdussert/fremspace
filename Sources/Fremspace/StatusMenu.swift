@@ -348,7 +348,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         windowMenu.addItem(lock)
 
         let edges = active.map { engine.drawers.edges(forWindow: $0.id) } ?? []
-        for edge in [DrawerEdge.left, .right] where edges.contains(edge) {
+        for edge in DrawerEdge.allCases where edges.contains(edge) {
             let entry = NSMenuItem(title: "Add to \(edge.rawValue) drawer", action: #selector(addToDrawer(_:)), keyEquivalent: "")
             entry.target = self
             entry.representedObject = edge.rawValue

@@ -1,10 +1,43 @@
 import CoreGraphics
 
-/// The drawer's zone on a display: full height of the visible frame, `size` of its width, at the edge.
+/// The drawer's zone on a display: full height of the visible frame, `size` of its width, at the
+/// edge; for the top drawer the full width, `size` of the height, under the menu bar (AX
+/// coordinates: the top is the smallest y).
 public func drawerZone(_ drawer: DrawerSpec, visible: CGRect) -> CGRect {
+    if drawer.edge == .top {
+        let height = (CGFloat(drawer.size) * visible.height).rounded()
+        return CGRect(x: visible.minX, y: visible.minY, width: visible.width, height: height)
+    }
     let width = (CGFloat(drawer.size) * visible.width).rounded()
     let x = drawer.edge == .left ? visible.minX : visible.maxX - width
     return CGRect(x: x, y: visible.minY, width: width, height: visible.height)
+}
+
+/// The drawer's zone in fractions of the display, for a drawing of it.
+public func drawerUnitZone(_ drawer: DrawerSpec) -> UnitRect {
+    switch drawer.edge {
+    case .left: return UnitRect(x: 0, y: 0, w: drawer.size, h: 1)
+    case .right: return UnitRect(x: 1 - drawer.size, y: 0, w: drawer.size, h: 1)
+    case .top: return UnitRect(x: 0, y: 0, w: 1, h: drawer.size)
+    }
+}
+
+/// The frame a window `height` points high takes in `slot` of a drawer whose windows keep their
+/// own height (`DrawerSpec.keepsWindowHeights`): the slot's place and width, the window's height,
+/// stopped `gap` above the bottom of the display's visible frame. The slot's own frame when the
+/// window's height is not known.
+public func fittedFrame(slot: CGRect, windowHeight height: CGFloat?, visible: CGRect, gap: CGFloat) -> CGRect {
+    guard let height, height > 0 else { return slot }
+    var frame = slot
+    frame.size.height = max(min(height, visible.maxY - gap - slot.minY), 1)
+    return frame
+}
+
+/// The left and right sides in the order a drawer's windows are parked through them: its own
+/// side first. The top drawer has none of its own (macOS refuses a window above the top of a
+/// display, spike `docs/spikes/2026-11-drawer-putaway.md`): it goes out through the left.
+private func parkingSides(_ edge: DrawerEdge) -> [ScreenSide] {
+    edge == .right ? [.right, .left] : [.left, .right]
 }
 
 /// The frame of each drawer slot, with the same gaps as layout slots.
@@ -56,9 +89,7 @@ public func freeSides(of display: CGRect, others: [CGRect]) -> Set<ScreenSide> {
 /// visible; the top is refused (spike `docs/spikes/2026-11-drawer-putaway.md`). The owner wants
 /// parked windows hidden completely.
 public func parkSide(for edge: DrawerEdge, free: Set<ScreenSide>) -> ScreenSide? {
-    let own: ScreenSide = edge == .left ? .left : .right
-    let opposite: ScreenSide = edge == .left ? .right : .left
-    return [own, opposite, .bottom].first { free.contains($0) }
+    (parkingSides(edge) + [.bottom]).first { free.contains($0) }
 }
 
 /// The side to park through when no side hides the window (`hiddenParkedFrame` found none): like
@@ -68,9 +99,7 @@ public func parkSide(for edge: DrawerEdge, free: Set<ScreenSide>) -> ScreenSide?
 /// "closed" drawer would show on it. The bottom then comes first.
 public func parkSide(for edge: DrawerEdge, free: Set<ScreenSide>, frame: CGRect, display: CGRect, others: [CGRect],
                      strip: CGFloat) -> ScreenSide? {
-    let own: ScreenSide = edge == .left ? .left : .right
-    let opposite: ScreenSide = edge == .left ? .right : .left
-    return [own, opposite, .bottom].first { side in
+    (parkingSides(edge) + [.bottom]).first { side in
         guard free.contains(side) else { return false }
         guard side != .bottom else { return true }
         var hidden = parkedFrame(frame, display: display, side: side, strip: strip)
@@ -99,7 +128,7 @@ public func parkedFrame(_ frame: CGRect, display: CGRect, side: ScreenSide, stri
 /// neither side takes the window; the bottom, which keeps a title bar visible, is then all that is left.
 public func hiddenParkedFrame(_ frame: CGRect, display: CGRect, others: [CGRect], edge: DrawerEdge,
                               strip: CGFloat) -> CGRect? {
-    let sides: [ScreenSide] = edge == .left ? [.left, .right] : [.right, .left]
+    let sides = parkingSides(edge)
     // Against the display over at least this height, so that macOS keeps the window on it.
     let hold = min(frame.height, 100)
     for side in sides {
@@ -120,11 +149,15 @@ public func hiddenParkedFrame(_ frame: CGRect, display: CGRect, others: [CGRect]
 
 /// Like `parkedFrame`, narrowed to `width` and kept `gap` from the drawer's edge of the display: through
 /// the bottom macOS keeps a parked window's title bar visible, so it shrinks to a small tab in the
-/// drawer's corner.
+/// drawer's corner (the middle of the bottom for the top drawer).
 public func compactParkedFrame(_ frame: CGRect, display: CGRect, side: ScreenSide, strip: CGFloat,
                                edge: DrawerEdge, width: CGFloat, gap: CGFloat) -> CGRect {
     var f = parkedFrame(frame, display: display, side: side, strip: strip)
     f.size.width = width
-    f.origin.x = edge == .left ? display.minX + gap : display.maxX - gap - width
+    switch edge {
+    case .left: f.origin.x = display.minX + gap
+    case .right: f.origin.x = display.maxX - gap - width
+    case .top: f.origin.x = (display.midX - width / 2).rounded()
+    }
     return f
 }

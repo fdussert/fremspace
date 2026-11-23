@@ -931,10 +931,10 @@ struct ScenesEditor: View {
                                 }
                             }
                             ForEach(display.drawers, id: \.edge) { drawer in
-                                line(drawer.edge == .left ? "Left drawer" : "Right drawer", detail: true) {
+                                line("\(drawer.edge.title) drawer", detail: true) {
                                     Choice(options: [("No change", -1), ("Open", 1), ("Closed", 0)],
                                            selection: scene.drawer(drawer.edge, on: display.identity).map { $0 ? 1 : 0 } ?? -1,
-                                           name: "\(drawer.edge == .left ? "Left" : "Right") drawer of \(display.displayName) in the scene \(scene.name)") { choice in
+                                           name: "\(drawer.edge.title) drawer of \(display.displayName) in the scene \(scene.name)") { choice in
                                         session.updateScene(scene.id) { $0.setDrawer(choice < 0 ? nil : choice == 1, edge: drawer.edge, on: display.identity) }
                                     }
                                 }

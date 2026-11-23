@@ -29,7 +29,7 @@ public func linkMayRun(_ id: String) -> Bool {
 private let linkCommands: Set<String> = [
     "palette", "openAdmin", "windowMenu", "reapply", "focusToggle",
     "slotLeft", "slotRight", "slotUp", "slotDown", "stackNext", "stackPrevious",
-    "drawerLeft", "drawerRight",
+    "drawerLeft", "drawerRight", "drawerTop",
 ]
 
 public func parseLink(_ url: URL) -> FremspaceLink? {

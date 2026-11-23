@@ -1,8 +1,18 @@
 import Foundation
 
-/// The display edge a drawer sits on.
-public enum DrawerEdge: String, Codable {
-    case left, right
+/// The display edge a drawer sits on. A left or right drawer is as high as the display and `size`
+/// of its width; the top one is as wide as the display and `size` of its height.
+public enum DrawerEdge: String, Codable, CaseIterable {
+    case left, right, top
+
+    /// "Left", "Right", "Top": the start of a title.
+    public var title: String { rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
+
+    /// The command that opens and closes the drawer of this edge (a shortcut's and a link's name).
+    public var toggleCommand: String { "drawer\(title)" }
+
+    /// The command that sends the active window to the drawer of this edge, or takes it out.
+    public var sendCommand: String { "drawerSend\(title)" }
 }
 
 /// A region of the drawer zone, in fractions of the zone. Any window can be sent to it by hand; the
@@ -51,14 +61,44 @@ public struct DrawerLayout: Codable, Equatable {
 /// windows the owner sent there.
 public struct DrawerSpec: Codable, Equatable {
     public var edge: DrawerEdge
-    /// Width of the zone, as a fraction of the display's visible width.
+    /// How far the zone comes over the display: a fraction of its visible width, or of its
+    /// visible height for the top drawer.
     public var size: Double
     public var layout: DrawerLayout
+    /// The top drawer only: each of its windows keeps the height it has (the one its app gives it
+    /// for what it shows, or the one the owner dragged it to) instead of the drawer's. Fremspace
+    /// then sets where the window is and how wide, never how high.
+    public var fitsContent: Bool
 
-    public init(edge: DrawerEdge, size: Double, layout: DrawerLayout) {
+    public init(edge: DrawerEdge, size: Double, layout: DrawerLayout, fitsContent: Bool = false) {
         self.edge = edge
         self.size = size
         self.layout = layout
+        self.fitsContent = fitsContent
+    }
+
+    /// Whether the windows of this drawer keep their own height.
+    public var keepsWindowHeights: Bool { edge == .top && fitsContent }
+
+    private enum CodingKeys: String, CodingKey {
+        case edge, size, layout, fitsContent
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        edge = try c.decode(DrawerEdge.self, forKey: .edge)
+        size = try c.decode(Double.self, forKey: .size)
+        layout = try c.decode(DrawerLayout.self, forKey: .layout)
+        fitsContent = try c.decodeIfPresent(Bool.self, forKey: .fitsContent) ?? false
+    }
+
+    /// Written only when it is on, so other files do not change.
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(edge, forKey: .edge)
+        try c.encode(size, forKey: .size)
+        try c.encode(layout, forKey: .layout)
+        if fitsContent { try c.encode(fitsContent, forKey: .fitsContent) }
     }
 }
 

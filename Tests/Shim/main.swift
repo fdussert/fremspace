@@ -463,6 +463,11 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
     ]),
     ("DrawerGeometryTests", { DrawerGeometryTests() }, [
         ("testDrawerZoneAndFrames", { ($0 as! DrawerGeometryTests).testDrawerZoneAndFrames() }),
+        ("testTheTopDrawerIsAsWideAsTheDisplay", { ($0 as! DrawerGeometryTests).testTheTopDrawerIsAsWideAsTheDisplay() }),
+        ("testTheTopDrawerIsParkedThroughASide", { ($0 as! DrawerGeometryTests).testTheTopDrawerIsParkedThroughASide() }),
+        ("testEachEdgeNamesItsCommands", { ($0 as! DrawerGeometryTests).testEachEdgeNamesItsCommands() }),
+        ("testAWindowKeepsItsHeightInADrawerThatFitsItsContent", { ($0 as! DrawerGeometryTests).testAWindowKeepsItsHeightInADrawerThatFitsItsContent() }),
+        ("testOnlyTheTopDrawerKeepsWindowHeights", { try ($0 as! DrawerGeometryTests).testOnlyTheTopDrawerKeepsWindowHeights() }),
         ("testOwnersDeskFreeSides", { ($0 as! DrawerGeometryTests).testOwnersDeskFreeSides() }),
         ("testTwoDrawersShareOneSetOfSlotKeys", { ($0 as! DrawerGeometryTests).testTwoDrawersShareOneSetOfSlotKeys() }),
         ("testParkSideFollowsTheFallbackOrder", { ($0 as! DrawerGeometryTests).testParkSideFollowsTheFallbackOrder() }),

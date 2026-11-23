@@ -404,10 +404,18 @@ struct CanvasView: View {
             .aspectRatio(visible.width / max(visible.height, 1), contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.primary.opacity(0.18), lineWidth: 1))
-            // The display's drawers, where they are: a rail on each side of the screen.
-            .padding(.horizontal, rails ? DrawerRail.width + 6 : 0)
-            .overlay(alignment: .leading) { if rails { DrawerRail(session: session, edge: .left, hover: $railHover) } }
-            .overlay(alignment: .trailing) { if rails { DrawerRail(session: session, edge: .right, hover: $railHover) } }
+            // The display's drawers, where they are: a rail on each side of the screen and one above it.
+            .padding(.horizontal, rails ? DrawerRail.room : 0)
+            .padding(.top, rails ? DrawerRail.room : 0)
+            .overlay(alignment: .leading) {
+                if rails { DrawerRail(session: session, edge: .left, hover: $railHover).padding(.top, DrawerRail.room) }
+            }
+            .overlay(alignment: .trailing) {
+                if rails { DrawerRail(session: session, edge: .right, hover: $railHover).padding(.top, DrawerRail.room) }
+            }
+            .overlay(alignment: .top) {
+                if rails { DrawerRail(session: session, edge: .top, hover: $railHover).padding(.horizontal, DrawerRail.room) }
+            }
             .frame(maxWidth: .infinity)
             footer(connected: geometry.connected)
         }
@@ -421,7 +429,7 @@ struct CanvasView: View {
         HStack(spacing: 8) {
             if let edge = session.selection.drawer {
                 // A drawer is the display's, not the desktop's: named after the display.
-                Text("\(edge == .left ? "Left" : "Right") drawer of \(session.displaySpec?.displayName ?? "this display")")
+                Text("\(edge.title) drawer of \(session.displaySpec?.displayName ?? "this display")")
                     .font(.headline).lineLimit(1)
                 Spacer()
                 Button("Done") { session.editDrawer(nil) }
@@ -597,8 +605,7 @@ struct CanvasView: View {
             // How far each drawer comes over the layout (not while one is edited).
             if !editingDrawer {
                 ForEach(session.displaySpec?.drawers ?? [], id: \.edge) { drawer in
-                    let zone = UnitRect(x: drawer.edge == .left ? 0 : 1 - drawer.size, y: 0, w: drawer.size, h: 1)
-                    let r = rect(Self.whole, in: zone, size: size)
+                    let r = rect(Self.whole, in: drawerUnitZone(drawer), size: size)
                     DrawerZone(edge: drawer.edge, lit: railHover == drawer.edge)
                         .frame(width: r.width, height: r.height).offset(x: r.minX, y: r.minY)
                         .allowsHitTesting(false)
@@ -728,7 +735,18 @@ struct DividerHandle: View {
     }
 }
 
-/// One side of the screen: the display's drawer on that edge (click to edit it), or the place to add
+extension DrawerEdge {
+    /// The symbol that stands for the drawer of this edge.
+    var symbol: String {
+        switch self {
+        case .left: return "sidebar.left"
+        case .right: return "sidebar.right"
+        case .top: return "rectangle.topthird.inset.filled"
+        }
+    }
+}
+
+/// One edge of the screen: the display's drawer on that edge (click to edit it), or the place to add
 /// one. Always there, on every desktop, because a drawer belongs to the display.
 struct DrawerRail: View {
     @ObservedObject var session: EditSession
@@ -737,6 +755,8 @@ struct DrawerRail: View {
     @Binding var hover: DrawerEdge?
 
     static let width: CGFloat = 24
+    /// A rail and the space between it and the screen.
+    static let room: CGFloat = width + 6
 
     var body: some View {
         let drawer = session.displaySpec?.drawers.first { $0.edge == edge }
@@ -750,11 +770,21 @@ struct DrawerRail: View {
             }
         } label: {
             // With the apps that live in the drawer when the rail is long enough for them.
-            ViewThatFits(in: .vertical) {
-                column(drawer, apps: true)
-                column(drawer, apps: false)
+            Group {
+                if edge == .top {
+                    ViewThatFits(in: .horizontal) {
+                        row(drawer, apps: true)
+                        row(drawer, apps: false)
+                    }
+                    .frame(height: Self.width).frame(maxWidth: .infinity)
+                } else {
+                    ViewThatFits(in: .vertical) {
+                        column(drawer, apps: true)
+                        column(drawer, apps: false)
+                    }
+                    .frame(width: Self.width).frame(maxHeight: .infinity)
+                }
             }
-            .frame(width: Self.width).frame(maxHeight: .infinity)
             // The name in the text's own colour: in the accent on a tint of the accent it was the
             // hardest thing to read in the window.
             .foregroundColor(editing ? .white : drawer != nil ? .primary : .secondary)
@@ -767,56 +797,87 @@ struct DrawerRail: View {
         .onHover { inside in
             if inside { hover = edge } else if hover == edge { hover = nil }
         }
-        .help(drawer == nil ? "Add a \(edge.rawValue) drawer to this display: a panel of windows that slides over the \(edge.rawValue) edge"
+        .help(drawer == nil ? (edge == .top
+                               ? "Add a top drawer to this display: a panel of windows that comes down from the top"
+                               : "Add a \(edge.rawValue) drawer to this display: a panel of windows that slides over the \(edge.rawValue) edge")
               : editing ? "Back to the desktop's layout" : "Edit the \(edge.rawValue) drawer of this display")
-        .accessibilityLabel(drawer.map { "\(edge == .left ? "Left" : "Right") drawer, \(fractionLabel($0.size)) of the display" }
+        .accessibilityLabel(drawer.map { "\(edge.title) drawer, \(fractionLabel($0.size)) of the display" }
                             ?? "Add a \(edge.rawValue) drawer")
         .accessibilityAddTraits(editing ? .isSelected : [])
     }
 
-    private func column(_ drawer: DrawerSpec?, apps: Bool) -> some View {
-        let name = edge == .left ? "Left drawer" : "Right drawer"
+    /// The apps the drawer names, and those of the windows sent to it by hand, each once: these
+    /// are fainter, they are not in the configuration.
+    private func apps(_ drawer: DrawerSpec?) -> (named: [Rule], guests: [String]) {
         let rules = drawer?.layout.slots.flatMap(\.rules) ?? []
-        // The apps of the windows sent to this drawer by hand, each once: fainter, they are not
-        // in the configuration.
         var seen = Set(rules.map(\.bundleID))
         let guests = (drawer?.layout.slots ?? []).flatMap { slot in
             session.displaySpec.map { session.drawerGuests(on: $0.identity, edge: edge, slot: slot).map(\.bundleID) } ?? []
         }.filter { seen.insert($0).inserted }
+        return (rules, guests)
+    }
+
+    private var symbol: some View {
+        let drawer = session.displaySpec?.drawers.first { $0.edge == edge }
+        return Image(systemName: drawer == nil ? "plus" : edge.symbol)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(drawer != nil && session.selection.drawer != edge ? .accentColor : nil)
+    }
+
+    /// A handful of icons: the rail says a drawer has apps, the drawer's own screen says which.
+    @ViewBuilder
+    private func icons(_ held: (named: [Rule], guests: [String])) -> some View {
+        ForEach(Array(held.named.prefix(4).enumerated()), id: \.offset) { _, rule in
+            if let icon = AppIcons.icon(rule.bundleID) {
+                Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16)
+            }
+        }
+        ForEach(Array(held.guests.prefix(2)), id: \.self) { bundleID in
+            if let icon = AppIcons.icon(bundleID) {
+                Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16).opacity(0.55)
+            }
+        }
+    }
+
+    private func column(_ drawer: DrawerSpec?, apps: Bool) -> some View {
+        let held = self.apps(drawer)
         return VStack(spacing: 8) {
-            Image(systemName: drawer == nil ? "plus" : edge == .left ? "sidebar.left" : "sidebar.right")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(drawer != nil && session.selection.drawer != edge ? .accentColor : nil)
+            symbol
             // Read from the screen outwards, like the spine of a book lying next to it. An edge
             // without a drawer has the + alone: its name there read as a drawer that exists.
             if let drawer {
-                Text("\(name)  \(fractionLabel(drawer.size))")
+                Text("\(edge.title) drawer  \(fractionLabel(drawer.size))")
                     .font(.caption.weight(.medium)).lineLimit(1).fixedSize()
                     .rotationEffect(.degrees(edge == .left ? -90 : 90))
                     .frame(width: 16, height: 110)
             }
-            if apps, !(rules.isEmpty && guests.isEmpty) {
-                VStack(spacing: 4) {
-                    // A handful: the rail says a drawer has apps, the drawer's own screen says which.
-                    ForEach(Array(rules.prefix(4).enumerated()), id: \.offset) { _, rule in
-                        if let icon = AppIcons.icon(rule.bundleID) {
-                            Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16)
-                        }
-                    }
-                    ForEach(Array(guests.prefix(2)), id: \.self) { bundleID in
-                        if let icon = AppIcons.icon(bundleID) {
-                            Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16).opacity(0.55)
-                        }
-                    }
-                }
+            if apps, !(held.named.isEmpty && held.guests.isEmpty) {
+                VStack(spacing: 4) { icons(held) }
             }
         }
         .padding(.vertical, 8)
     }
+
+    /// The top rail: the same, lying along the top of the screen.
+    private func row(_ drawer: DrawerSpec?, apps: Bool) -> some View {
+        let held = self.apps(drawer)
+        return HStack(spacing: 8) {
+            symbol
+            if let drawer {
+                Text("\(edge.title) drawer  \(fractionLabel(drawer.size))")
+                    .font(.caption.weight(.medium)).lineLimit(1).fixedSize()
+            }
+            if apps, !(held.named.isEmpty && held.guests.isEmpty) {
+                HStack(spacing: 4) { icons(held) }
+            }
+        }
+        .padding(.horizontal, 8)
+    }
 }
 
-/// How far a drawer comes over the desktop's layout: a bracket in the gutters at the top and the
-/// bottom of the screen, in the rail's colour, and the whole zone while the pointer is on the rail.
+/// How far a drawer comes over the desktop's layout: a bracket in the gutters of the screen (at
+/// the top and the bottom for a side drawer, on the left and the right for the top one), in the
+/// rail's colour, and the whole zone while the pointer is on the rail.
 /// Not a line across the tiles: it would strike through their titles and vanish on a tile of the
 /// accent's hue. And nothing white or dashed, which on this screen mean "selected" and "to fill in".
 struct DrawerZone: View {
@@ -824,27 +885,27 @@ struct DrawerZone: View {
     let lit: Bool
 
     var body: some View {
-        let inner: Alignment = edge == .left ? .trailing : .leading
+        let top = edge == .top
         Rectangle().fill(Color.accentColor.opacity(lit ? 0.32 : 0))
-            .overlay(alignment: .top) { bar }
-            .overlay(alignment: .bottom) { bar }
-            .overlay(alignment: inner) {
+            .overlay(alignment: top ? .leading : .top) { bar }
+            .overlay(alignment: top ? .trailing : .bottom) { bar }
+            .overlay(alignment: top ? .bottom : edge == .left ? .trailing : .leading) {
                 // The inner edge itself only while the zone is lit.
-                Rectangle().fill(Color.accentColor).frame(width: 2).opacity(lit ? 1 : 0)
+                Rectangle().fill(Color.accentColor).frame(width: top ? nil : 2, height: top ? 2 : nil).opacity(lit ? 1 : 0)
             }
-            .overlay(alignment: edge == .left ? .topTrailing : .topLeading) { tick }
-            .overlay(alignment: edge == .left ? .bottomTrailing : .bottomLeading) { tick }
+            .overlay(alignment: top ? .bottomLeading : edge == .left ? .topTrailing : .topLeading) { tick }
+            .overlay(alignment: top ? .bottomTrailing : edge == .left ? .bottomTrailing : .bottomLeading) { tick }
             .animation(.easeOut(duration: 0.12), value: lit)
     }
 
-    /// As high as the gutter between the screen's edge and the tiles.
+    /// As thick as the gutter between the screen's edge and the tiles.
     private var bar: some View {
-        Rectangle().fill(Color.accentColor).frame(height: 3)
+        Rectangle().fill(Color.accentColor).frame(width: edge == .top ? 3 : nil, height: edge == .top ? nil : 3)
     }
 
-    /// Where the drawer stops; short enough to stay above the tiles' titles.
+    /// Where the drawer stops; short enough to stay clear of the tiles' titles.
     private var tick: some View {
-        Rectangle().fill(Color.accentColor).frame(width: 2, height: 7)
+        Rectangle().fill(Color.accentColor).frame(width: edge == .top ? 7 : 2, height: edge == .top ? 2 : 7)
     }
 }
 

@@ -16,6 +16,8 @@ final class Hotkeys {
     /// L for the left drawer, D ("droite") for the right one (owner, 2026-11-10).
     static let drawerLeft = hyper(keyCode(for: "l", fallback: kVK_ANSI_L))
     static let drawerRight = hyper(keyCode(for: "d", fallback: kVK_ANSI_D))
+    /// T for the top drawer.
+    static let drawerTop = hyper(keyCode(for: "t", fallback: kVK_ANSI_T))
     static let openAdmin = hyper(keyCode(for: ",", fallback: kVK_ANSI_Comma))
     static let windowMenu = hyper(keyCode(for: "w", fallback: kVK_ANSI_W))
     /// K for the palette: windows, apps, desktops and commands by name.
@@ -66,6 +68,7 @@ final class Hotkeys {
     /// The drawer keys with Shift: send the active window to that drawer, or take it out.
     static let drawerSendLeft: Combo = (drawerLeft.0, UInt32(controlKey | optionKey | cmdKey | shiftKey))
     static let drawerSendRight: Combo = (drawerRight.0, UInt32(controlKey | optionKey | cmdKey | shiftKey))
+    static let drawerSendTop: Combo = (drawerTop.0, UInt32(controlKey | optionKey | cmdKey | shiftKey))
 
     private static let signature: OSType = 0x4652_454D // "FREM"
 

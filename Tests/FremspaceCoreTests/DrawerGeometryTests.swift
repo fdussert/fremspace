@@ -132,4 +132,61 @@ final class DrawerGeometryTests: XCTestCase {
         let slot = CGRect(x: 1520, y: -556, width: 1100, height: 1849)
         XCTAssertNil(hiddenParkedFrame(slot, display: middle, others: [left, right], edge: .left, strip: 1))
     }
+
+    func testTheTopDrawerIsAsWideAsTheDisplay() {
+        let d = DrawerSpec(edge: .top, size: 0.5,
+                           layout: DrawerLayout(slots: [DrawerSlot(id: "main", rect: UnitRect(x: 0, y: 0, w: 1, h: 1))]))
+        // A laptop alone, under its menu bar.
+        let visible = CGRect(x: 0, y: 38, width: 1512, height: 944)
+        XCTAssertEqual(drawerZone(d, visible: visible), CGRect(x: 0, y: 38, width: 1512, height: 472))
+        XCTAssertEqual(drawerFrames([d], visible: visible, gap: 8)["top.main"], CGRect(x: 8, y: 46, width: 1496, height: 456))
+        XCTAssertEqual(drawerUnitZone(d), UnitRect(x: 0, y: 0, w: 1, h: 0.5))
+        XCTAssertEqual(drawerUnitZone(DrawerSpec(edge: .right, size: 0.25, layout: halves)), UnitRect(x: 0.75, y: 0, w: 0.25, h: 1))
+        XCTAssertEqual(drawer(ofSlotKey: "top.main", in: [d])?.edge, .top)
+    }
+
+    func testTheTopDrawerIsParkedThroughASide() {
+        // macOS refuses a window above the top of a display: the top drawer leaves by the left,
+        // down to one point, like a left drawer.
+        let slot = CGRect(x: 8, y: 46, width: 1496, height: 456)
+        XCTAssertEqual(hiddenParkedFrame(slot, display: builtIn, others: [], edge: .top, strip: 1),
+                       CGRect(x: -1495, y: 46, width: 1496, height: 456))
+        XCTAssertEqual(parkSide(for: .top, free: [.right, .top, .bottom]), .right)
+        XCTAssertEqual(parkSide(for: .top, free: [.top, .bottom]), .bottom)
+        // Through the bottom, its tab is in the middle: the corners are the side drawers'.
+        XCTAssertEqual(compactParkedFrame(slot, display: builtIn, side: .bottom, strip: 8, edge: .top, width: 160, gap: 8),
+                       CGRect(x: 676, y: 974, width: 160, height: 456))
+    }
+
+    func testAWindowKeepsItsHeightInADrawerThatFitsItsContent() {
+        let visible = CGRect(x: 0, y: 38, width: 1512, height: 944)
+        let slot = CGRect(x: 8, y: 46, width: 1496, height: 456)
+        // The slot's place and width, the window's own height.
+        XCTAssertEqual(fittedFrame(slot: slot, windowHeight: 300, visible: visible, gap: 8), CGRect(x: 8, y: 46, width: 1496, height: 300))
+        // Never past the bottom of the display.
+        XCTAssertEqual(fittedFrame(slot: slot, windowHeight: 2000, visible: visible, gap: 8), CGRect(x: 8, y: 46, width: 1496, height: 928))
+        // A window that does not say how high it is takes the slot.
+        XCTAssertEqual(fittedFrame(slot: slot, windowHeight: nil, visible: visible, gap: 8), slot)
+    }
+
+    func testOnlyTheTopDrawerKeepsWindowHeights() throws {
+        let layout = DrawerLayout(slots: [DrawerSlot(id: "main", rect: UnitRect(x: 0, y: 0, w: 1, h: 1))])
+        XCTAssertTrue(DrawerSpec(edge: .top, size: 0.5, layout: layout, fitsContent: true).keepsWindowHeights)
+        XCTAssertFalse(DrawerSpec(edge: .left, size: 0.5, layout: layout, fitsContent: true).keepsWindowHeights)
+        XCTAssertFalse(DrawerSpec(edge: .top, size: 0.5, layout: layout).keepsWindowHeights)
+        // Written only when on; a file without it reads as off.
+        let plain = try JSONEncoder().encode(DrawerSpec(edge: .top, size: 0.5, layout: layout))
+        XCTAssertFalse(String(decoding: plain, as: UTF8.self).contains("fitsContent"))
+        let read = try JSONDecoder().decode(DrawerSpec.self, from: plain)
+        XCTAssertFalse(read.fitsContent)
+        let fitting = try JSONEncoder().encode(DrawerSpec(edge: .top, size: 0.5, layout: layout, fitsContent: true))
+        let back = try JSONDecoder().decode(DrawerSpec.self, from: fitting)
+        XCTAssertTrue(back.fitsContent)
+    }
+
+    func testEachEdgeNamesItsCommands() {
+        XCTAssertEqual(DrawerEdge.allCases.map(\.toggleCommand), ["drawerLeft", "drawerRight", "drawerTop"])
+        XCTAssertEqual(DrawerEdge.top.sendCommand, "drawerSendTop")
+        XCTAssertEqual(DrawerEdge.left.title, "Left")
+    }
 }

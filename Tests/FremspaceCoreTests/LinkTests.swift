@@ -11,7 +11,7 @@ final class LinkTests: XCTestCase {
 
     func testALinkRunsWhatShowsGoesToOrResizes() {
         for id in ["palette", "openAdmin", "windowMenu", "reapply", "focusToggle", "slotLeft", "slotDown",
-                   "stackNext", "stackPrevious", "drawerLeft", "drawerRight", "scene.1", "scene.4",
+                   "stackNext", "stackPrevious", "drawerLeft", "drawerRight", "drawerTop", "scene.1", "scene.4",
                    "quick.leftHalf", "quick.maximize", "quick.restore"] {
             XCTAssertTrue(linkMayRun(id), id)
         }
