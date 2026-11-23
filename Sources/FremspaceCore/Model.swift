@@ -33,12 +33,16 @@ public struct Config: Codable, Equatable {
     /// General setting: the palette, the maps of desktops and the editor show a picture of each
     /// window. Off unless switched on: it needs the Screen Recording permission.
     public var windowPreviews: Bool = false
+    /// General setting: the palette also lists the rows of the owner's sources, the executables of
+    /// the "Palette Sources" folder (see `SourceItem`). Off unless switched on: Fremspace then runs
+    /// those files.
+    public var paletteSources: Bool = false
 
     public init(version: Int = Config.currentVersion, configurations: [Configuration], noFloating: Bool = false,
                 floatingApps: [String] = [],
                 shortcuts: [String: Shortcut] = [:], fullScreenCalls: [String] = [], hyperKey: Bool = false,
                 resizeLayouts: Bool = false, desktopNames: Bool = true, notchMap: Bool = true,
-                windowPreviews: Bool = false) {
+                windowPreviews: Bool = false, paletteSources: Bool = false) {
         self.version = version
         self.configurations = configurations
         self.noFloating = noFloating
@@ -50,11 +54,12 @@ public struct Config: Codable, Equatable {
         self.desktopNames = desktopNames
         self.notchMap = notchMap
         self.windowPreviews = windowPreviews
+        self.paletteSources = paletteSources
     }
 
     private enum CodingKeys: String, CodingKey {
         case version, configurations, noFloating, shortcuts, fullScreenCalls, hyperKey, resizeLayouts, desktopNames, notchMap
-        case windowPreviews, floatingApps
+        case windowPreviews, floatingApps, paletteSources
     }
 
     /// For one day (2026-11-10) the switch was written in each configuration.
@@ -81,6 +86,7 @@ public struct Config: Codable, Equatable {
         desktopNames = try c.decodeIfPresent(Bool.self, forKey: .desktopNames) ?? true
         notchMap = try c.decodeIfPresent(Bool.self, forKey: .notchMap) ?? true
         windowPreviews = try c.decodeIfPresent(Bool.self, forKey: .windowPreviews) ?? false
+        paletteSources = try c.decodeIfPresent(Bool.self, forKey: .paletteSources) ?? false
         // For one day (2026-11-10) this was an option of the app's slot.
         var calls = Set(try c.decodeIfPresent([String].self, forKey: .fullScreenCalls) ?? [])
         for ci in configurations.indices {
@@ -110,6 +116,7 @@ public struct Config: Codable, Equatable {
         if hyperKey { try c.encode(hyperKey, forKey: .hyperKey) }
         if resizeLayouts { try c.encode(resizeLayouts, forKey: .resizeLayouts) }
         if windowPreviews { try c.encode(windowPreviews, forKey: .windowPreviews) }
+        if paletteSources { try c.encode(paletteSources, forKey: .paletteSources) }
         // On unless switched off.
         if !desktopNames { try c.encode(desktopNames, forKey: .desktopNames) }
         if !notchMap { try c.encode(notchMap, forKey: .notchMap) }

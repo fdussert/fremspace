@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""Fremspace palette source: the Claude Code sessions their owner has named.
+
+    claude-code list                one row per recent session that was given a name
+    claude-code run <session id>    opens a terminal on `claude --resume <session id>`
+
+Sessions are read from $CLAUDE_CONFIG_DIR/projects, or ~/.claude/projects when it is not set.
+"""
+import glob
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+RECENT = 40                       # transcripts looked at, the most recently written first
+HEAD, TAIL = 64 * 1024, 256 * 1024
+SESSION_ID = re.compile(r"[0-9a-fA-F-]{8,64}")
+# The folder is found in the bytes, not by parsing lines: the first lines of a transcript
+# can be longer than the part that is read, and a line cut short is not JSON any more.
+CWD = re.compile(rb'"cwd":\s*("(?:[^"\\]|\\.)*")')
+
+
+def projects_dir():
+    root = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+    return os.path.join(root, "projects")
+
+
+def read_ends(path, size):
+    """The start and the end of a transcript: they can weigh hundreds of megabytes."""
+    with open(path, "rb") as transcript:
+        if size <= HEAD + TAIL:
+            return transcript.read(), b""
+        head = transcript.read(HEAD)
+        transcript.seek(size - TAIL)
+        return head, transcript.read()
+
+
+def folder_of(head, tail):
+    """The folder the session was started in: the first one its transcript mentions."""
+    found = CWD.search(head) or CWD.search(tail)
+    try:
+        return json.loads(found.group(1)) if found else None
+    except ValueError:
+        return None
+
+
+def name_of(head, tail):
+    """The name its owner gave the session; the last rename wins."""
+    name = None
+    for line in (head + b"\n" + tail).split(b"\n"):
+        if b'"custom-title"' not in line:
+            continue
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(entry, dict) and entry.get("type") == "custom-title" and entry.get("customTitle"):
+            name = str(entry["customTitle"]).strip() or name
+    return name
+
+
+def ago(seconds):
+    for unit, length in (("d", 86400), ("h", 3600), ("min", 60)):
+        if seconds >= length:
+            return "%d %s ago" % (seconds // length, unit)
+    return "just now"
+
+
+def list_items():
+    transcripts = []
+    try:
+        with os.scandir(projects_dir()) as projects:
+            for project in projects:
+                if not project.is_dir():
+                    continue
+                with os.scandir(project.path) as entries:
+                    for entry in entries:
+                        if entry.name.endswith(".jsonl") and entry.is_file():
+                            status = entry.stat()
+                            transcripts.append((status.st_mtime, status.st_size, entry.path))
+    except OSError:
+        return []  # Claude Code was never used here
+    transcripts.sort(reverse=True)
+    now = time.time()
+    items = []
+    for modified, size, path in transcripts[:RECENT]:
+        try:
+            head, tail = read_ends(path, size)
+        except OSError:
+            continue
+        name = name_of(head, tail)
+        if not name:
+            continue
+        folder = folder_of(head, tail)
+        project = os.path.basename(folder.rstrip("/")) if folder else ""
+        items.append({
+            "title": name,
+            "subtitle": " · ".join(p for p in (project, ago(now - modified)) if p),
+            "arg": os.path.basename(path)[:-len(".jsonl")],
+            "keywords": [w for w in ("claude", project) if w],
+        })
+    return items
+
+
+def user_temp_dir():
+    # Run by hand without TMPDIR, /tmp would be shared by everyone on the Mac: ask macOS for
+    # the owner's own temporary folder (65537 is _CS_DARWIN_USER_TEMP_DIR).
+    if os.environ.get("TMPDIR"):
+        return os.environ["TMPDIR"]
+    try:
+        return os.confstr(65537) or tempfile.gettempdir()
+    except (OSError, ValueError):
+        return tempfile.gettempdir()
+
+
+def run(session):
+    if not SESSION_ID.fullmatch(session):
+        print("claude-code: unexpected argument", file=sys.stderr)
+        return 2
+    found = glob.glob(os.path.join(glob.escape(projects_dir()), "*", session + ".jsonl"))
+    if not found:
+        print("claude-code: no such session any more", file=sys.stderr)
+        return 1
+    folder = folder_of(*read_ends(found[0], os.path.getsize(found[0])))
+    lines = ["#!/bin/sh", 'rm -f "$0"']  # the file is of no use once the terminal has read it
+    if os.environ.get("CLAUDE_CONFIG_DIR"):
+        # The terminal starts from the owner's login environment, not from this one.
+        lines.append("export CLAUDE_CONFIG_DIR=" + shlex.quote(os.environ["CLAUDE_CONFIG_DIR"]))
+    if folder and os.path.isdir(folder):
+        # Claude Code looks a session up from the folder it was started in.
+        lines.append("cd " + shlex.quote(folder) + " || exit 1")
+    lines.append("exec %s --resume %s" % (shlex.quote(shutil.which("claude") or "claude"), session))
+    # A .command file is opened by the owner's terminal, which runs it in a new window:
+    # no Apple event is sent, so macOS has no permission to ask for.
+    handle, command = tempfile.mkstemp(prefix="fremspace-claude-", suffix=".command", dir=user_temp_dir())
+    with os.fdopen(handle, "w") as script:
+        script.write("\n".join(lines) + "\n")
+    os.chmod(command, 0o700)
+    subprocess.run(["/usr/bin/open", command], stdin=subprocess.DEVNULL, check=True, timeout=8)
+    return 0
+
+
+def main(argv):
+    if argv[1:] == ["list"]:
+        json.dump({"items": list_items()}, sys.stdout)
+        return 0
+    if len(argv) == 3 and argv[1] == "run":
+        try:
+            return run(argv[2])
+        except Exception as error:
+            print("claude-code: %s" % error, file=sys.stderr)
+            return 1
+    print("usage: claude-code list | claude-code run <session id>", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

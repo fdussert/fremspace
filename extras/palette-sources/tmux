@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""Fremspace palette source: every window of every tmux session.
+
+    tmux list            one row per window of the default tmux server
+    tmux run <target>    shows that window, <target> being "$<session id>:@<window id>"
+"""
+import json
+import re
+import shutil
+import subprocess
+import sys
+
+# tmux runs inside a terminal and cannot say which one. Put that terminal's bundle
+# identifier here (for instance "com.apple.Terminal") to have it brought to the front.
+TERMINAL_APP = ""
+MAX_ITEMS = 200
+# The two names come last: they are the only fields their owner types, and a tab
+# typed into the window's name then stays in the last field instead of shifting the others.
+FIELDS = ("session_id", "window_id", "window_index", "window_active", "session_attached",
+          "pane_current_command", "session_name", "window_name")
+
+
+def tmux(*args, timeout=2.5):
+    exe = shutil.which("tmux")
+    if not exe:
+        raise RuntimeError("tmux is not installed")
+    # -u: without it, and without a UTF-8 locale in the environment, tmux prints "_" in
+    # place of every character that is not printable ASCII, the tabs between fields included.
+    done = subprocess.run(
+        [exe, "-u", *args],
+        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout,
+    )
+    if done.returncode != 0:
+        raise RuntimeError(done.stderr.strip() or "tmux failed")
+    return done.stdout
+
+
+def list_items():
+    try:
+        out = tmux("list-windows", "-a", "-F", "\t".join("#{%s}" % f for f in FIELDS))
+    except Exception:
+        return []  # tmux is not installed, or no server is running
+    items = []
+    for line in out.splitlines():
+        parts = line.split("\t", len(FIELDS) - 1)
+        if len(parts) != len(FIELDS):
+            continue
+        window = dict(zip(FIELDS, parts))
+        command = window["pane_current_command"]
+        item = {
+            "title": window["window_name"] or command or window["session_name"],
+            "subtitle": " · ".join(p for p in (
+                "%s:%s" % (window["session_name"], window["window_index"]), command) if p),
+            # Identifiers, not names: they survive a rename between listing and choosing.
+            "arg": "%s:%s" % (window["session_id"], window["window_id"]),
+            "keywords": [w for w in (window["session_name"], command) if w],
+        }
+        if window["window_active"] == "1" and window["session_attached"] not in ("", "0"):
+            item["tag"] = "shown"
+        if TERMINAL_APP:
+            item["app"] = TERMINAL_APP
+        items.append(item)
+    return items[:MAX_ITEMS]
+
+
+def run(target):
+    if not re.fullmatch(r"\$\d+:@\d+", target):
+        print("tmux: unexpected argument", file=sys.stderr)
+        return 2
+    if tmux("list-clients", "-F", "#{client_name}").strip():
+        # Called from outside tmux, switch-client acts on the most recently used client.
+        # A target with a colon moves it to the session and to the window in one go.
+        tmux("switch-client", "-t", target, timeout=8)
+    else:
+        # Nobody is attached: make the window its session's current one, for the next attach.
+        tmux("select-window", "-t", target, timeout=8)
+    return 0
+
+
+def main(argv):
+    if argv[1:] == ["list"]:
+        json.dump({"items": list_items()}, sys.stdout)
+        return 0
+    if len(argv) == 3 and argv[1] == "run":
+        try:
+            return run(argv[2])
+        except Exception as error:
+            print("tmux: %s" % error, file=sys.stderr)
+            return 1
+    print("usage: tmux list | tmux run '$<session id>:@<window id>'", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

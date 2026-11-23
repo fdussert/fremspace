@@ -9,6 +9,7 @@ enum SettingSection: String {
     case generalSlots = "general.slots"
     case generalDesktops = "general.desktops"
     case generalCalls = "general.calls"
+    case generalPalette = "general.palette"
     case shortcutsHyper = "shortcuts.hyper"
     case maintenanceLayouts = "maintenance.layouts"
     case maintenanceWindows = "maintenance.windows"
@@ -22,6 +23,7 @@ enum SettingSection: String {
         case .generalSlots: return "Slots"
         case .generalDesktops: return "Desktops"
         case .generalCalls: return "Calls in full screen"
+        case .generalPalette: return "Palette"
         case .shortcutsHyper: return "Hyper key"
         case .maintenanceLayouts: return "Layouts"
         case .maintenanceWindows: return "Windows"
@@ -34,7 +36,7 @@ enum SettingSection: String {
 /// The switches and commands of the settings pages. The pages take their names here and the search
 /// lists them, so a setting cannot be on a page without being found.
 enum SettingRow: String, CaseIterable {
-    case openAtLogin, paused, autoUpdates, checkForUpdates, noFloating, floatingApps, resizeLayouts, desktopNames, notchMap, windowPreviews, fullScreenCalls, hyperKey
+    case openAtLogin, paused, autoUpdates, checkForUpdates, noFloating, floatingApps, resizeLayouts, desktopNames, notchMap, windowPreviews, fullScreenCalls, paletteSources, hyperKey
     case reapply, restoreEverything, bringBack, openConfigFile, reloadConfig, copyDiagnostics, dumpWindows, reportProblem
 
     var title: String {
@@ -50,6 +52,7 @@ enum SettingRow: String, CaseIterable {
         case .notchMap: return "Map of desktops at the notch"
         case .windowPreviews: return "Window previews"
         case .fullScreenCalls: return "Calls in full screen"
+        case .paletteSources: return "Palette sources"
         case .hyperKey: return "Use Caps Lock as ⌃⌥⌘"
         case .reapply: return "Re-apply the layouts"
         case .restoreEverything: return "Restore everything now"
@@ -65,7 +68,7 @@ enum SettingRow: String, CaseIterable {
     var page: SettingsPage {
         switch self {
         case .openAtLogin, .paused, .autoUpdates, .checkForUpdates, .noFloating, .floatingApps, .resizeLayouts, .desktopNames, .notchMap,
-             .windowPreviews, .fullScreenCalls: return .general
+             .windowPreviews, .fullScreenCalls, .paletteSources: return .general
         case .hyperKey: return .shortcuts
         default: return .maintenance
         }
@@ -78,6 +81,7 @@ enum SettingRow: String, CaseIterable {
         case .resizeLayouts: return .generalSlots
         case .desktopNames, .notchMap, .windowPreviews: return .generalDesktops
         case .fullScreenCalls: return .generalCalls
+        case .paletteSources: return .generalPalette
         case .hyperKey: return .shortcutsHyper
         case .reapply, .restoreEverything: return .maintenanceLayouts
         case .bringBack: return .maintenanceWindows
@@ -100,6 +104,7 @@ enum SettingRow: String, CaseIterable {
         case .notchMap: return ["hover", "pointer", "resting", "encoche", "switcher", "overview"]
         case .windowPreviews: return ["picture", "thumbnail", "screen recording", "palette", "aperçu", "vignette"]
         case .fullScreenCalls: return ["Teams", "Zoom", "meeting", "fullscreen"]
+        case .paletteSources: return ["launcher", "script", "plugin", "extension", "session", "terminal", "tmux", "agent"]
         case .hyperKey: return ["hyper", "caps lock", "verr maj"]
         case .reapply: return ["reapply", "fix", "sort"]
         case .restoreEverything: return ["login", "reopen"]

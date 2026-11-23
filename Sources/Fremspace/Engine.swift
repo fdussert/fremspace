@@ -566,6 +566,8 @@ final class Engine {
     var notchMap: Bool { config?.notchMap ?? true }
     /// The general setting "window previews".
     var windowPreviews: Bool { config?.windowPreviews ?? false }
+    /// Whether the palette lists the rows of the owner's sources (and so runs them).
+    var paletteSources: Bool { config?.paletteSources ?? false }
     /// A display shows another desktop (the desktop links are up to date when this is called).
     var onDesktopChange: (() -> Void)?
     /// The config file was read again.

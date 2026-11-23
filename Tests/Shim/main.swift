@@ -172,6 +172,17 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testTheGeneralListRoundTripsAndTheSlotOptionOfOneDayMovesToIt", { try ($0 as! CallsTests).testTheGeneralListRoundTripsAndTheSlotOptionOfOneDayMovesToIt() }),
         ("testATitleTellsAZoomMeetingFromZoomsOtherWindows", { try ($0 as! CallsTests).testATitleTellsAZoomMeetingFromZoomsOtherWindows() }),
     ]),
+    ("PaletteSourcesTests", { PaletteSourcesTests() }, [
+        ("testASourceListsRowsWithWhatToDoWhenChosen", { ($0 as! PaletteSourcesTests).testASourceListsRowsWithWhatToDoWhenChosen() }),
+        ("testWhatIsNotAListIsNotRead", { ($0 as! PaletteSourcesTests).testWhatIsNotAListIsNotRead() }),
+        ("testARowThatCannotBeShownOrChosenIsLeftOut", { ($0 as! PaletteSourcesTests).testARowThatCannotBeShownOrChosenIsLeftOut() }),
+        ("testTextIsOneLineAndCut", { ($0 as! PaletteSourcesTests).testTextIsOneLineAndCut() }),
+        ("testNoMoreRowsThanTheLimit", { ($0 as! PaletteSourcesTests).testNoMoreRowsThanTheLimit() }),
+        ("testOnlyTheOwnersOwnExecutablesAreRun", { ($0 as! PaletteSourcesTests).testOnlyTheOwnersOwnExecutablesAreRun() }),
+        ("testARowOfASourceIsFoundByItsTitleAndItsSource", { ($0 as! PaletteSourcesTests).testARowOfASourceIsFoundByItsTitleAndItsSource() }),
+        ("testAmongEqualMatchesAWindowComesBeforeASourceRowBeforeAnApp", { ($0 as! PaletteSourcesTests).testAmongEqualMatchesAWindowComesBeforeASourceRowBeforeAnApp() }),
+        ("testASourceRunsWithTheUsualPlacesOfTools", { ($0 as! PaletteSourcesTests).testASourceRunsWithTheUsualPlacesOfTools() }),
+    ]),
     ("PaletteTests", { PaletteTests() }, [
         ("testAWordMatchesBestAtTheStartThenAWordThenInitialsThenTheMiddle", { ($0 as! PaletteTests).testAWordMatchesBestAtTheStartThenAWordThenInitialsThenTheMiddle() }),
         ("testAccentsAndCaseDoNotCount", { ($0 as! PaletteTests).testAccentsAndCaseDoNotCount() }),

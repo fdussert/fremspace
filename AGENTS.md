@@ -33,6 +33,8 @@ Fremspace is a macOS window manager in Swift, built with plain `swiftc`. Read th
   The distributed app updates itself through Sparkle (`Updater.swift`, compiled only with
   `FREMSPACE_SPARKLE`, which `scripts/release.sh` sets): it fetches the feed of its versions and
   sends nothing. The everyday build has no Sparkle and makes no request at all.
+  The palette runs the owner's own scripts (`PaletteSources.swift`) only when "Palette sources"
+  is switched on, only the owner's files of one folder, and never anything a script printed.
   Already there, and listed in the README: macOS asks for notifications the first time a window
   command confirms something (`WindowCommands.notify`); nothing depends on the answer.
 - Everything in the repository is in English. Comments say why, not what.

@@ -25,7 +25,9 @@ in their slot, stay there, and are all back where they were after a restart.
   that matches the connected displays is applied. A travel version turns the slots of the big
   displays into desktops of the laptop. Displays take the name you give them ("Main", "Right").
 - **A palette** (⌃⌥⌘K) that finds an open window on any desktop, an app, a desktop, a scene or a
-  command, over a map of every desktop that the arrow keys go through.
+  command, over a map of every desktop that the arrow keys go through. With **palette sources**
+  switched on it also lists what your own scripts list: agent sessions, terminal tabs, anything
+  with a name ([how to write one, and ready-made ones](extras/palette-sources/README.md)).
 - **Scenes** that switch several displays to their desktops at once, and can put a slot in Focus,
   open or close a drawer and open apps; asking for a scene again leaves it and goes back to what
   the displays showed.
@@ -87,6 +89,11 @@ open dist/Fremspace.app
 - **The map under the notch** is on unless you switch it off, on a Mac with a notch. While it is
   open Fremspace filters key presses too: with the pointer on the map, the arrow keys, Return and
   Escape are the map's; every other key goes to the app in front.
+- **Palette sources** are off unless you switch them on. While on, Fremspace runs the executable
+  files of `~/Library/Application Support/Fremspace/Palette Sources/` each time the palette opens,
+  to ask them for their rows, and runs one again when you choose a row of it. Only files that are
+  yours and that nobody else may write are run, for a few seconds at most; what a script does is
+  the script's business, and Fremspace ships none in that folder.
 - **The Hyper key** is off unless you switch it on. While on, Caps Lock is remapped in the system and
   Fremspace filters key presses to read it; the mapping is removed when Fremspace quits.
 - **If Fremspace crashes.** Two things wait for it to start again, which puts both right: with the

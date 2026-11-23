@@ -9,6 +9,12 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- Palette sources: the palette can list rows that come from your own scripts, next to the
+  windows, apps, desktops and commands. A source is an executable file in
+  `~/Library/Application Support/Fremspace/Palette Sources/`; it lists rows (a title, and a link
+  to open or a word handed back to it when the row is chosen). Off unless switched on in
+  General → Palette. Ready-made sources for a few terminal and agent tools are in
+  `extras/palette-sources`, with the format.
 - A display can have a drawer on its top edge as well: a panel as wide as the display that comes
   down over its upper half (or a third, two thirds, three quarters), added with the rail above
   the screen in the editor. ⌃⌥⌘T opens and closes it, ⌃⌥⇧⌘T sends the window in front to it.

@@ -9,6 +9,8 @@ enum PaletteAction {
     case desktop(ConfiguredDesktop)
     case scene(CoreScene)
     case command(String)
+    /// A row of one of the owner's sources, and the file it came from.
+    case source(URL, SourceItem)
 }
 
 struct PaletteRow: Identifiable {
@@ -133,6 +135,7 @@ final class Palette: NSObject, NSWindowDelegate {
     private let engine: Engine
     private let windows: AXWindows
     private let catalog = AppCatalog()
+    private let sources = PaletteSources()
     private let model = PaletteModel()
     private var panel: PalettePanel?
     /// Every row, in the order shown without a query.
@@ -197,11 +200,12 @@ final class Palette: NSObject, NSWindowDelegate {
         model.inMap = false
         model.showsPreviews = WindowPreviews.shared.check()
         catalog.refresh()
+        refreshSources()
         rebuild(keepSelection: false)
         panel.makeKeyAndOrderFront(nil)
         if let field = model.field { panel.makeFirstResponder(field) }
         let kinds = Dictionary(grouping: all, by: { $0.item.kind }).mapValues(\.count)
-        Log.app.info("palette: \(kinds[.window] ?? 0) windows, \(kinds[.app] ?? 0) apps, \(kinds[.desktop] ?? 0) desktops, \(kinds[.command] ?? 0) commands")
+        Log.app.info("palette: \(kinds[.window] ?? 0) windows, \(kinds[.app] ?? 0) apps, \(kinds[.desktop] ?? 0) desktops, \(kinds[.command] ?? 0) commands, \(kinds[.extra] ?? 0) rows of sources")
     }
 
     func close() {
@@ -234,7 +238,7 @@ final class Palette: NSObject, NSWindowDelegate {
     private func rebuild(keepSelection: Bool) {
         let chosen = keepSelection && model.selected < model.rows.count ? model.rows[model.selected].id : nil
         seen = readWindows()
-        all = windowRows() + appRows() + desktopRows() + sceneRows() + commandRows()
+        all = windowRows() + appRows() + desktopRows() + sceneRows() + commandRows() + sourceRows()
         model.map = map()
         filter()
         if let chosen, let index = model.rows.firstIndex(where: { $0.id == chosen }) { model.selected = index }
@@ -558,12 +562,53 @@ final class Palette: NSObject, NSWindowDelegate {
         }
     }
 
+    // MARK: - Sources
+
+    /// The rows of the owner's sources as they were listed last, each with its source's name at
+    /// the right unless the row has a word of its own there.
+    private func sourceRows() -> [PaletteRow] {
+        guard engine.paletteSources else { return [] }
+        return sources.listings.flatMap { listing in
+            listing.items.map { item in
+                PaletteRow(item: paletteItem(item, source: listing.name), icon: nil, tag: item.tag.isEmpty ? listing.name : item.tag,
+                           action: .source(listing.script, item))
+            }
+        }
+    }
+
+    /// Asks the sources again as the palette opens. What they listed last is shown meanwhile; the
+    /// rows are replaced when the answers are in, without touching the windows, and the row the
+    /// owner is on stays chosen.
+    private func refreshSources() {
+        guard engine.paletteSources else { return sources.clear() }
+        sources.refresh { [weak self] in
+            guard let self, self.isOpen else { return }
+            let chosen = self.model.selected < self.model.rows.count ? self.model.rows[self.model.selected].id : nil
+            self.all.removeAll { if case .source = $0.action { return true } else { return false } }
+            self.all += self.sourceRows()
+            self.filter()
+            if let chosen, let index = self.model.rows.firstIndex(where: { $0.id == chosen }) { self.model.selected = index }
+        }
+    }
+
+    /// Brings the app a row of a source names to the front, when it is running.
+    private func bringForward(app bundleID: String?) {
+        guard let bundleID, let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first else { return }
+        if #available(macOS 14, *) { app.activate() } else { app.activate(options: []) }
+    }
+
     private func withIcon(_ row: PaletteRow) -> PaletteRow {
         guard row.icon == nil else { return row }
         var row = row
         switch row.action {
         case .window(_, let pid): row.icon = icon(key: "pid:\(pid)") { NSRunningApplication(processIdentifier: pid)?.icon }
         case .app(let url): row.icon = icon(key: url.path) { NSWorkspace.shared.icon(forFile: url.path) }
+        case .source(_, let item):
+            row.icon = item.app.flatMap { bundleID in
+                icon(key: "app:\(bundleID)") {
+                    NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID).map { NSWorkspace.shared.icon(forFile: $0.path) }
+                }
+            } ?? icon(key: "source") { NSImage(systemSymbolName: "terminal", accessibilityDescription: nil) }
         case .desktop, .scene, .command: break
         }
         return row
@@ -691,6 +736,21 @@ final class Palette: NSObject, NSWindowDelegate {
             close()
             // Once the panel is gone, so that the command finds the owner's window in front.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.run(id) }
+        case .source(let script, let item):
+            close()
+            if let url = item.url {
+                NSWorkspace.shared.open(url)
+                bringForward(app: item.app)
+            } else if let arg = item.arg {
+                // The app comes forward once its source has shown the row in it: before, the
+                // owner would see the app's last tab first.
+                sources.run(script, arg: arg) { [weak self] worked in
+                    guard worked else { return NSSound.beep() }
+                    self?.bringForward(app: item.app)
+                }
+            } else {
+                bringForward(app: item.app)
+            }
         }
     }
 

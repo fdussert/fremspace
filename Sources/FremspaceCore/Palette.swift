@@ -1,11 +1,25 @@
 import Foundation
 
-/// What a row of the palette opens.
+/// What a row of the palette opens. `extra` is a row of one of the owner's sources
+/// (`SourceItem`): a session, a tab, whatever the source lists.
 public enum PaletteKind: Int, Equatable {
-    case window, app, desktop, command
+    case window, app, desktop, command, extra
+
+    /// Among rows that match a query equally: what is open now (a window, then a row of a source,
+    /// most often something running too) before what would be started or shown.
+    var rank: Int {
+        switch self {
+        case .window: return 0
+        case .extra: return 1
+        case .app: return 2
+        case .desktop: return 3
+        case .command: return 4
+        }
+    }
 }
 
-/// One thing the palette can open: an open window, an app to launch, a desktop to show, a command.
+/// One thing the palette can open: an open window, an app to launch, a desktop to show, a command,
+/// a row of a source.
 public struct PaletteItem: Equatable, Identifiable {
     public var id: String
     public var kind: PaletteKind
@@ -83,8 +97,8 @@ public func paletteScore(_ query: String, item: PaletteItem) -> Int? {
 
 /// The rows for `query`, best first. `items` come in the order to show without a query (windows,
 /// the most recent first); without a query only the windows are listed. Among equal matches the item
-/// opened most often wins (`uses`, by `useKey`), then a window over an app, a desktop and a command,
-/// then the order given.
+/// opened most often wins (`uses`, by `useKey`), then a window over a row of a source, an app, a
+/// desktop and a command, then the order given.
 public func paletteResults(_ query: String, items: [PaletteItem], uses: [String: Int] = [:], limit: Int = 30) -> [PaletteItem] {
     guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
         return Array(items.filter { $0.kind == .window }.prefix(limit))
@@ -96,7 +110,7 @@ public func paletteResults(_ query: String, items: [PaletteItem], uses: [String:
     }
     scored.sort { a, b in
         if a.score != b.score { return a.score > b.score }
-        if a.item.kind != b.item.kind { return a.item.kind.rawValue < b.item.kind.rawValue }
+        if a.item.kind != b.item.kind { return a.item.kind.rank < b.item.kind.rank }
         return a.order < b.order
     }
     return scored.prefix(limit).map(\.item)

@@ -582,6 +582,20 @@ final class EditSession: ObservableObject {
         status = Status(kind: .success, text: "\u{201C}\(export.layout.name)\u{201D} is kept in Layouts, under Whole desks.")
     }
 
+    /// Shows the folder of the palette's sources in the Finder, made if it is not there yet (for
+    /// the owner alone: what is in it is run).
+    func openPaletteSourcesFolder() {
+        try? FileManager.default.createDirectory(at: PaletteSources.folder, withIntermediateDirectories: true,
+                                                 attributes: [.posixPermissions: 0o700])
+        engine.openForOwner(PaletteSources.folder)
+    }
+
+    /// How many files of the sources folder would be run.
+    var paletteSourcesCount: String {
+        let count = PaletteSources.scripts().count
+        return count == 0 ? "No source in it yet" : count == 1 ? "1 source in it" : "\(count) sources in it"
+    }
+
     /// Shows the library folder in the Finder: a layout file dropped there is listed.
     func openLibraryFolder() {
         try? FileManager.default.createDirectory(at: libraryFolder, withIntermediateDirectories: true)

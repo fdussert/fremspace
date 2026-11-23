@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Fremspace palette source: the agents and tabs of herdr.
+
+    herdr list                   one row per agent, then one per tab
+    herdr run "agent <pane id>"  focuses that agent's pane in herdr
+    herdr run "tab <tab id>"     focuses that tab in herdr
+"""
+import json
+import re
+import shutil
+import subprocess
+import sys
+
+# herdr runs inside a terminal and cannot say which one. Put that terminal's bundle
+# identifier here (for instance "com.apple.Terminal") to have it brought to the front.
+TERMINAL_APP = ""
+MAX_ITEMS = 200
+# Statuses worth a word at the right of a row; "idle" and "unknown" say nothing.
+TAGGED = {"working", "blocked", "done"}
+
+
+def herdr(*args, timeout=2.5):
+    exe = shutil.which("herdr")
+    if not exe:
+        raise RuntimeError("herdr is not installed")
+    done = subprocess.run(
+        [exe, *args],
+        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout,
+    )
+    if done.returncode != 0:
+        raise RuntimeError(done.stderr.strip() or "herdr failed")
+    return done.stdout
+
+
+def row(title, subtitle, arg, status, keywords):
+    item = {"title": title, "subtitle": subtitle, "arg": arg,
+            "keywords": [w for w in keywords if w]}
+    if status in TAGGED:
+        item["tag"] = status
+    if TERMINAL_APP:
+        item["app"] = TERMINAL_APP
+    return item
+
+
+def list_items():
+    try:
+        # One call gives the workspaces, tabs and agents together. It fails, and nothing
+        # is listed, when no herdr server is running: it never starts one.
+        snapshot = json.loads(herdr("api", "snapshot"))["result"]["snapshot"]
+    except Exception:
+        return []
+    workspaces = {w["workspace_id"]: w for w in snapshot.get("workspaces", [])}
+    tabs = {t["tab_id"]: t for t in snapshot.get("tabs", [])}
+
+    def place(workspace_id, tab_id):
+        workspace = workspaces.get(workspace_id, {})
+        label = workspace.get("label") or workspace_id
+        # A tab's own label only tells something when its workspace has several.
+        if workspace.get("tab_count", 1) > 1 and tabs.get(tab_id, {}).get("label"):
+            label += " / " + tabs[tab_id]["label"]
+        return label
+
+    items = []
+    for agent in snapshot.get("agents", []):
+        kind = agent.get("display_agent") or agent.get("agent")
+        if not kind:
+            continue  # a pane with no agent in it: its tab is listed below
+        where = place(agent["workspace_id"], agent["tab_id"])
+        title = agent.get("name") or agent.get("title") or agent.get("terminal_title_stripped") or kind
+        items.append(row(title, "%s · %s" % (kind, where), "agent " + agent["pane_id"],
+                         agent.get("agent_status"),
+                         [kind, workspaces.get(agent["workspace_id"], {}).get("label"), "herdr"]))
+    for tab in tabs.values():
+        count = tab.get("pane_count", 1)
+        panes = "1 pane" if count == 1 else "%d panes" % count
+        items.append(row(place(tab["workspace_id"], tab["tab_id"]), "tab · " + panes,
+                         "tab " + tab["tab_id"], tab.get("agent_status"), ["herdr"]))
+    return items[:MAX_ITEMS]
+
+
+def run(arg):
+    kind, _, target = arg.partition(" ")
+    # Identifiers look like "w1:t2" and "w1:p3"; anything else did not come from `list`.
+    if kind not in ("agent", "tab") or not re.fullmatch(r"[A-Za-z0-9_:.-]+", target):
+        print("herdr: unexpected argument", file=sys.stderr)
+        return 2
+    herdr(kind, "focus", target, timeout=8)
+    return 0
+
+
+def main(argv):
+    if argv[1:] == ["list"]:
+        json.dump({"items": list_items()}, sys.stdout)
+        return 0
+    if len(argv) == 3 and argv[1] == "run":
+        try:
+            return run(argv[2])
+        except Exception as error:
+            print("herdr: %s" % error, file=sys.stderr)
+            return 1
+    print('usage: herdr list | herdr run "agent <pane id>" | herdr run "tab <tab id>"', file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

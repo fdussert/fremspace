@@ -289,6 +289,22 @@ struct SettingsPageView: View {
                 }
                 .modifier(marked(.fullScreenCalls))
             }
+            PageSection(.generalPalette) {
+                SwitchRow(title: SettingRow.paletteSources.title,
+                          detail: "The palette also lists what your own scripts list: agent sessions, terminal tabs, anything with a name. Fremspace then runs the scripts of the sources folder.",
+                          more: "A source is an executable file of that folder. Each time the palette opens it is asked for its rows; choosing a row opens its link or hands it back to the source. Only files that are yours and that nobody else may write are run, and never while this is off. The format and ready-made sources are in the project's extras/palette-sources.",
+                          isOn: Binding(
+                            get: { session.config.paletteSources },
+                            set: { on in
+                                session.checkpoint()
+                                session.config.paletteSources = on
+                            }))
+                    .modifier(marked(.paletteSources))
+                HStack(spacing: 8) {
+                    Button("Open the sources folder") { session.openPaletteSourcesFolder() }
+                    Text(session.paletteSourcesCount).font(.callout).foregroundColor(.secondary)
+                }
+            }
         case .shortcuts:
             ShortcutsEditor(session: session, actions: actions, filter: session.shortcutFilter)
         case .scenes:

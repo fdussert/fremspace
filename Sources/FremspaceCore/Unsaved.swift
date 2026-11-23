@@ -34,6 +34,7 @@ public func unsavedChanges(edited: Config, saved: Config) -> UnsavedChanges {
         || edited.resizeLayouts != saved.resizeLayouts
         || edited.desktopNames != saved.desktopNames || edited.notchMap != saved.notchMap
         || edited.windowPreviews != saved.windowPreviews || edited.fullScreenCalls != saved.fullScreenCalls
+        || edited.paletteSources != saved.paletteSources
     changes.shortcuts = edited.shortcuts != saved.shortcuts || edited.hyperKey != saved.hyperKey
     return changes
 }

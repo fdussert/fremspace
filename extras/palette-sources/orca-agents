@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""Fremspace palette source: the agents open in Orca.
+
+    orca-agents list        one row per agent `orca agent list` knows
+    orca-agents run <id>    shows that agent's terminal tab in Orca
+"""
+import json
+import shutil
+import subprocess
+import sys
+
+ORCA_APP = "com.stablyai.orca"
+# Orca ships its command inside the app; it is on PATH only when the owner linked it.
+BUNDLED_CLI = "/Applications/Orca.app/Contents/Resources/bin/orca"
+MAX_ITEMS = 200
+
+
+def orca(*args, timeout=2.5):
+    """Runs one orca command with --json and returns its "result"."""
+    done = subprocess.run(
+        [shutil.which("orca") or BUNDLED_CLI, *args, "--json"],
+        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout,
+    )
+    if done.returncode != 0:
+        raise RuntimeError(done.stderr.strip() or "orca failed")
+    return json.loads(done.stdout)["result"]
+
+
+def list_items():
+    try:
+        agents = orca("agent", "list")["agents"]
+    except Exception:
+        return []  # Orca is not installed, or not running
+    agents.sort(key=lambda a: a.get("updatedAt") or 0, reverse=True)
+    items = []
+    for agent in agents:
+        session = agent.get("orcaSessionId")
+        # An agent that has just started has no title yet: its workspace still says where it is.
+        title = (agent.get("title") or "").strip() or agent.get("workspace")
+        if not session or not title:
+            continue
+        kind = agent.get("agent") or ""
+        place = "/".join(p for p in (agent.get("repo"), agent.get("workspace")) if p)
+        item = {
+            "title": title,
+            "subtitle": " · ".join(p for p in (kind, place) if p),
+            "arg": session,
+            "app": ORCA_APP,
+            "keywords": [w for w in (kind, agent.get("repo"), agent.get("workspace")) if w],
+        }
+        if agent.get("state"):
+            item["tag"] = agent["state"]
+        items.append(item)
+    return items[:MAX_ITEMS]
+
+
+def find_agent(session):
+    for agent in orca("agent", "list")["agents"]:
+        if agent.get("orcaSessionId") == session:
+            return agent
+    return None
+
+
+def terminal_handle(agent):
+    """The handle `orca terminal switch` takes, or None when the agent has no live terminal.
+
+    An agent only names its pane ("<tab id>:<leaf id>"); the handle is issued by the running
+    Orca and is found by looking that pane up among the terminals of the agent's workspace.
+    """
+    terminals = orca("terminal", "list", "--worktree", "id:" + agent["worktreeId"])["terminals"]
+    for terminal in terminals:
+        if "%s:%s" % (terminal.get("tabId"), terminal.get("leafId")) == agent.get("paneKey"):
+            return terminal.get("handle")
+    return None
+
+
+def run(session):
+    agent = find_agent(session)
+    if agent is None:
+        print("orca-agents: no such agent any more", file=sys.stderr)
+        return 1
+    handle = terminal_handle(agent)
+    if handle:
+        orca("terminal", "switch", "--terminal", handle, timeout=8)
+    else:
+        # A chat, or an agent asleep with its workspace, has no terminal to switch to:
+        # opening the workspace is the closest thing to showing it.
+        orca("worktree", "activate", "--worktree", "id:" + agent["worktreeId"], timeout=8)
+    return 0
+
+
+def main(argv):
+    if argv[1:] == ["list"]:
+        json.dump({"items": list_items()}, sys.stdout)
+        return 0
+    if len(argv) == 3 and argv[1] == "run":
+        try:
+            return run(argv[2])
+        except Exception as error:
+            print("orca-agents: %s" % error, file=sys.stderr)
+            return 1
+    print("usage: orca-agents list | orca-agents run <orca session id>", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

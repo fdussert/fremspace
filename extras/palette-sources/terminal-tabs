@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""Fremspace palette source: the tabs of Terminal.app.
+
+    terminal-tabs list         one row per tab of every Terminal window
+    terminal-tabs run <tty>    selects the tab on that tty and raises its window
+
+Terminal is asked through osascript, so macOS asks once whether Fremspace may control
+Terminal. Until that is allowed, and whenever it is refused, nothing is listed.
+"""
+import json
+import re
+import subprocess
+import sys
+
+TERMINAL_APP = "com.apple.Terminal"
+MAX_ITEMS = 200
+# Characters nobody types in a title, so that titles need no escaping on the way out.
+FIELD, RECORD = "\x1f", "\x1e"
+
+# One record per tab: window id, tab position, tty, selected, custom title, window name, processes.
+LIST_SCRIPT = """
+if application "Terminal" is not running then return ""
+set fs to character id 31
+set rs to character id 30
+set AppleScript's text item delimiters to ","
+set out to ""
+tell application "Terminal"
+	repeat with w in windows
+		set n to 0
+		try
+			repeat with t in tabs of w
+				set n to n + 1
+				set out to out & (id of w) & fs & n & fs & (tty of t) & fs & (selected of t) & fs & (custom title of t) & fs & (name of w) & fs & ((processes of t) as text) & rs
+			end repeat
+		end try
+	end repeat
+end tell
+return out
+"""
+
+# The tab is found again by its tty: a position would point at another tab as soon as
+# one was closed or dragged between listing and choosing.
+RUN_SCRIPT = """
+on run argv
+	set target to item 1 of argv
+	if application "Terminal" is not running then error "Terminal is not running"
+	tell application "Terminal"
+		repeat with w in windows
+			repeat with t in tabs of w
+				if tty of t is target then
+					if miniaturized of w then set miniaturized of w to false
+					set selected of t to true
+					set index of w to 1
+					return
+				end if
+			end repeat
+		end repeat
+	end tell
+	error "no tab on " & target
+end run
+"""
+
+
+def terminal_is_running():
+    # Asked of the process table, not of osascript: when Terminal is closed there is
+    # nothing to list, and no reason to start an interpreter to learn it.
+    return subprocess.run(["/usr/bin/pgrep", "-x", "Terminal"], stdin=subprocess.DEVNULL,
+                          capture_output=True).returncode == 0
+
+
+def osascript(script, *args, timeout=2.5):
+    done = subprocess.run(
+        ["/usr/bin/osascript", "-e", script, *args],
+        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout,
+    )
+    if done.returncode != 0:
+        raise RuntimeError(done.stderr.strip() or "osascript failed")
+    return done.stdout
+
+
+def list_items():
+    try:
+        if not terminal_is_running():
+            return []
+        out = osascript(LIST_SCRIPT)
+    except Exception:
+        return []  # refused, or still waiting for the owner's answer to macOS's question
+    items = []
+    for record in out.split(RECORD):
+        parts = record.strip("\n").split(FIELD)
+        if len(parts) != 7:
+            continue
+        _window_id, position, tty, selected, custom, window_name, processes = parts
+        process = processes.split(",")[-1]
+        # Terminal only composes a title for the tab in view, and gives it to the window.
+        title = custom or (window_name if selected == "true" else "") or process or tty
+        item = {
+            "title": title,
+            "subtitle": " · ".join(p for p in (process, "tab " + position, tty.replace("/dev/", "")) if p),
+            "arg": tty,
+            "app": TERMINAL_APP,
+            "keywords": [w for w in ("terminal", process) if w],
+        }
+        items.append(item)
+    return items[:MAX_ITEMS]
+
+
+def run(tty):
+    if not re.fullmatch(r"/dev/[A-Za-z0-9]+", tty):
+        print("terminal-tabs: unexpected argument", file=sys.stderr)
+        return 2
+    osascript(RUN_SCRIPT, tty, timeout=8)
+    return 0
+
+
+def main(argv):
+    if argv[1:] == ["list"]:
+        json.dump({"items": list_items()}, sys.stdout)
+        return 0
+    if len(argv) == 3 and argv[1] == "run":
+        try:
+            return run(argv[2])
+        except Exception as error:
+            print("terminal-tabs: %s" % error, file=sys.stderr)
+            return 1
+    print("usage: terminal-tabs list | terminal-tabs run <tty>", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
