@@ -337,15 +337,20 @@ final class Palette: NSObject, NSWindowDelegate {
 
     /// An arrow key on the map. The first one comes onto it: at the desktop chosen with ⇥, else at
     /// the one shown by the display nearest the list. The list follows the chosen desktop; down
-    /// from the last row goes into it, up from the first row gives every window back.
+    /// from the last row goes into it, at its first row; up from the first row gives every window back.
     private func mapKey(dx: Int, dy: Int) {
         let before = model.desktop
         let entering = !model.inMap
         model.inMap = true
         let move = entering && before != nil ? nil : model.step(dx: dx, dy: dy, from: model.map.count - 1)
-        if move == .below { model.inMap = false }
         if move == .above { return wholeList() }
         if model.desktop != before { filter() }
+        // Down from the map comes into the list at its head: the first pinned row when there are
+        // some, as the eye goes (owner, 2026-11-23), not the desktop's first window under them.
+        if move == .below {
+            model.inMap = false
+            if !model.rows.isEmpty { model.selected = 0 }
+        }
     }
 
     /// Off the map and its desktop: every window again.
