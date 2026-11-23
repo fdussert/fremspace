@@ -11,7 +11,9 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 - Pinned rows in the palette: ⌘P pins the selected row (an app, a desktop, a scene, a command or
   a row of one of your sources), and ⌘P again takes it off. Pinned rows head the list when nothing
-  is typed, above the windows; Return still goes back to the window you had before.
+  is typed, above the windows, and stay there while the map narrows the list to a desktop; Return
+  still goes back to the window you had before.
+- The palette's field says it finds agent sessions too, while one of your sources lists some.
 - With many desktops on a display, the palette's map of that display is a carousel: the desktop
   the keyboard is on stands in the middle and the others lean away on both sides; a swipe or the
   arrow keys turn it. Before, the row outgrew the panel and was cut on both sides.

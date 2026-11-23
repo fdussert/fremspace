@@ -68,6 +68,11 @@ final class PaletteModel: ObservableObject {
     /// Counts the times the palette was opened: the map's carousels come back to the desktop
     /// shown, wherever a swipe left them the time before.
     @Published var openings = 0
+    /// What the empty field says it finds: agent sessions too, while a source lists some.
+    @Published var prompt = PaletteModel.plainPrompt
+
+    static let plainPrompt = "A window, an app, a desktop, a command"
+    static let agentPrompt = "A window, an app, a desktop, a command, an agent session"
 
     var onQuery: () -> Void = {}
     var onMove: (Int) -> Void = { _ in }
@@ -258,6 +263,7 @@ final class Palette: NSObject, NSWindowDelegate {
         let chosen = keepSelection && model.selected < model.rows.count ? model.rows[model.selected].id : nil
         seen = readWindows()
         all = windowRows() + appRows() + desktopRows() + sceneRows() + commandRows() + sourceRows()
+        updatePrompt()
         model.map = map()
         filter()
         if let chosen, let index = model.rows.firstIndex(where: { $0.id == chosen }) { model.selected = index }
@@ -276,12 +282,14 @@ final class Palette: NSObject, NSWindowDelegate {
 
     private func filter() {
         var items = all.map(\.item)
+        let pins = engine.palettePins
         if model.query.isEmpty, let desktop = model.desktop, let space = engine.realSpace(desktop) {
             let there = Set(seen.filter { $0.space == space }.map { "w:\($0.id)" })
-            items = items.filter { there.contains($0.id) }
+            // The pinned rows stay above the windows of whichever desktop the map is on (owner,
+            // 2026-11-23: going through the desktops, the pins went away).
+            items = items.filter { there.contains($0.id) || pins.contains($0.id) }
         }
         let byID = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let pins = engine.palettePins
         model.rows = paletteResults(model.query, items: items, uses: engine.paletteUses, pins: pins).compactMap { byID[$0.id] }.map { row in
             var row = withIcon(row)
             row.pinned = pins.contains(row.id)
@@ -289,7 +297,7 @@ final class Palette: NSObject, NSWindowDelegate {
         }
         // Without a query the first window is the one in front: the one before it is what the owner
         // most likely wants back. The pinned rows stand above both.
-        model.selected = model.query.isEmpty && model.desktop == nil ? paletteFirstChoice(model.rows.map(\.item)) : 0
+        model.selected = model.query.isEmpty ? paletteFirstChoice(model.rows.map(\.item), onDesktop: model.desktop != nil) : 0
         resize()
     }
 
@@ -312,6 +320,11 @@ final class Palette: NSObject, NSWindowDelegate {
         // Up from the top of the list: onto the map, when it is there.
         if step < 0, model.query.isEmpty, !model.map.isEmpty, model.selected == 0 || model.rows.isEmpty { return mapKey(dx: 0, dy: 0) }
         guard !model.rows.isEmpty else { return }
+        // No row chosen (a desktop without window, under pinned rows): down takes the first, up the last.
+        guard model.selected < model.rows.count else {
+            model.selected = step > 0 ? 0 : model.rows.count - 1
+            return
+        }
         model.selected = (model.selected + step + model.rows.count) % model.rows.count
     }
 
@@ -614,6 +627,11 @@ final class Palette: NSObject, NSWindowDelegate {
         }
     }
 
+    private func updatePrompt() {
+        let prompt = engine.paletteSources && sources.listsAgents ? PaletteModel.agentPrompt : PaletteModel.plainPrompt
+        if model.prompt != prompt { model.prompt = prompt }
+    }
+
     /// Asks the sources again as the palette opens. What they listed last is shown meanwhile; the
     /// rows are replaced when the answers are in, without touching the windows, and the row the
     /// owner is on stays chosen.
@@ -624,6 +642,7 @@ final class Palette: NSObject, NSWindowDelegate {
             let chosen = self.model.selected < self.model.rows.count ? self.model.rows[self.model.selected].id : nil
             self.all.removeAll { if case .source = $0.action { return true } else { return false } }
             self.all += self.sourceRows()
+            self.updatePrompt()
             self.filter()
             if let chosen, let index = self.model.rows.firstIndex(where: { $0.id == chosen }) { self.model.selected = index }
         }

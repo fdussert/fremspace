@@ -82,6 +82,10 @@ final class PaletteTests: XCTestCase {
         XCTAssertEqual(paletteFirstChoice([session, front]), 1)
         XCTAssertEqual(paletteFirstChoice([session, app]), 0)
         XCTAssertEqual(paletteFirstChoice([]), 0)
+        // Narrowed to a desktop of the map, under the same pins: its first window, and no row at
+        // all when it has none, so that Return shows the desktop.
+        XCTAssertEqual(paletteFirstChoice([session, app, front, before], onDesktop: true), 2)
+        XCTAssertEqual(paletteFirstChoice([session, app], onDesktop: true), 2)
         // A query ranks as before: the pins change nothing in it.
         XCTAssertEqual(paletteResults("bro", items: items, pins: ["a:notes"]).map(\.id), ["w:2"])
     }

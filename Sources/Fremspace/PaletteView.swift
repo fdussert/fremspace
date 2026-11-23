@@ -375,7 +375,7 @@ private struct PaletteField: NSViewRepresentable {
         field.drawsBackground = false
         field.focusRingType = .none
         field.font = .systemFont(ofSize: 20, weight: .regular)
-        field.placeholderString = "A window, an app, a desktop, a command"
+        field.placeholderString = model.prompt
         field.cell?.usesSingleLineMode = true
         field.cell?.wraps = false
         field.cell?.isScrollable = true
@@ -387,6 +387,12 @@ private struct PaletteField: NSViewRepresentable {
 
     func updateNSView(_ field: NSTextField, context: Context) {
         if field.stringValue != model.query { field.stringValue = model.query }
+        if field.placeholderString != model.prompt {
+            field.placeholderString = model.prompt
+            field.setAccessibilityLabel(model.prompt == PaletteModel.agentPrompt
+                                        ? "Search windows, apps, desktops, commands and agent sessions"
+                                        : "Search windows, apps, desktops and commands")
+        }
     }
 
     final class Coordinator: NSObject, NSTextFieldDelegate {

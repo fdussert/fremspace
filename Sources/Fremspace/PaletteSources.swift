@@ -193,6 +193,8 @@ extension PaletteSources {
         var file: String
         var title: String
         var detail: String
+        /// Whether its rows are agent sessions: the palette's field then says it finds them.
+        var agents = false
         var id: String { file }
     }
 
@@ -200,11 +202,11 @@ extension PaletteSources {
     /// (`scripts/build.sh` copies them into the bundle).
     static let readyMade: [ReadyMade] = [
         ReadyMade(file: "orca-agents", title: "Orca agents",
-                  detail: "The agents open in Orca, with their state. Choosing one shows its tab."),
+                  detail: "The agents open in Orca, with their state. Choosing one shows its tab.", agents: true),
         ReadyMade(file: "claude-code", title: "Claude Code sessions",
-                  detail: "The sessions you gave a name, to resume in a new terminal window."),
+                  detail: "The sessions you gave a name, to resume in a new terminal window.", agents: true),
         ReadyMade(file: "herdr", title: "herdr",
-                  detail: "The agents and tabs of herdr. Not tried against a running herdr yet."),
+                  detail: "The agents and tabs of herdr. Not tried against a running herdr yet.", agents: true),
         ReadyMade(file: "tmux", title: "tmux",
                   detail: "Every window of every tmux session. Not tried against a running tmux yet."),
     ]
@@ -213,6 +215,12 @@ extension PaletteSources {
         guard let url = Bundle.main.resourceURL?.appendingPathComponent("Palette Sources").appendingPathComponent(file),
               FileManager.default.fileExists(atPath: url.path) else { return nil }
         return url
+    }
+
+    /// Whether a source that lists agent sessions has rows now.
+    var listsAgents: Bool {
+        let agents = Set(Self.readyMade.filter(\.agents).map(\.file))
+        return listings.contains { agents.contains($0.script.lastPathComponent) && !$0.items.isEmpty }
     }
 
     /// Those this build of the app carries.

@@ -111,8 +111,12 @@ public func palettePins(_ pins: [String], toggling item: PaletteItem) -> [String
 /// The row chosen when the palette opens with nothing typed: the second window, the one the owner
 /// had before the one in front (open, Return: back to it), under the pinned rows; the only
 /// window when there is one; else the first row.
-public func paletteFirstChoice(_ rows: [PaletteItem]) -> Int {
-    guard let first = rows.firstIndex(where: { $0.kind == .window }) else { return 0 }
+/// `onDesktop`: the list is narrowed to one desktop of the map, under the same pinned rows. Its
+/// first window is chosen; when it has none, no row is (the index is past the last one): Return
+/// then shows the desktop, not a pinned row that happens to be first.
+public func paletteFirstChoice(_ rows: [PaletteItem], onDesktop: Bool = false) -> Int {
+    guard let first = rows.firstIndex(where: { $0.kind == .window }) else { return onDesktop ? rows.count : 0 }
+    if onDesktop { return first }
     return rows.indices.contains(first + 1) && rows[first + 1].kind == .window ? first + 1 : first
 }
 
