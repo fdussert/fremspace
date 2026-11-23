@@ -27,7 +27,8 @@ in their slot, stay there, and are all back where they were after a restart.
 - **A palette** (⌃⌥⌘K) that finds an open window on any desktop, an app, a desktop, a scene or a
   command, over a map of every desktop that the arrow keys go through. With **palette sources**
   switched on it also lists what your own scripts list: agent sessions, terminal tabs, anything
-  with a name ([how to write one, and ready-made ones](extras/palette-sources/README.md)).
+  with a name. A few ready-made ones are added with a button on the General page
+  ([how to write your own](extras/palette-sources/README.md)).
 - **Scenes** that switch several displays to their desktops at once, and can put a slot in Focus,
   open or close a drawer and open apps; asking for a scene again leaves it and goes back to what
   the displays showed.

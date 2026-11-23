@@ -591,10 +591,22 @@ final class Palette: NSObject, NSWindowDelegate {
         }
     }
 
-    /// Brings the app a row of a source names to the front, when it is running.
+    /// Brings the app a row of a source names to the front, when it is running: through its
+    /// window, the way the palette shows any window. Asked of the app itself, macOS refuses when
+    /// Fremspace is not the app in front, and it never is (owner, 2026-11-23: from another app,
+    /// the source showed the session in its app and the app stayed behind).
     private func bringForward(app bundleID: String?) {
         guard let bundleID, let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first else { return }
-        if #available(macOS 14, *) { app.activate() } else { app.activate(options: []) }
+        if let window = windows.mainWindow(pid: app.processIdentifier) {
+            if Self.bool(window, kAXMinimizedAttribute) {
+                AXUIElementSetAttributeValue(window, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+            }
+            windows.focus(window, pid: app.processIdentifier)
+            Log.app.info("palette: \(bundleID, privacy: .public) brought forward through its window")
+        } else {
+            Log.app.notice("palette: \(bundleID, privacy: .public) has no window to bring forward; asked of the app instead")
+            if #available(macOS 14, *) { app.activate() } else { app.activate(options: []) }
+        }
     }
 
     private func withIcon(_ row: PaletteRow) -> PaletteRow {
@@ -746,6 +758,7 @@ final class Palette: NSObject, NSWindowDelegate {
                 // owner would see the app's last tab first.
                 sources.run(script, arg: arg) { [weak self] worked in
                     guard worked else { return NSSound.beep() }
+                    Log.app.info("palette: a row of source \(sourceName(file: script.lastPathComponent), privacy: .public) was run")
                     self?.bringForward(app: item.app)
                 }
             } else {

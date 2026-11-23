@@ -590,6 +590,20 @@ final class EditSession: ObservableObject {
         engine.openForOwner(PaletteSources.folder)
     }
 
+    /// Adds a ready-made source to the sources folder, or takes it away. A file is copied or
+    /// trashed at once: it is not a setting, and nothing runs it while the switch is off.
+    func setPaletteSource(_ source: PaletteSources.ReadyMade, added: Bool) {
+        do {
+            if added { try PaletteSources.add(source) } else { try PaletteSources.remove(source) }
+            status = Status(kind: .info, text: added
+                            ? "\(source.title) is in the sources folder.\(config.paletteSources ? "" : " Switch Palette sources on and save to use it.")"
+                            : "\(source.title) is in the Trash.")
+        } catch {
+            status = Status(kind: .warning, text: "\(source.title) could not be \(added ? "added" : "removed"): \(error.localizedDescription)")
+        }
+        objectWillChange.send()
+    }
+
     /// How many files of the sources folder would be run.
     var paletteSourcesCount: String {
         let count = PaletteSources.scripts().count

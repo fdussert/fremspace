@@ -78,6 +78,13 @@ cp "$BINARY" "$APP/Contents/MacOS/Fremspace"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 # Drawn by scripts/make-icon.swift.
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# The ready-made palette sources the General page offers to add (`PaletteSources.readyMade`).
+# Not terminal-tabs: started by the app it lists nothing (see its README).
+mkdir -p "$APP/Contents/Resources/Palette Sources"
+for source in orca-agents claude-code herdr tmux; do
+    cp "extras/palette-sources/$source" "$APP/Contents/Resources/Palette Sources/$source"
+    chmod 755 "$APP/Contents/Resources/Palette Sources/$source"
+done
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" -c "Set :CFBundleVersion $VERSION" \
     "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"

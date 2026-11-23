@@ -61,7 +61,7 @@ final class PaletteSources {
         var waiting = scripts.count
         for script in scripts {
             let name = sourceName(file: script.lastPathComponent)
-            DispatchQueue.global(qos: .userInitiated).async {
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 let result = Self.execute(script, arguments: ["list"], limit: SourceLimit.listSeconds, capture: true)
                 let items = result.flatMap { $0.status == 0 ? sourceItems(from: $0.output) : nil }
                 if items == nil {
@@ -181,5 +181,62 @@ final class PaletteSources {
         lock.lock()
         defer { lock.unlock() }
         return (process.terminationStatus, output)
+    }
+}
+
+// MARK: - The sources that come with the app
+
+extension PaletteSources {
+    /// A source the app carries a copy of, for the owner to add without fetching anything: it is
+    /// copied into the sources folder, where it is theirs to change or remove.
+    struct ReadyMade: Identifiable {
+        var file: String
+        var title: String
+        var detail: String
+        var id: String { file }
+    }
+
+    /// In the order the General page lists them. The same files as `extras/palette-sources`
+    /// (`scripts/build.sh` copies them into the bundle).
+    static let readyMade: [ReadyMade] = [
+        ReadyMade(file: "orca-agents", title: "Orca agents",
+                  detail: "The agents open in Orca, with their state. Choosing one shows its tab."),
+        ReadyMade(file: "claude-code", title: "Claude Code sessions",
+                  detail: "The sessions you gave a name, to resume in a new terminal window."),
+        ReadyMade(file: "herdr", title: "herdr",
+                  detail: "The agents and tabs of herdr. Not tried against a running herdr yet."),
+        ReadyMade(file: "tmux", title: "tmux",
+                  detail: "Every window of every tmux session. Not tried against a running tmux yet."),
+    ]
+
+    private static func bundled(_ file: String) -> URL? {
+        guard let url = Bundle.main.resourceURL?.appendingPathComponent("Palette Sources").appendingPathComponent(file),
+              FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }
+
+    /// Those this build of the app carries.
+    static var offered: [ReadyMade] { readyMade.filter { bundled($0.file) != nil } }
+
+    /// Whether a file of that name is in the sources folder (the owner's copy, changed or not).
+    static func isAdded(_ source: ReadyMade) -> Bool {
+        FileManager.default.fileExists(atPath: folder.appendingPathComponent(source.file).path)
+    }
+
+    /// Copies a ready-made source into the sources folder, made for the owner alone if it is not
+    /// there. A file of that name already there is left as it is: it may have been changed.
+    static func add(_ source: ReadyMade) throws {
+        guard let from = bundled(source.file), !isAdded(source) else { return }
+        let manager = FileManager.default
+        try manager.createDirectory(at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let to = folder.appendingPathComponent(source.file)
+        try manager.copyItem(at: from, to: to)
+        try manager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: to.path)
+    }
+
+    /// Moves the owner's copy to the Trash, where it can be taken back.
+    static func remove(_ source: ReadyMade) throws {
+        guard isAdded(source) else { return }
+        try FileManager.default.trashItem(at: folder.appendingPathComponent(source.file), resultingItemURL: nil)
     }
 }

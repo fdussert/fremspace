@@ -285,6 +285,19 @@ final class AXWindows {
         AXUIElementPerformAction(e, kAXRaiseAction as CFString)
     }
 
+    /// The window of an app that would have the keyboard if the app were in front: the one it
+    /// calls focused, else its main one, else any it has.
+    func mainWindow(pid: pid_t) -> AXUIElement? {
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, Self.messagingTimeout)
+        for attribute in [kAXFocusedWindowAttribute, kAXMainWindowAttribute] {
+            if let window = copy(app, attribute), CFGetTypeID(window) == AXUIElementGetTypeID() {
+                return (window as! AXUIElement)
+            }
+        }
+        return allWindows(pid: pid).first
+    }
+
     /// `kCPSUserGenerated`: front only the given window.
     private static let userGenerated: UInt32 = 0x200
 

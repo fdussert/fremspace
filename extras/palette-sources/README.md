@@ -10,10 +10,16 @@ The five scripts here are sources ready to use, and examples to copy from.
 
 ## Installing one
 
-1. Copy the script into the folder above, or link it there (`ln -s`). Create the folder if it
-   does not exist.
+Four of these scripts come with the app (all but `terminal-tabs`): in Fremspace's settings,
+General → Palette lists them under "Ready-made sources", each with an **Add** button that copies
+it into the folder. Then switch on **Palette sources** on the same page, and save.
+
+For one of your own, or to do it by hand:
+
+1. Copy the script into the folder above, or link it there (`ln -s`). "Open the sources folder",
+   on the same page, makes the folder and shows it.
 2. Keep it executable (`chmod +x`).
-3. Switch on **Palette sources** in Fremspace's General settings, and save.
+3. Switch on **Palette sources**, and save.
 
 The scripts need `python3` (the one of the Xcode command line tools or of Homebrew will do) and
 nothing else. A script whose tool is not installed, or not running, lists nothing.

@@ -300,6 +300,28 @@ struct SettingsPageView: View {
                                 session.config.paletteSources = on
                             }))
                     .modifier(marked(.paletteSources))
+                if !PaletteSources.offered.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Ready-made sources").font(.callout.weight(.medium))
+                        ForEach(PaletteSources.offered) { source in
+                            let added = PaletteSources.isAdded(source)
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(source.title)
+                                    Text(source.detail).font(.callout).foregroundColor(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                Spacer(minLength: 8)
+                                if added { Text("Added").font(.callout).foregroundColor(.secondary) }
+                                Button(added ? "Remove" : "Add") { session.setPaletteSource(source, added: !added) }
+                                    .help(added ? "Moves your copy of this source to the Trash"
+                                          : "Copies this source into the sources folder, where it is yours to change")
+                                    .accessibilityLabel("\(added ? "Remove" : "Add") \(source.title)")
+                            }
+                        }
+                        HelpText("Adding copies a script into the sources folder at once; it is run only while the switch above is on. These need python3, which the Xcode command line tools and Homebrew both bring.")
+                    }
+                }
                 HStack(spacing: 8) {
                     Button("Open the sources folder") { session.openPaletteSourcesFolder() }
                     Text(session.paletteSourcesCount).font(.callout).foregroundColor(.secondary)
