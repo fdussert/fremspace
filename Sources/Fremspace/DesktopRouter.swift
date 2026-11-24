@@ -420,6 +420,10 @@ final class DesktopRouter {
             guard let space = Spaces.spaceIndex(ofWindow: id, managed: managed, displays: displays),
                   let here = engine.configuredDesktop(space), here != from, let info = lastInfo[id] else { continue }
             lastDesktop[id] = here
+            // Dropped on a display whose drawer names its app: the drawer takes it there (the
+            // engine's next pass), it is not a floating window to send away (owner, 2026-11-24:
+            // dragged to the display of its drawer, it left for another display's free desktop).
+            if engine.drawerSlot(for: info) != nil { continue }
             let remembered = matched[id]?.desktop
                 ?? engine.state.remembered.entry(forWindow: id, configurationID: configuration.id, idsSince: bootTime)?.desktop
             let held = lastSlot[id].flatMap { $0.desktop == from ? $0.slotID : nil }

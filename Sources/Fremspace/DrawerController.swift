@@ -219,6 +219,8 @@ final class DrawerController {
         bring(display, edges: [edge.rawValue]) { [weak self] _ in
             guard let self else { return }
             self.prune(display)
+            // Still empty: its apps' windows may be on another display (see `adoptStrays`).
+            if self.state.stacks(display, edge: edge.rawValue).isEmpty { self.adoptStrays(display, edge: edge, fromOtherDisplays: true) }
             guard !self.state.stacks(display, edge: edge.rawValue).isEmpty else {
                 // An empty drawer whose slots ask for folders: the folders are fetched, and it opens
                 // with them (owner, 2026-11-14: a new drawer with a folder "never shows").
@@ -287,6 +289,7 @@ final class DrawerController {
         bring(display, edges: [edge.rawValue]) { [weak self] _ in
             guard let self else { return }
             self.prune(display)
+            if self.state.stacks(display, edge: edge.rawValue).isEmpty { self.adoptStrays(display, edge: edge, fromOtherDisplays: true) }
             guard !self.state.stacks(display, edge: edge.rawValue).isEmpty else { return }
             self.open(display, edges: [edge.rawValue], keyboardTo: nil)
         }
@@ -329,7 +332,13 @@ final class DrawerController {
 
     /// The windows of the apps of the drawer of `edge` that are on another desktop of `display` become
     /// members where they are; `bring` then fetches them.
-    private func adoptStrays(_ display: DisplayIdentity, edge: DrawerEdge) {
+    ///
+    /// `fromOtherDisplays`: those on another display instead, when nothing claims them there (no
+    /// slot of the layout of their desktop, no drawer of their display). For a drawer that would
+    /// open empty: its app's window was dropped or sent elsewhere, and the drawer "did not work"
+    /// (owner, 2026-11-24: a window sent to another display's free desktop by "no floating
+    /// windows" before it had joined). They come over when the drawer places its members.
+    private func adoptStrays(_ display: DisplayIdentity, edge: DrawerEdge, fromOtherDisplays: Bool = false) {
         let specs = drawerSpecs(display).filter { $0.edge == edge }
         let apps = Set(specs.flatMap { $0.layout.slots.flatMap { $0.rules.map(\.bundleID) } })
         guard !apps.isEmpty else { return }
@@ -341,12 +350,21 @@ final class DrawerController {
                 guard let info = windows.info(for: element, pid: app.processIdentifier, bundleID: bundleID),
                       members[info.id] == nil, takenOut[info.id] == nil,
                       let place = Spaces.spaceIndex(ofWindow: info.id, managed: managed, displays: displays),
-                      place.display == display,
+                      (place.display == display) != fromOtherDisplays,
                       let slot = drawerSlotKey(for: info, in: specs, layout: layoutOf(place)) else { continue }
+                // On another display, a drawer there that names its app keeps it.
+                if fromOtherDisplays, drawerSlotKey(for: info, in: drawerSpecs(place.display)) != nil { continue }
+                if fromOtherDisplays {
+                    fetched.insert(info.id)
+                    Log.engine.notice("window \(info.id) \(info.bundleID, privacy: .public) fetched from \(place.display.name, privacy: .public) for the \(edge.rawValue, privacy: .public) drawer of \(display.name, privacy: .public), which was empty")
+                }
                 join(info.id, element: element, pid: info.pid, bundleID: info.bundleID, display: display, slot: slot)
             }
         }
     }
+
+    /// Members just adopted from another display, until `bring` has sent for them.
+    private var fetched: Set<UInt32> = []
 
     /// Whether the owner took this window out of a drawer.
     func wasTakenOut(_ id: UInt32) -> Bool { takenOut[id] != nil }
@@ -548,6 +566,7 @@ final class DrawerController {
     /// A window was destroyed (or its app quit): it leaves its drawer.
     func forget(_ id: UInt32) {
         takenOut[id] = nil
+        fetched.remove(id)
         guard members.removeValue(forKey: id) != nil else { return }
         openFrames[id] = nil
         notBroughtBack.remove(id)
@@ -662,11 +681,21 @@ final class DrawerController {
     /// Sends the members of the drawers of `edges` that are on another desktop of `display` to the
     /// one it shows, then calls `then` (with true when some had to move).
     private func bring(_ display: DisplayIdentity, edges: Set<String>, then: @escaping (Bool) -> Void) {
-        let strays = membersToBring(state, shown: Spaces.current()) { Spaces.spaceIndex(ofWindow: $0) }
+        var strays = membersToBring(state, shown: Spaces.current()) { Spaces.spaceIndex(ofWindow: $0) }
             .filter { stray in
                 stray.to.display == display
                     && state.slot(of: stray.id).map { edges.contains(drawerEdge(ofSlotKey: $0)) } == true
             }
+        // Members adopted from another display (`adoptStrays`) come to this one. Only those: a
+        // member macOS moved away as displays came and went is not chased from here.
+        if !fetched.isEmpty, let index = Spaces.current()[display] {
+            for id in fetched where state.display(of: id) == display && !strays.contains(where: { $0.id == id }) {
+                guard state.slot(of: id).map({ edges.contains(drawerEdge(ofSlotKey: $0)) }) == true,
+                      let here = Spaces.spaceIndex(ofWindow: id), here.display != display else { continue }
+                strays.append((id, SpaceKey(display: display, spaceIndex: index)))
+            }
+            fetched.subtract(strays.map(\.id))
+        }
         guard let target = strays.first?.to else { return then(false) }
         guard SpaceMover.isPresent, let sid = Spaces.spaceID(display: display, real: target.spaceIndex) else {
             Log.engine.notice("drawer on \(display.name, privacy: .public): \(strays.count) windows are on another desktop and cannot be brought here")

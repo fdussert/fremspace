@@ -9,6 +9,10 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- A drawer that would open empty fetches the windows of its apps from the other displays, when
+  nothing claims them there (no slot of the desktop they are on, no drawer of that display).
+  And a window dragged to the display of its app's drawer joins the drawer: with "no floating
+  windows" on, it was sent to a free desktop first, and the drawer stayed empty.
 - A desktop can be moved to another display in the editor ("Move to another display", on its tab
   and in its settings): it goes with its layout, its name, its Focus and the scenes that showed
   it. On save its windows go where their slots are; the macOS desktop it leaves stays on the Mac
