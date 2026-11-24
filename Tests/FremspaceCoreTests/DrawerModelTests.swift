@@ -67,6 +67,23 @@ final class DrawerModelTests: XCTestCase {
         XCTAssertEqual(back, slot)
     }
 
+    func testADrawerSlotCanTakeOneWindowOfAnAppByItsTitle() {
+        func window(_ app: String, _ title: String) -> WindowInfo {
+            WindowInfo(id: 1, pid: 1, bundleID: app, title: title, profile: nil, isStandard: true, isMinimized: false, isFullScreen: false)
+        }
+        let whole = UnitRect(x: 0, y: 0, w: 1, h: 1)
+        let slot = DrawerSlot(id: "main", rect: whole, rules: [Rule(bundleID: "com.example.panels", titleContains: "dashboard")])
+        let drawers = [DrawerSpec(edge: .top, size: 0.5, layout: DrawerLayout(slots: [slot]))]
+        XCTAssertEqual(drawerSlotKey(for: window("com.example.panels", "Panels — Dashboard"), in: drawers), "top.main")
+        XCTAssertNil(drawerSlotKey(for: window("com.example.panels", "Panels — settings"), in: drawers))
+        // A window that joined before the filter was written leaves; one sent by hand, of an app
+        // the slot does not name, stays.
+        XCTAssertTrue(memberOutgrewItsSlot(window("com.example.panels", "Panels — settings"), slot: slot))
+        XCTAssertFalse(memberOutgrewItsSlot(window("com.example.panels", "Panels — dashboard"), slot: slot))
+        XCTAssertFalse(memberOutgrewItsSlot(window("com.example.notes", "Shopping"), slot: slot))
+        XCTAssertFalse(memberOutgrewItsSlot(window("com.example.panels", "anything"), slot: DrawerSlot(id: "free", rect: whole)))
+    }
+
     func testWindowsGoToTheDrawerSlotOfTheirApp() {
         func window(_ app: String, profile: String? = nil, standard: Bool = true) -> WindowInfo {
             WindowInfo(id: 1, pid: 1, bundleID: app, title: "w", profile: profile, isStandard: standard, isMinimized: false,

@@ -778,6 +778,18 @@ final class DrawerController {
             if let member = members[id], let frame = openFrames[id] { windows.setFrame(member.element, frame) }
             forget(id)
         }
+        // A slot's rules were narrowed (a window-title filter, a profile): the windows of its
+        // app that they no longer take leave the drawer (owner, 2026-11-24: an app's second
+        // window had joined with the first and stood in front of it).
+        for (id, member) in Array(members) {
+            guard let display = state.display(of: id), let key = state.slot(of: id),
+                  let spec = drawer(ofSlotKey: key, in: drawerSpecs(display)),
+                  let slot = spec.layout.slots.first(where: { "\(spec.edge.rawValue).\($0.id)" == key }),
+                  let info = windows.info(for: member.element, pid: member.pid, bundleID: member.bundleID),
+                  memberOutgrewItsSlot(info, slot: slot) else { continue }
+            Log.engine.notice("window \(id) \(member.bundleID, privacy: .public) is no longer taken by the rules of drawer slot \(key, privacy: .public): it leaves the drawer")
+            takeOut(id)
+        }
     }
 
     /// Opens the drawers of `edges` (a display's other drawer stays as it is). Their members left on

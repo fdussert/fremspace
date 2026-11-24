@@ -561,6 +561,13 @@ struct DrawerSlotInspector: View {
                     update { if $0.rules.indices.contains(offset) { $0.rules[offset].folder = path } }
                 }
             }
+            // One window of an app that has several (a dashboard, not its settings): by its title.
+            TextField("Any window, or part of a title", text: Binding(
+                get: { rule.titleContains ?? "" },
+                set: { text in update { if $0.rules.indices.contains(offset) { $0.rules[offset].titleContains = text.isEmpty ? nil : text } } }))
+                .textFieldStyle(.roundedBorder).controlSize(.small)
+                .help("Only the windows of \(appName(rule.bundleID)) whose title contains this go to the slot. Empty: all of them")
+                .accessibilityLabel("Window title of \(appName(rule.bundleID)) contains")
         }
     }
 }

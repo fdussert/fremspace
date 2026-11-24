@@ -9,6 +9,9 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- A drawer slot can take one window of an app by its title, as a layout slot can: under the app,
+  type part of the title ("dashboard"). On save, the app's windows that the slot no longer takes
+  leave the drawer.
 - A drawer that would open empty fetches the windows of its apps from the other displays, when
   nothing claims them there (no slot of the desktop they are on, no drawer of that display).
   And a window dragged to the display of its app's drawer joins the drawer: with "no floating

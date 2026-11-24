@@ -468,6 +468,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testFitActionRetriesThenStopsFighting", { ($0 as! EnforceTests).testFitActionRetriesThenStopsFighting() }),
     ]),
     ("DrawerModelTests", { DrawerModelTests() }, [
+        ("testADrawerSlotCanTakeOneWindowOfAnAppByItsTitle", { ($0 as! DrawerModelTests).testADrawerSlotCanTakeOneWindowOfAnAppByItsTitle() }),
         ("testDesktopWithoutDrawerStillDecodes", { try ($0 as! DrawerModelTests).testDesktopWithoutDrawerStillDecodes() }),
         ("testDrawerRoundTrips", { try ($0 as! DrawerModelTests).testDrawerRoundTrips() }),
         ("testSingleDrawerOfTheFirstFormatStillDecodes", { try ($0 as! DrawerModelTests).testSingleDrawerOfTheFirstFormatStillDecodes() }),

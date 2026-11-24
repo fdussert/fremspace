@@ -102,6 +102,15 @@ public struct DrawerSpec: Codable, Equatable {
     }
 }
 
+/// Whether a member of a drawer slot no longer belongs in it: the slot names its app, and none of
+/// its rules for that app takes this window any more (a window-title filter or a profile was
+/// added since it joined). A window of an app the slot does not name was sent there by hand: it
+/// stays until the owner takes it out.
+public func memberOutgrewItsSlot(_ window: WindowInfo, slot: DrawerSlot) -> Bool {
+    let named = slot.rules.filter { $0.bundleID == window.bundleID }
+    return !named.isEmpty && !named.contains { matches($0, window) }
+}
+
 /// The drawer slot (`"<edge>.<slot id>"`) whose rules take `window`, if any: the first in the order of
 /// the drawers and of their slots. A window that matches a slot of `layout` (the layout of the desktop
 /// it is on) belongs to that layout instead.
