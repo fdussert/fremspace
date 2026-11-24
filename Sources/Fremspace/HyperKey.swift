@@ -42,6 +42,9 @@ final class HyperKey {
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
     private(set) var isOn = false
+    /// Looks every few seconds that the filter is still there while Hyper is on (see `verify`).
+    private var watch: Timer?
+    private static let watchEvery: TimeInterval = 3
     /// Keys whose press ran a command: their release goes no further either.
     private var swallowed: Set<Int64> = []
     /// F18 is down, as the filter saw it (a held key repeats its press).
@@ -86,12 +89,61 @@ final class HyperKey {
         }
         if isOn != on { Log.app.info("hyper key \(on ? "on" : "off", privacy: .public)") }
         isOn = on
+        watchFilter(on)
         return true
+    }
+
+    private func watchFilter(_ on: Bool) {
+        watch?.invalidate()
+        watch = nil
+        guard on else { return }
+        let timer = Timer(timeInterval: Self.watchEvery, repeats: true) { [weak self] _ in self?.verify() }
+        timer.tolerance = 1
+        RunLoop.main.add(timer, forMode: .common)
+        watch = timer
+    }
+
+    /// Whether the window server still has a filter of this process that is switched on.
+    private static func filterIsListed() -> Bool {
+        var count: UInt32 = 0
+        guard CGGetEventTapList(0, nil, &count) == .success, count > 0 else { return false }
+        var taps = [CGEventTapInformation](repeating: CGEventTapInformation(), count: Int(count))
+        guard CGGetEventTapList(count, &taps, &count) == .success else { return false }
+        let own = getpid()
+        return taps.prefix(Int(count)).contains { $0.tappingProcess == own && $0.enabled }
+    }
+
+    /// While Hyper is on, the filter has to be there: Caps Lock is remapped to a key that only the
+    /// filter reads, so without it Caps Lock is dead and every Hyper shortcut with it. macOS took
+    /// the filter away once with nothing said to the app (owner, 2026-11-24: after a wake with
+    /// other displays, "the drawer no longer works"; the filter had been fine five hours before
+    /// and was in the window server's list no more). Switched off, it is switched on again;
+    /// gone, it is installed again.
+    func verify() {
+        guard isOn else { return }
+        if let tap, CFMachPortIsValid(tap), Self.filterIsListed() { return }
+        if let tap, CFMachPortIsValid(tap) {
+            CGEvent.tapEnable(tap: tap, enable: true)
+            if Self.filterIsListed() {
+                Log.app.notice("hyper key: the key filter was switched off; it is on again")
+                held = false
+                swallowed.removeAll()
+                return
+            }
+        }
+        stopTap()
+        held = false
+        if startTap() {
+            Log.app.notice("hyper key: the key filter was gone; it is installed again")
+        } else {
+            Log.app.error("hyper key: the key filter is gone and could not be installed again; tried again in a moment")
+        }
     }
 
     /// Before Fremspace ends: Caps Lock is itself again.
     func stop() {
         guard isOn else { return }
+        watchFilter(false)
         stopTap()
         setMapping(false)
         isOn = false

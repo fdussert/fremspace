@@ -9,6 +9,9 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- The Hyper key looks after its own key filter: when macOS switches it off or takes it away (seen
+  once after a wake with other displays), it is back within a few seconds. Until now Caps Lock
+  then did nothing, and no Hyper shortcut with it, until Fremspace was started again.
 - A drawer slot can take one window of an app by its title, as a layout slot can: under the app,
   type part of the title ("dashboard"). On save, the app's windows that the slot no longer takes
   leave the drawer.
