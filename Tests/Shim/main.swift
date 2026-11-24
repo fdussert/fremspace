@@ -323,6 +323,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testScenesAreWrittenOnlyWhenThereAreSome", { try ($0 as! SceneTests).testScenesAreWrittenOnlyWhenThereAreSome() }),
         ("testRemovingADesktopShiftsTheLaterOnesAndDropsItFromItsScenes", { ($0 as! SceneTests).testRemovingADesktopShiftsTheLaterOnesAndDropsItFromItsScenes() }),
         ("testMovingADesktopKeepsTheScenesOnTheSameDesktops", { ($0 as! SceneTests).testMovingADesktopKeepsTheScenesOnTheSameDesktops() }),
+        ("testADesktopMovedToAnotherDisplayTakesItsScenesAlong", { ($0 as! SceneTests).testADesktopMovedToAnotherDisplayTakesItsScenesAlong() }),
         ("testASceneShowsWhatIsThereAndNotShownTheKeyboardDisplayLast", { ($0 as! SceneTests).testASceneShowsWhatIsThereAndNotShownTheKeyboardDisplayLast() }),
         ("testWhatASceneDoesBeyondTheDesktopsIsWrittenOnlyWhenThereIsSome", { try ($0 as! SceneTests).testWhatASceneDoesBeyondTheDesktopsIsWrittenOnlyWhenThereIsSome() }),
         ("testTheFocusOfASceneGoesWithTheDesktopItWasOn", { ($0 as! SceneTests).testTheFocusOfASceneGoesWithTheDesktopItWasOn() }),

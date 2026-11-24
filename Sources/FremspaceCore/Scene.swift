@@ -165,6 +165,29 @@ public func scenes(_ scenes: [Scene], afterMovingDesktop from: Int, to: Int, of 
     }
 }
 
+/// The scenes once desktop `index` of display `from` became desktop `newIndex` of display `to`
+/// (the owner moved it to that display in the editor). A scene that showed it shows it where it
+/// is now, with the Focus it gave there, unless it already shows another desktop of `to`: a
+/// display shows one desktop, so the scene then keeps that one and leaves `from` as it is. The
+/// desktops after it on `from` are one position earlier, those at `newIndex` or after on `to` one later.
+public func scenes(_ scenes: [Scene], afterMovingDesktop index: Int, of from: DisplayIdentity, to: DisplayIdentity,
+                   at newIndex: Int) -> [Scene] {
+    guard from != to else { return scenes }
+    return scenes.map { scene in
+        let showedIt = scene.desktop(on: from) == index
+        let focus = showedIt ? scene.focus(on: from) : nil
+        var scene = FremspaceCore.scenes([scene], afterRemovingDesktop: index, of: from)[0]
+        scene.desktops = scene.desktops.map { desktop in
+            desktop.display == to && desktop.index >= newIndex ? ConfiguredDesktop(display: to, index: desktop.index + 1) : desktop
+        }
+        if showedIt, scene.desktop(on: to) == nil {
+            scene.set(newIndex, on: to)
+            if let focus { scene.setFocus(focus, on: to) }
+        }
+        return scene
+    }
+}
+
 /// The desktops to show for a scene, in order: only those that are there (`available`) and not
 /// shown already (`shown`), the display that has the keyboard last, so that the keyboard ends on it.
 public func sceneOrder(_ scene: Scene, available: Set<ConfiguredDesktop>, shown: Set<ConfiguredDesktop>,

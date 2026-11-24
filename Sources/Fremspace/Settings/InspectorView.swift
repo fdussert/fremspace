@@ -622,6 +622,18 @@ struct DesktopInspector: View {
                 }
                 // Free or Layout is chosen above the screen (`DesktopMode`).
                 SwiftUI.Divider()
+                let others = session.displaysToMoveTo
+                if !others.isEmpty {
+                    Menu {
+                        ForEach(others, id: \.identity) { display in
+                            Button(display.displayName) { session.moveDesktop(at: session.selection.desktop, toDisplay: display.identity) }
+                        }
+                    } label: {
+                        Label("Move to another display", systemImage: "rectangle.on.rectangle")
+                    }
+                    .fixedSize()
+                    .help("Gives this desktop to another display of the configuration, with its layout, its name and the scenes that showed it. On save its windows go where their slots are")
+                }
                 Button(role: .destructive) { session.removeDesktop(at: session.selection.desktop) } label: {
                     Label("Remove this desktop", systemImage: "trash")
                 }

@@ -1002,6 +1002,52 @@ final class EditSession: ObservableObject {
         selection.desktop = movedIndex(selection.desktop, from: from, to: to)
     }
 
+    /// The displays of the configuration a desktop of the selected one can be moved to: the others
+    /// that Fremspace arranges. None while the selected display has a single desktop: a display
+    /// keeps at least one.
+    var displaysToMoveTo: [DisplaySpec] {
+        guard let display = displaySpec, display.spaces.count > 1 else { return [] }
+        return (configuration?.displays ?? []).filter { $0.identity != display.identity && !$0.ignored }
+    }
+
+    /// Moves desktop `index` of the selected display to another display of the configuration,
+    /// with its layout, its name, its Focus and the scenes that showed it. For the display it
+    /// leaves it is a removal, for the other an addition: last, or on the macOS desktop that
+    /// display has and the configuration did not list, as for a new desktop (`addDesktop`).
+    /// Nothing moves on the Mac until the save; then the windows go where their slots are.
+    func moveDesktop(at index: Int, toDisplay target: DisplayIdentity) {
+        let c = selection.configuration
+        guard let source = displaySpec, source.identity != target, source.spaces.count > 1, source.spaces.indices.contains(index),
+              config.configurations.indices.contains(c),
+              let s = config.configurations[c].displays.firstIndex(where: { $0.identity == source.identity }),
+              let d = config.configurations[c].displays.firstIndex(where: { $0.identity == target }) else { return }
+        let destination = config.configurations[c].displays[d]
+        guard !destination.ignored else { return }
+        let spare = unlisted(on: destination).first
+        let count = destination.spaces.count
+        let newIndex = spare.map { min(max(0, $0.index), count) } ?? count
+        let space = source.spaces[index]
+        checkpoint()
+        // As for a removal: undoing the step also forgets it.
+        removedBeforeChange = removedDesktops
+        let id = config.configurations[c].id
+        removedDesktops.append((id, source.identity, index, nil, nil))
+        if let spare { removedDesktops.append((id, target, count, newIndex, spare.uuid)) }
+        var next = config.configurations[c]
+        next.displays[s].spaces.remove(at: index)
+        next.displays[d].spaces.insert(space, at: newIndex)
+        next.scenes = scenes(next.scenes, afterMovingDesktop: index, of: source.identity, to: target, at: newIndex)
+        config.configurations[c] = next
+        removedBeforeChange = nil
+        selection.display = target
+        selection.desktop = newIndex
+        selection.slot = nil
+        selection.drawer = nil
+        normalizeSelection()
+        let name = space.label.isEmpty ? "The desktop" : "\u{201C}\(space.label)\u{201D}"
+        status = Status(kind: .info, text: "\(name) is now desktop \(newIndex + 1) of \(destination.displayName). Nothing moves until you save; the macOS desktop it leaves on \(source.displayName) stays there, and the editor then offers to remove it.")
+    }
+
     /// The owner's name for a display, in every configuration that lists it: it is the same screen.
     func renameDisplay(_ identity: DisplayIdentity, to name: String) {
         var next = config

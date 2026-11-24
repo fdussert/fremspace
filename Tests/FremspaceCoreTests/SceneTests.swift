@@ -70,6 +70,22 @@ final class SceneTests: XCTestCase {
         XCTAssertEqual(pushed[0].desktops, [on(laptop, 2), on(big, 1)])
     }
 
+    func testADesktopMovedToAnotherDisplayTakesItsScenesAlong() {
+        // A scene that showed desktop 3 of the laptop and nothing of the big display: it shows
+        // the desktop where it went, with the Focus it gave it.
+        let alone = Scene(id: UUID(), name: "Writing", desktops: [on(laptop, 3)], focus: [SceneFocus(display: laptop, slotID: "main")])
+        let moved = scenes([alone], afterMovingDesktop: 3, of: laptop, to: big, at: 2)[0]
+        XCTAssertEqual(moved.desktops, [on(big, 2)])
+        XCTAssertEqual(moved.focus, [SceneFocus(display: big, slotID: "main")])
+        // One that already shows a desktop of the big display keeps it (moved one later when the
+        // new desktop lands before it) and leaves the laptop as it is.
+        let both = scenes([meeting], afterMovingDesktop: 3, of: laptop, to: big, at: 0)[0]
+        XCTAssertEqual(both.desktops, [on(big, 2)])
+        // The other desktops only change position.
+        let other = Scene(id: UUID(), name: "Mail", desktops: [on(laptop, 4), on(big, 0)])
+        XCTAssertEqual(scenes([other], afterMovingDesktop: 3, of: laptop, to: big, at: 1)[0].desktops, [on(laptop, 3), on(big, 0)])
+    }
+
     func testASceneShowsWhatIsThereAndNotShownTheKeyboardDisplayLast() {
         let all: Set<ConfiguredDesktop> = [on(laptop, 3), on(big, 1)]
         XCTAssertEqual(sceneOrder(meeting, available: all, shown: [], keyboardOn: laptop), [on(big, 1), on(laptop, 3)])

@@ -207,6 +207,18 @@ struct DesktopTabs: View {
         .contextMenu {
             Button("Move left") { session.moveDesktop(from: i, to: i - 1) }.disabled(i == 0)
             Button("Move right") { session.moveDesktop(from: i, to: i + 1) }.disabled(i >= count - 1)
+            // To another display: with its layout, its name and the scenes that showed it.
+            let others = session.displaysToMoveTo
+            if !others.isEmpty {
+                Menu("Move to another display") {
+                    ForEach(others, id: \.identity) { display in
+                        Button(display.displayName) {
+                            session.select(desktop: i)
+                            session.moveDesktop(at: i, toDisplay: display.identity)
+                        }
+                    }
+                }
+            }
             SwiftUI.Divider()
             Button("Remove from the configuration") { session.removeDesktop(at: i) }
                 .disabled(count <= 1)

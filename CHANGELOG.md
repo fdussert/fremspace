@@ -9,6 +9,10 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- A desktop can be moved to another display in the editor ("Move to another display", on its tab
+  and in its settings): it goes with its layout, its name, its Focus and the scenes that showed
+  it. On save its windows go where their slots are; the macOS desktop it leaves stays on the Mac
+  until you remove it there.
 - Pinned rows in the palette: ⌘P pins the selected row (an app, a desktop, a scene, a command or
   a row of one of your sources), and ⌘P again takes it off. Pinned rows head the list when nothing
   is typed, above the windows, and stay there while the map narrows the list to a desktop; Return
