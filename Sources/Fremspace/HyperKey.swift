@@ -46,9 +46,8 @@ final class HyperKey {
     private var secureSince: Date?
     /// What holds secure keyboard input and blocks the key, once it has for a while.
     private(set) var blockedBy: String?
-    /// Called when the key becomes blocked (with what holds the keys, and whether the owner is
-    /// to be told) and when it is free again (nil).
-    var onBlock: (_ holder: String?, _ tell: Bool) -> Void = { _, _ in }
+    /// Called when the key becomes blocked (with what holds the keys) and when it is free again (nil).
+    var onBlock: (_ holder: String?) -> Void = { _ in }
     /// Looks every second that the filter is still there and whether secure keyboard input is on,
     /// while Hyper is on (see `verify`).
     private var watch: Timer?
@@ -229,9 +228,9 @@ final class HyperKey {
         let byLockScreen = holder.map { pid in
             name?.bundleIdentifier == "com.apple.loginwindow" || name == nil && Self.isLoginWindow(pid)
         } ?? false
-        let block = hyperBlock(secureFor: secureSince.map { Date().timeIntervalSince($0) }, byLockScreen: byLockScreen,
-                               sessionLocked: Engine.sessionIsLocked)
-        let by = block.blocked ? (byLockScreen ? "The lock screen" : name?.localizedName ?? "An app") : nil
+        let blocked = hyperBlock(secureFor: secureSince.map { Date().timeIntervalSince($0) }, byLockScreen: byLockScreen,
+                                 sessionLocked: Engine.sessionIsLocked)
+        let by = blocked ? (byLockScreen ? "The lock screen" : name?.localizedName ?? "An app") : nil
         guard by != blockedBy else { return }
         blockedBy = by
         if let by {
@@ -239,7 +238,7 @@ final class HyperKey {
         } else {
             Log.app.notice("hyper key: secure keyboard input is off again; Caps Lock shortcuts work")
         }
-        onBlock(by, block.tell)
+        onBlock(by)
     }
 
     /// loginwindow is not an app the workspace lists: told by the path of its executable.
@@ -257,7 +256,7 @@ final class HyperKey {
             secureSince = nil
             if blockedBy != nil {
                 blockedBy = nil
-                onBlock(nil, false)
+                onBlock(nil)
             }
         }
         guard on else { return }

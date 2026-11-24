@@ -77,13 +77,14 @@ public func hyperMappingChange(_ current: [KeyMapping], hyper on: Bool,
 /// left. The lock screen sometimes keeps it after an unlock, and then it does not end (owner,
 /// 2026-11-24: "the key is gone again", twice in a day, each time after a wake).
 ///
-/// `secureFor`: how long it has been on without a break, nil when it is off. `blocked` is for
-/// the Status page; `tell` for a notification, kept for the case nothing on screen explains:
-/// the lock screen holding it while the session is unlocked. Behind the lock screen nothing is
-/// said: it is doing its job.
-public func hyperBlock(secureFor seconds: TimeInterval?, byLockScreen: Bool, sessionLocked: Bool) -> (blocked: Bool, tell: Bool) {
-    guard let seconds, !sessionLocked else { return (false, false) }
-    if byLockScreen { return (seconds >= 10, seconds >= 10) }
-    return (seconds >= 20, false)
+/// Whether the Status page says so. `secureFor`: how long it has been on without a break, nil
+/// when it is off. A password field is given longer than the lock screen of an unlocked
+/// session, which nothing on screen explains. Behind the lock screen nothing is said: it is
+/// doing its job. No notification either way: Fremspace's own commands keep working (through
+/// hot keys), so there is nothing for the owner to do, and with a lock screen that keeps secure
+/// input it would come at every unlock.
+public func hyperBlock(secureFor seconds: TimeInterval?, byLockScreen: Bool, sessionLocked: Bool) -> Bool {
+    guard let seconds, !sessionLocked else { return false }
+    return seconds >= (byLockScreen ? 10 : 20)
 }
 

@@ -105,16 +105,15 @@ final class AttentionTests: XCTestCase {
     }
 
     func testSecureInputBlocksTheHyperKeyAndOnlyTheLockScreenIsToldAbout() {
-        // A password field: nothing for a while, then on the Status page, never a notification.
-        XCTAssertFalse(hyperBlock(secureFor: 5, byLockScreen: false, sessionLocked: false).blocked)
-        XCTAssertTrue(hyperBlock(secureFor: 30, byLockScreen: false, sessionLocked: false).blocked)
-        XCTAssertFalse(hyperBlock(secureFor: 3600, byLockScreen: false, sessionLocked: false).tell)
-        // The lock screen that kept it after the unlock: said, and soon.
-        XCTAssertFalse(hyperBlock(secureFor: 4, byLockScreen: true, sessionLocked: false).tell)
-        XCTAssertTrue(hyperBlock(secureFor: 12, byLockScreen: true, sessionLocked: false).tell)
+        // A password field: nothing for a while, then on the Status page.
+        XCTAssertFalse(hyperBlock(secureFor: 5, byLockScreen: false, sessionLocked: false))
+        XCTAssertTrue(hyperBlock(secureFor: 30, byLockScreen: false, sessionLocked: false))
+        // The lock screen that kept it after the unlock: said sooner.
+        XCTAssertFalse(hyperBlock(secureFor: 4, byLockScreen: true, sessionLocked: false))
+        XCTAssertTrue(hyperBlock(secureFor: 12, byLockScreen: true, sessionLocked: false))
         // While the screen is locked it is doing its job; off, there is nothing.
-        XCTAssertFalse(hyperBlock(secureFor: 600, byLockScreen: true, sessionLocked: true).blocked)
-        XCTAssertFalse(hyperBlock(secureFor: nil, byLockScreen: true, sessionLocked: false).blocked)
+        XCTAssertFalse(hyperBlock(secureFor: 600, byLockScreen: true, sessionLocked: true))
+        XCTAssertFalse(hyperBlock(secureFor: nil, byLockScreen: true, sessionLocked: false))
     }
 
     func testAnAppThatIsNotInstalledIsANoteOnceWithItsFirstSlot() {

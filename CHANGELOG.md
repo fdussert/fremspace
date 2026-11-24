@@ -14,7 +14,7 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
   keeps them after an unlock, and locking again does not give them back): Caps Lock + key did
   nothing at all. Fremspace's own commands now go through hot keys meanwhile. What stays out of
   reach until it ends is Caps Lock for the shortcuts of other apps; the Status page says what
-  holds the keys, and a notification says it when it is the lock screen.
+  holds the keys.
 - Desktops that macOS made anew are taken back. When a display leaves or comes back, macOS can
   give its desktops new identities: their layouts then had no desktop and "Restore everything
   now" restored nothing. The layouts now take the desktops nothing uses, in order, when the

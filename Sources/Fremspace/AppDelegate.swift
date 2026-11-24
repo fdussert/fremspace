@@ -93,13 +93,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         engine.onDesktopChange = { [weak self] in self?.notch.desktopChanged() }
         engine.start()
 
-        hyper.onBlock = { [weak self] holder, tell in
-            ShortcutCatalog.hyperBlockedBy = holder
-            // Said once per time it happens, and only when nothing on screen explains it.
-            guard let holder, tell else { return }
-            self?.engine.commands.notify("\(holder) kept secure keyboard input after the unlock. Caps Lock still runs Fremspace's commands, but does not reach the shortcuts of other apps until you log out.",
-                                         logged: false)
-        }
+        // For the Status page only: there is nothing for the owner to do about it (see `hyperBlock`).
+        hyper.onBlock = { holder in ShortcutCatalog.hyperBlockedBy = holder }
         hyper.record = { [weak self] in self?.engine.hyperMapping }
         hyper.remember = { [weak self] record in self?.engine.rememberHyperMapping(record) }
         hotkeys = Hotkeys()
