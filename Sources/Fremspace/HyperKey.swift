@@ -42,9 +42,17 @@ final class HyperKey {
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
     private(set) var isOn = false
-    /// Looks every few seconds that the filter is still there while Hyper is on (see `verify`).
+    /// Since when secure keyboard input has been on without a break (see `hyperBlock`).
+    private var secureSince: Date?
+    /// What holds secure keyboard input and blocks the key, once it has for a while.
+    private(set) var blockedBy: String?
+    /// Called when the key becomes blocked (with what holds the keys, and whether the owner is
+    /// to be told) and when it is free again (nil).
+    var onBlock: (_ holder: String?, _ tell: Bool) -> Void = { _, _ in }
+    /// Looks every second that the filter is still there and whether secure keyboard input is on,
+    /// while Hyper is on (see `verify`).
     private var watch: Timer?
-    private static let watchEvery: TimeInterval = 3
+    private static let watchEvery: TimeInterval = 1
     /// Keys whose press ran a command: their release goes no further either.
     private var swallowed: Set<Int64> = []
     /// F18 is down, as the filter saw it (a held key repeats its press).
@@ -93,12 +101,168 @@ final class HyperKey {
         return true
     }
 
+    // MARK: - Without the filter: while secure keyboard input is on
+
+    // Secure keyboard input hides key presses from the filter, not from hot keys: those are
+    // matched by the window server itself (owner, 2026-11-24: with the lock screen holding
+    // secure input, Caps Lock + T did nothing and Control-Option-Command-T opened the drawer).
+    // So while it is on, Caps Lock (F18) is a hot key of its own; while it is held, the keys of
+    // Fremspace's own commands are hot keys too, with no modifier, and are let go the moment it
+    // is released. Fremspace's commands then work as ever. What is lost until secure input ends
+    // is Caps Lock + key for the shortcuts of other apps: no key press can be changed on its way.
+
+    private static let signature: OSType = 0x4652_4D48 // "FRMH"
+    private static let leaderID: UInt32 = 1
+    private var chordHandler: EventHandlerRef?
+    private var leader: EventHotKeyRef?
+    private var chords: [EventHotKeyRef] = []
+    private var chordActions: [UInt32: () -> Void] = [:]
+    private var chordWatch: Timer?
+    /// The keyboard said F18 was down at least once while the chords were up: its "up" can then
+    /// be believed, as a second way of noticing the release.
+    private var keyboardSawLeader = false
+    private var chordsSince = Date.distantPast
+    /// The longest the command keys stay taken if no release of Caps Lock is ever seen: they are
+    /// plain letters, and nobody could type them meanwhile.
+    private static let chordsAtMost: TimeInterval = 8
+
+    private func installChordHandler() {
+        guard chordHandler == nil else { return }
+        var specs = [EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed)),
+                     EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased))]
+        InstallEventHandler(GetApplicationEventTarget(), { _, event, userData in
+            guard let event, let userData else { return OSStatus(eventNotHandledErr) }
+            var id = EventHotKeyID()
+            let status = GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
+                                           nil, MemoryLayout<EventHotKeyID>.size, nil, &id)
+            guard status == noErr, id.signature == HyperKey.signature else { return OSStatus(eventNotHandledErr) }
+            let hyper = Unmanaged<HyperKey>.fromOpaque(userData).takeUnretainedValue()
+            let pressed = GetEventKind(event) == UInt32(kEventHotKeyPressed)
+            if id.id == HyperKey.leaderID {
+                if pressed { hyper.leaderDown() } else { hyper.leaderUp() }
+            } else if pressed {
+                hyper.chordActions[id.id]?()
+            }
+            return noErr
+        }, specs.count, &specs, Unmanaged.passUnretained(self).toOpaque(), &chordHandler)
+    }
+
+    /// Caps Lock as a hot key of its own, for as long as secure keyboard input is on.
+    private func setLeader(_ on: Bool) {
+        if on, leader == nil {
+            installChordHandler()
+            var ref: EventHotKeyRef?
+            let status = RegisterEventHotKey(UInt32(Self.f18), 0, EventHotKeyID(signature: Self.signature, id: Self.leaderID),
+                                             GetApplicationEventTarget(), 0, &ref)
+            leader = status == noErr ? ref : nil
+            Log.app.notice("hyper key: secure keyboard input is on; Caps Lock goes through a hot key meanwhile (\(status == noErr ? "registered" : "refused: \(status)", privacy: .public))")
+        } else if !on, let leader {
+            UnregisterEventHotKey(leader)
+            self.leader = nil
+            leaderUp()
+        }
+    }
+
+    private func leaderDown() {
+        guard chords.isEmpty, !commandsSuspended else { return }
+        held = true
+        chordsSince = Date()
+        keyboardSawLeader = false
+        var next: UInt32 = 100
+        for code in 0..<UInt32(128) where code != UInt32(Self.f18) {
+            for shift in [false, true] {
+                guard let action = command(code, shift) else { continue }
+                var ref: EventHotKeyRef?
+                let status = RegisterEventHotKey(code, shift ? UInt32(shiftKey) : 0, EventHotKeyID(signature: Self.signature, id: next),
+                                                 GetApplicationEventTarget(), 0, &ref)
+                if status == noErr, let ref {
+                    chords.append(ref)
+                    chordActions[next] = action
+                }
+                next += 1
+            }
+        }
+        if traces < 12 {
+            traces += 1
+            Log.app.notice("hyper key: Caps Lock down, as a hot key; \(self.chords.count) command keys taken while it is held")
+        }
+        // The release comes as an event; missed (it happens to hot keys under load), the plain
+        // keys would stay taken: the keyboard's own word, and a deadline, end it too.
+        let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            let down = CGEventSource.keyState(.hidSystemState, key: Self.f18)
+            if down { self.keyboardSawLeader = true }
+            if (self.keyboardSawLeader && !down) || Date().timeIntervalSince(self.chordsSince) > Self.chordsAtMost { self.leaderUp() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        chordWatch = timer
+    }
+
+    private func leaderUp() {
+        chordWatch?.invalidate()
+        chordWatch = nil
+        chords.forEach { UnregisterEventHotKey($0) }
+        chords.removeAll()
+        chordActions.removeAll()
+        held = false
+    }
+
+    /// The process that holds secure keyboard input, as the window server records it for the
+    /// console session.
+    private static func secureInputHolder() -> pid_t? {
+        let root = IORegistryGetRootEntry(kIOMainPortDefault)
+        defer { IOObjectRelease(root) }
+        let users = IORegistryEntryCreateCFProperty(root, "IOConsoleUsers" as CFString, kCFAllocatorDefault, 0)?
+            .takeRetainedValue() as? [[String: Any]]
+        return users?.compactMap { ($0["kCGSSessionSecureInputPID"] as? NSNumber)?.int32Value }.first
+    }
+
+    /// Secure keyboard input hides every key press from the filter, with nothing told to the app:
+    /// the filter is in place and Caps Lock + key does nothing. No app can end it for another;
+    /// what can be done is to say so, and what holds it.
+    private func checkSecureInput() {
+        let secure = IsSecureEventInputEnabled()
+        if secure { secureSince = secureSince ?? Date() } else { secureSince = nil }
+        setLeader(secure)
+        let holder = secure ? Self.secureInputHolder() : nil
+        let name = holder.flatMap { NSRunningApplication(processIdentifier: $0) }
+        let byLockScreen = holder.map { pid in
+            name?.bundleIdentifier == "com.apple.loginwindow" || name == nil && Self.isLoginWindow(pid)
+        } ?? false
+        let block = hyperBlock(secureFor: secureSince.map { Date().timeIntervalSince($0) }, byLockScreen: byLockScreen,
+                               sessionLocked: Engine.sessionIsLocked)
+        let by = block.blocked ? (byLockScreen ? "The lock screen" : name?.localizedName ?? "An app") : nil
+        guard by != blockedBy else { return }
+        blockedBy = by
+        if let by {
+            Log.app.notice("hyper key: blocked by secure keyboard input, held by \(by, privacy: .public) for \(Int(Date().timeIntervalSince(self.secureSince ?? Date()))) s")
+        } else {
+            Log.app.notice("hyper key: secure keyboard input is off again; Caps Lock shortcuts work")
+        }
+        onBlock(by, block.tell)
+    }
+
+    /// loginwindow is not an app the workspace lists: told by the path of its executable.
+    private static func isLoginWindow(_ pid: pid_t) -> Bool {
+        var buffer = [CChar](repeating: 0, count: 4096)
+        guard proc_pidpath(pid, &buffer, UInt32(buffer.count)) > 0 else { return false }
+        return String(cString: buffer).hasSuffix("/loginwindow")
+    }
+
     private func watchFilter(_ on: Bool) {
         watch?.invalidate()
         watch = nil
+        if !on {
+            setLeader(false)
+            secureSince = nil
+            if blockedBy != nil {
+                blockedBy = nil
+                onBlock(nil, false)
+            }
+        }
         guard on else { return }
         let timer = Timer(timeInterval: Self.watchEvery, repeats: true) { [weak self] _ in self?.verify() }
-        timer.tolerance = 1
+        timer.tolerance = 0.3
         RunLoop.main.add(timer, forMode: .common)
         watch = timer
     }
@@ -121,6 +285,7 @@ final class HyperKey {
     /// gone, it is installed again.
     func verify() {
         guard isOn else { return }
+        checkSecureInput()
         if let tap, CFMachPortIsValid(tap), Self.filterIsListed() { return }
         if let tap, CFMachPortIsValid(tap) {
             CGEvent.tapEnable(tap: tap, enable: true)

@@ -98,6 +98,8 @@ enum ShortcutCatalog {
 
     /// Whether the Hyper key is on: ⌃⌥⌘ is then written ⇪, the key the owner holds.
     static var hyperOn = false
+    /// What holds secure keyboard input and blocks the Hyper key, for the Status page.
+    static var hyperBlockedBy: String?
 
     /// "⌃⌥⌘L" ("⇪L" with the Hyper key); "None" for a command without shortcut.
     static func label(_ shortcut: Shortcut) -> String {

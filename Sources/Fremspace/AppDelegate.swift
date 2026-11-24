@@ -93,6 +93,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         engine.onDesktopChange = { [weak self] in self?.notch.desktopChanged() }
         engine.start()
 
+        hyper.onBlock = { [weak self] holder, tell in
+            ShortcutCatalog.hyperBlockedBy = holder
+            // Said once per time it happens, and only when nothing on screen explains it.
+            guard let holder, tell else { return }
+            self?.engine.commands.notify("Caps Lock shortcuts are blocked: \(holder.prefix(1).lowercased() + holder.dropFirst()) kept secure keyboard input after the unlock. Lock the screen (\u{2303}\u{2318}Q) and unlock it again.",
+                                         logged: false)
+        }
         hyper.record = { [weak self] in self?.engine.hyperMapping }
         hyper.remember = { [weak self] record in self?.engine.rememberHyperMapping(record) }
         hotkeys = Hotkeys()

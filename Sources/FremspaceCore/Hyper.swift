@@ -70,3 +70,20 @@ public func hyperMappingChange(_ current: [KeyMapping], hyper on: Bool,
     }
     return (wanted, nil)
 }
+
+/// What secure keyboard input does to the Hyper key. While an app holds it (a password field has
+/// the keys, or the app asked for it), macOS hides key presses from every other app: the filter
+/// that reads Caps Lock sees nothing, and Caps Lock + key does nothing. It ends when the field is
+/// left. The lock screen sometimes keeps it after an unlock, and then it does not end (owner,
+/// 2026-11-24: "the key is gone again", twice in a day, each time after a wake).
+///
+/// `secureFor`: how long it has been on without a break, nil when it is off. `blocked` is for
+/// the Status page; `tell` for a notification, kept for the case nothing on screen explains:
+/// the lock screen holding it while the session is unlocked. Behind the lock screen nothing is
+/// said: it is doing its job.
+public func hyperBlock(secureFor seconds: TimeInterval?, byLockScreen: Bool, sessionLocked: Bool) -> (blocked: Bool, tell: Bool) {
+    guard let seconds, !sessionLocked else { return (false, false) }
+    if byLockScreen { return (seconds >= 10, seconds >= 10) }
+    return (seconds >= 20, false)
+}
+

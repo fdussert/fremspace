@@ -197,6 +197,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testTheLimitCutsTheList", { ($0 as! PaletteTests).testTheLimitCutsTheList() }),
     ]),
     ("AttentionTests", { AttentionTests() }, [
+        ("testSecureInputBlocksTheHyperKeyAndOnlyTheLockScreenIsToldAbout", { ($0 as! AttentionTests).testSecureInputBlocksTheHyperKeyAndOnlyTheLockScreenIsToldAbout() }),
         ("testNothingToSayWhenEverythingRuns", { ($0 as! AttentionTests).testNothingToSayWhenEverythingRuns() }),
         ("testWithoutAccessibilityOnlyThatIsSaidAboutNotRunning", { ($0 as! AttentionTests).testWithoutAccessibilityOnlyThatIsSaidAboutNotRunning() }),
         ("testPausedIsSaidOnceWithTheWayBack", { ($0 as! AttentionTests).testPausedIsSaidOnceWithTheWayBack() }),

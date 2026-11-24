@@ -67,6 +67,9 @@ public struct AttentionFacts {
     public var takenShortcuts: [String] = []
     /// The key filter of the Hyper key is in place.
     public var hyperOn = false
+    /// What holds secure keyboard input and so blocks the Hyper key ("The lock screen", an app's
+    /// name), when it has for a while (see `hyperBlock`).
+    public var hyperBlockedBy: String?
     /// Sending a window to another desktop works (see `MoverHealth`).
     public var moverAvailable = true
     /// The operation that sends a window to another desktop is not on this macOS.
@@ -170,6 +173,9 @@ public func attentionItems(_ facts: AttentionFacts) -> [AttentionItem] {
         add("hyper", .warning, "Caps Lock is not the Hyper key",
             "The setting is on and the key filter could not be installed, so Caps Lock is itself. If macOS asks, allow Fremspace under Privacy & Security.",
             .openAccessibilitySettings)
+    } else if facts.config.hyperKey, let holder = facts.hyperBlockedBy {
+        add("hyper.blocked", .warning, "Caps Lock shortcuts are blocked by secure keyboard input",
+            "\(holder) holds it, and macOS then hides key presses from every other app. With a password field open this is as it should be, and it ends when you leave the field. Otherwise the lock screen kept it after an unlock: lock the screen (\u{2303}\u{2318}Q) and unlock it again.")
     }
 
     if facts.config.windowPreviews, !facts.screenRecording {

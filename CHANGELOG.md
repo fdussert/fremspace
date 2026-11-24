@@ -9,6 +9,10 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- The Hyper key says when macOS blocks it. While an app holds secure keyboard input, macOS hides
+  key presses from every other app and Caps Lock + key does nothing; the lock screen sometimes
+  keeps it after an unlock. Fremspace now tells you when that happens (a notification, and a line
+  on the Status page) and what ends it: lock the screen and unlock it again.
 - The Hyper key looks after its own key filter: when macOS switches it off or takes it away (seen
   once after a wake with other displays), it is back within a few seconds. Until now Caps Lock
   then did nothing, and no Hyper shortcut with it, until Fremspace was started again.

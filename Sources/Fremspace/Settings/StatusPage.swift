@@ -25,6 +25,7 @@ extension EditSession {
         }
         facts.takenShortcuts = takenShortcuts()
         facts.hyperOn = ShortcutCatalog.hyperOn
+        facts.hyperBlockedBy = ShortcutCatalog.hyperBlockedBy
         facts.moverAvailable = engine.moverHealth.isAvailable
         facts.waitingDrawerWindows = engine.drawers.waitingCount
         facts.spacesSpanDisplays = !NSScreen.screensHaveSeparateSpaces

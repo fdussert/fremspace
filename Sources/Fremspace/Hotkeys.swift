@@ -113,6 +113,8 @@ final class Hotkeys {
             let status = GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
                                            nil, MemoryLayout<EventHotKeyID>.size, nil, &id)
             guard status == noErr else { return status }
+            // Not one of these (the Hyper key registers its own, see `HyperKey`): left to its handler.
+            guard id.signature == Hotkeys.signature else { return OSStatus(eventNotHandledErr) }
             let hotkeys = Unmanaged<Hotkeys>.fromOpaque(userData).takeUnretainedValue()
             Log.app.info("hotkey \(hotkeys.labels[id.id] ?? "?", privacy: .public) pressed")
             hotkeys.actions[id.id]?()

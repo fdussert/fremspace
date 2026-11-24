@@ -93,6 +93,28 @@ final class AttentionTests: XCTestCase {
         facts.takenShortcuts = ["⌃⌥⌘K"]
         items = attentionItems(facts)
         XCTAssertEqual(items.map(\.title), ["A shortcut is taken by another app"])
+        // In place, and macOS hides the keys from it.
+        facts.takenShortcuts = []
+        facts.hyperBlockedBy = "The lock screen"
+        items = attentionItems(facts)
+        XCTAssertEqual(items.map(\.id), ["hyper.blocked"])
+        XCTAssertTrue(items[0].detail.hasPrefix("The lock screen holds it"))
+        // Nothing to say to someone who does not use the Hyper key.
+        facts.config.hyperKey = false
+        XCTAssertEqual(attentionItems(facts).map(\.id), [])
+    }
+
+    func testSecureInputBlocksTheHyperKeyAndOnlyTheLockScreenIsToldAbout() {
+        // A password field: nothing for a while, then on the Status page, never a notification.
+        XCTAssertFalse(hyperBlock(secureFor: 5, byLockScreen: false, sessionLocked: false).blocked)
+        XCTAssertTrue(hyperBlock(secureFor: 30, byLockScreen: false, sessionLocked: false).blocked)
+        XCTAssertFalse(hyperBlock(secureFor: 3600, byLockScreen: false, sessionLocked: false).tell)
+        // The lock screen that kept it after the unlock: said, and soon.
+        XCTAssertFalse(hyperBlock(secureFor: 4, byLockScreen: true, sessionLocked: false).tell)
+        XCTAssertTrue(hyperBlock(secureFor: 12, byLockScreen: true, sessionLocked: false).tell)
+        // While the screen is locked it is doing its job; off, there is nothing.
+        XCTAssertFalse(hyperBlock(secureFor: 600, byLockScreen: true, sessionLocked: true).blocked)
+        XCTAssertFalse(hyperBlock(secureFor: nil, byLockScreen: true, sessionLocked: false).blocked)
     }
 
     func testAnAppThatIsNotInstalledIsANoteOnceWithItsFirstSlot() {
