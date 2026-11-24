@@ -891,6 +891,31 @@ final class Engine {
         }
     }
 
+    /// The configured desktops whose macOS desktop is gone take the macOS desktops nothing uses,
+    /// in order (see `adoptedLinks`). `evenOnly`: only on a display that has as many of one as of
+    /// the other, for when nobody asked (the displays just changed); the owner asking for
+    /// everything to be put back takes what there is. Returns how many found a desktop.
+    @discardableResult
+    func adoptSpareDesktops(evenOnly: Bool) -> Int {
+        guard let configuration else { return 0 }
+        let live = liveDesktops(Spaces.managed())
+        var adopted = 0
+        for display in configuration.displays where !display.ignored {
+            guard let uuids = live[display.identity] else { continue }
+            let key = DesktopLinks.key(configuration: configuration.id, display: display.identity)
+            guard let plan = adoptedLinks(configured: display.spaces.count, links: state.desktopLinks.links[key] ?? [], live: uuids),
+                  plan.even || !evenOnly else { continue }
+            state.desktopLinks.links[key] = plan.links
+            adopted += plan.count
+            Log.engine.notice("\(plan.count) desktops of \(configuration.displayName(display.identity), privacy: .public) whose macOS desktop was gone took the desktops nothing used, in order")
+        }
+        if adopted > 0 {
+            saveState()
+            refreshDesktopMap()
+        }
+        return adopted
+    }
+
     /// Connected display → the uuids of its desktops, in Mission Control order.
     private func liveDesktops(_ managed: ManagedSpaces) -> [DisplayIdentity: [String]] {
         let byUUID = Dictionary(Displays.connected().map { ($0.uuid, $0.identity) }, uniquingKeysWith: { a, _ in a })
@@ -1082,6 +1107,8 @@ final class Engine {
         }
         resetPlacements()
         chooseConfiguration()
+        // macOS makes desktops anew when a display leaves or comes back: their layouts follow.
+        adoptSpareDesktops(evenOnly: true)
         if returned { drawers.displaysReturned() }
         // macOS put the windows where they are: none of them was moved by hand.
         router.reset()

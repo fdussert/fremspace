@@ -30,6 +30,8 @@ final class LoginRestorer {
             // that a folder it is about to show is not opened a second time.
             restoreNow(foldersAfter: 20)
         } else {
+            // The displays may have changed while Fremspace was not running: as when it sees them change.
+            engine.adoptSpareDesktops(evenOnly: true)
             engine.router.sortAll(reason: .startup)
         }
     }
@@ -38,6 +40,9 @@ final class LoginRestorer {
     /// `foldersAfter`: how long before the folders the slots ask for are opened.
     func restoreNow(foldersAfter delay: TimeInterval = 1) {
         guard engine.mayRoute, let configuration = engine.activeConfiguration else { return }
+        // Everything back includes the layouts whose macOS desktop is gone: they take the
+        // desktops nothing uses.
+        engine.adoptSpareDesktops(evenOnly: false)
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in self?.engine.openSlotFolders() }
         engine.router.restoring(until: Date().addingTimeInterval(Self.restoreWindow))
         engine.appsAreStarting(until: Date().addingTimeInterval(Self.restoreWindow))

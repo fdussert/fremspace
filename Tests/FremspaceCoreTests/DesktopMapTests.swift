@@ -135,6 +135,26 @@ final class DesktopMapTests: XCTestCase {
         XCTAssertEqual(r.links, [nil, "U2"])
     }
 
+    func testDesktopsMadeAnewAreTakenInOrderWhenAsked() {
+        // Back on the laptop alone: macOS made the last three desktops anew. Their layouts have
+        // no desktop, and three desktops have no layout.
+        let links: [String?] = [nil, "U2", "A", "B", "C"]
+        let live = ["", "U2", "X", "Y", "Z"]
+        XCTAssertEqual(resolveDesktops(configured: 5, links: links, live: live).real, [0, 1, nil, nil, nil])
+        let adopted = adoptedLinks(configured: 5, links: links, live: live)
+        XCTAssertEqual(adopted?.links, [nil, "U2", "X", "Y", "Z"])
+        XCTAssertEqual(adopted?.count, 3)
+        XCTAssertEqual(adopted?.even, true)
+        XCTAssertEqual(resolveDesktops(configured: 5, links: adopted?.links ?? [], live: live).real, [0, 1, 2, 3, 4])
+        // Fewer spare desktops than homeless layouts: the first ones are served, and it is not "even".
+        let short = adoptedLinks(configured: 5, links: links, live: ["", "U2", "X"])
+        XCTAssertEqual(short?.links, [nil, "U2", "X", "B", "C"])
+        XCTAssertEqual(short?.even, false)
+        // Nothing homeless, or nothing spare: nothing to do.
+        XCTAssertNil(adoptedLinks(configured: 2, links: [nil, "U2"], live: ["", "U2", "X"])?.count)
+        XCTAssertNil(adoptedLinks(configured: 3, links: [nil, "U2", "A"], live: ["", "U2"])?.count)
+    }
+
     func testADesktopWhoseOwnIsGoneDoesNotTakeASpareOne() {
         // Linked to a desktop macOS no longer has: it is looked for, not replaced.
         let r = resolveDesktops(configured: 2, links: ["U1", "U2"], live: ["UX", "U2"])

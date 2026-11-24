@@ -98,7 +98,7 @@ final class AttentionTests: XCTestCase {
         facts.hyperBlockedBy = "The lock screen"
         items = attentionItems(facts)
         XCTAssertEqual(items.map(\.id), ["hyper.blocked"])
-        XCTAssertTrue(items[0].detail.hasPrefix("The lock screen holds it"))
+        XCTAssertTrue(items[0].detail.hasPrefix("The lock screen holds secure keyboard input"))
         // Nothing to say to someone who does not use the Hyper key.
         facts.config.hyperKey = false
         XCTAssertEqual(attentionItems(facts).map(\.id), [])

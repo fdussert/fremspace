@@ -92,6 +92,30 @@ public func resolveDesktops(configured: Int, links: [String?], live: [String]) -
     return (real, newLinks)
 }
 
+/// The links once the configured desktops that have no macOS desktop take, in order, the macOS
+/// desktops nothing uses: the first homeless one the first spare one, and so on. `count` is how
+/// many found a place, `even` whether there were exactly as many of one as of the other. nil when
+/// no desktop is homeless, or none is spare.
+///
+/// `resolveDesktops` never does this by itself: a desktop whose own is gone is looked for, not
+/// replaced, so that a desktop missing for a moment does not lose its layout to a neighbour. But
+/// macOS makes desktops anew when a display leaves or comes back (owner, 2026-11-24: back on the
+/// laptop alone, five of its nine desktops had new uuids; five layouts had no desktop, five
+/// desktops no layout, and "restore everything" restored nothing). It is done when the displays
+/// have just changed and the two counts are the same, and when the owner asks for everything to
+/// be put back.
+public func adoptedLinks(configured: Int, links: [String?], live: [String]) -> (links: [String?], count: Int, even: Bool)? {
+    let resolved = resolveDesktops(configured: configured, links: links, live: live)
+    let homeless = (0..<configured).filter { resolved.real[$0] == nil }
+    let used = Set(resolved.real.compactMap { $0 })
+    // The desktop without a uuid cannot be linked: it is found by its position alone.
+    let spare = live.indices.filter { !used.contains($0) && !live[$0].isEmpty }
+    guard !homeless.isEmpty, !spare.isEmpty else { return nil }
+    var next = resolved.links
+    for (index, position) in zip(homeless, spare) { next[index] = live[position] }
+    return (next, min(homeless.count, spare.count), homeless.count == spare.count)
+}
+
 /// Links that put the configured desktops of a display in Mission Control's order, over the macOS
 /// desktops they use now: the first configured desktop on the first of those, and so on. nil when
 /// they already go that way, and when it cannot be done for sure: a configured desktop without a

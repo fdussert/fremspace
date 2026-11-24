@@ -97,7 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ShortcutCatalog.hyperBlockedBy = holder
             // Said once per time it happens, and only when nothing on screen explains it.
             guard let holder, tell else { return }
-            self?.engine.commands.notify("Caps Lock shortcuts are blocked: \(holder.prefix(1).lowercased() + holder.dropFirst()) kept secure keyboard input after the unlock. Lock the screen (\u{2303}\u{2318}Q) and unlock it again.",
+            self?.engine.commands.notify("\(holder) kept secure keyboard input after the unlock. Caps Lock still runs Fremspace's commands, but does not reach the shortcuts of other apps until you log out.",
                                          logged: false)
         }
         hyper.record = { [weak self] in self?.engine.hyperMapping }

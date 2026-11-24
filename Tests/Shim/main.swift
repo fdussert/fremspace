@@ -63,6 +63,7 @@ let suites: [(String, () -> XCTestCase, [TestMethod])] = [
         ("testANewDesktopTakesTheSpareOneLeftInTheMiddle", { ($0 as! DesktopMapTests).testANewDesktopTakesTheSpareOneLeftInTheMiddle() }),
         ("testTheDesktopWithoutUuidIsPreferredToASpareOne", { ($0 as! DesktopMapTests).testTheDesktopWithoutUuidIsPreferredToASpareOne() }),
         ("testADesktopWhoseOwnIsGoneDoesNotTakeASpareOne", { ($0 as! DesktopMapTests).testADesktopWhoseOwnIsGoneDoesNotTakeASpareOne() }),
+        ("testDesktopsMadeAnewAreTakenInOrderWhenAsked", { ($0 as! DesktopMapTests).testDesktopsMadeAnewAreTakenInOrderWhenAsked() }),
         ("testADesktopAddedOnASpareOneGoesWhereMissionControlShowsIt", { ($0 as! DesktopMapTests).testADesktopAddedOnASpareOneGoesWhereMissionControlShowsIt() }),
         ("testTheOrderOfMissionControlIsSaidWhenItIsNotTheTabs", { ($0 as! DesktopMapTests).testTheOrderOfMissionControlIsSaidWhenItIsNotTheTabs() }),
         ("testLinksPutInTheOrderOfMissionControl", { ($0 as! DesktopMapTests).testLinksPutInTheOrderOfMissionControl() }),

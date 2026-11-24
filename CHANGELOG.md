@@ -9,10 +9,17 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
-- The Hyper key says when macOS blocks it. While an app holds secure keyboard input, macOS hides
-  key presses from every other app and Caps Lock + key does nothing; the lock screen sometimes
-  keeps it after an unlock. Fremspace now tells you when that happens (a notification, and a line
-  on the Status page) and what ends it: lock the screen and unlock it again.
+- The Hyper key keeps running Fremspace's commands while secure keyboard input is on. macOS then
+  hides key presses from other apps (a password field has the keys; the lock screen sometimes
+  keeps them after an unlock, and locking again does not give them back): Caps Lock + key did
+  nothing at all. Fremspace's own commands now go through hot keys meanwhile. What stays out of
+  reach until it ends is Caps Lock for the shortcuts of other apps; the Status page says what
+  holds the keys, and a notification says it when it is the lock screen.
+- Desktops that macOS made anew are taken back. When a display leaves or comes back, macOS can
+  give its desktops new identities: their layouts then had no desktop and "Restore everything
+  now" restored nothing. The layouts now take the desktops nothing uses, in order, when the
+  displays change and there are as many of one as of the other, and whenever you ask for
+  everything to be restored.
 - The Hyper key looks after its own key filter: when macOS switches it off or takes it away (seen
   once after a wake with other displays), it is back within a few seconds. Until now Caps Lock
   then did nothing, and no Hyper shortcut with it, until Fremspace was started again.
