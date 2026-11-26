@@ -9,6 +9,19 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+- The Mac gets the desktops of the configuration in one step. After a change of desk (the laptop
+  alone, then its displays again) macOS keeps the desktops of the configuration that was in use
+  and gives a display that comes back a single one: desktops had to be removed one by one on a
+  display and added on the others, every time. "Match the Mac to the configuration…", beside the
+  editor's notes about desktops, adds what every display lacks and removes what the
+  configuration does not list, in one showing of Mission Control, after one question when
+  desktops are removed. The same is a command, "Give the Mac the desktops of the configuration",
+  in the palette and in the shortcuts list (no key until you give it one).
+- "Desktops follow the configuration" (General → Desktops, off unless you switch it on) does it
+  by itself when other displays are connected. macOS moves the windows of a removed desktop to
+  another one, and they are sorted again as usual.
+- Desktops added from the editor or the menu go to the layouts that had lost theirs. A layout
+  whose macOS desktop was gone kept waiting for it beside the new, empty ones.
 - The Hyper key keeps running Fremspace's commands while secure keyboard input is on. macOS then
   hides key presses from other apps (a password field has the keys; the lock screen sometimes
   keeps them after an unlock, and locking again does not give them back): Caps Lock + key did

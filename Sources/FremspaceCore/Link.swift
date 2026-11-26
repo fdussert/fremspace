@@ -13,8 +13,9 @@ public enum FremspaceLink: Equatable {
 /// without a prompt, and a web page after one: a link runs only what shows, goes to or resizes
 /// something and is undone by a key. Left out on purpose: the slot swaps (they write the
 /// configuration file), pause (the window manager would stop with no visible cause), the sends to a
-/// drawer (the window in front would be parked off screen) and side by side (it presses a menu item
-/// of another app). A command that is not listed here is refused: a new one has to be let in.
+/// drawer (the window in front would be parked off screen), side by side (it presses a menu item
+/// of another app) and matching the desktops (it opens Mission Control and changes the desktops of
+/// the Mac). A command that is not listed here is refused: a new one has to be let in.
 public func linkMayRun(_ id: String) -> Bool {
     if linkCommands.contains(id) { return true }
     let parts = id.split(separator: ".", maxSplits: 1).map(String.init)

@@ -276,6 +276,7 @@ struct DesktopTabs: View {
                     }
                     .help("Opens Mission Control and adds the desktops the saved configuration lacks, on every display")
                 }
+                matchButton(display, removing: false)
                 if addable < display.spaces.count - present {
                     Text(!active ? "macOS gets them when this configuration is in use."
                          : addable > 0 ? "The others after you save." : "Save, then add them here.")
@@ -307,6 +308,19 @@ extension DesktopTabs {
         }
     }
 
+    /// Every display at once: the desktops the configuration lacks added, those it does not list
+    /// removed, in one showing of Mission Control. Offered beside a banner's own button when
+    /// there is more to do than that button does (owner, 2026-11-26: after each change of desk,
+    /// four desktops to remove one by one on a display and others to add on two more).
+    @ViewBuilder
+    func matchButton(_ display: DisplaySpec, removing: Bool) -> some View {
+        if let what = session.matchOffer(from: display, removing: removing) {
+            Button("Match the Mac to the configuration\u{2026}") { session.matchDesktops() }
+                .fixedSize()
+                .help(what)
+        }
+    }
+
     /// macOS has desktops on this display that the configuration does not list: a desktop removed
     /// here stays on the Mac. Said without alarm, since nothing is wrong with a desktop kept on the
     /// side, and each can be removed from the Mac, after a question (`EditSession.removeFromMac`).
@@ -331,6 +345,7 @@ extension DesktopTabs {
                     .fixedSize()
                     .help("Opens Mission Control and removes the desktop you choose; macOS moves its windows to another one")
                 }
+                matchButton(display, removing: true)
             }
             .padding(.horizontal, 10).padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8).fill(Color.secondary.opacity(0.1)))

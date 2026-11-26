@@ -155,6 +155,58 @@ final class DesktopMapTests: XCTestCase {
         XCTAssertNil(adoptedLinks(configured: 3, links: [nil, "U2", "A"], live: ["", "U2"])?.count)
     }
 
+    func testWhatADisplayLacksIsToAddAndWhatNoLayoutUsesIsToRemove() {
+        // As configured: nothing to do.
+        XCTAssertTrue(desktopsToMatch(configured: 2, links: ["A", "B"], live: ["A", "B"]).isEmpty)
+        // A display that came back with one desktop, made anew: the first layout takes it, four
+        // are to add.
+        XCTAssertEqual(desktopsToMatch(configured: 5, links: ["A", "B", "C", "D", "E"], live: ["N"]),
+                       DesktopsToMatch(add: 4))
+        // Never linked, and one short.
+        XCTAssertEqual(desktopsToMatch(configured: 3, links: [], live: ["", "B"]), DesktopsToMatch(add: 1))
+        // The desktops another configuration used stayed on the display.
+        XCTAssertEqual(desktopsToMatch(configured: 4, links: ["A", "B", "C", "D"],
+                                       live: ["A", "B", "C", "D", "E", "F", "G", "H"]),
+                       DesktopsToMatch(remove: [4, 5, 6, 7]))
+        // Every desktop made anew, and one more than configured: the layouts take the first ones.
+        XCTAssertEqual(desktopsToMatch(configured: 2, links: ["A", "B"], live: ["X", "Y", "Z"]),
+                       DesktopsToMatch(remove: [2]))
+    }
+
+    func testTheDesktopWithoutUuidIsNeverToRemove() {
+        // The first desktop of the main display holds no layout here, and cannot be told from the
+        // others once something changed: it stays.
+        XCTAssertEqual(desktopsToMatch(configured: 1, links: ["B"], live: ["", "B", "C"]),
+                       DesktopsToMatch(remove: [2]))
+    }
+
+    func testWhatMatchingDoesIsSaidInTwoSentences() {
+        let said = matchSentences([
+            ("Laptop", DesktopsToMatch(remove: [4, 5, 6, 7])),
+            ("Main", DesktopsToMatch(add: 4)),
+            ("Right", DesktopsToMatch(add: 1)),
+        ])
+        XCTAssertEqual(said.add, "Adds 4 desktops to Main and 1 desktop to Right.")
+        XCTAssertEqual(said.remove, "Removes Desktops 5, 6, 7 and 8 of Laptop.")
+        let one = matchSentences([("Side", DesktopsToMatch(remove: [2])), ("Desk", DesktopsToMatch(remove: [1, 3]))])
+        XCTAssertNil(one.add)
+        XCTAssertEqual(one.remove, "Removes Desktop 3 of Side and Desktops 2 and 4 of Desk.")
+        XCTAssertNil(matchSentences([]).remove)
+    }
+
+    func testDesktopsFollowTheConfigurationOnlyWhenSwitchedOn() throws {
+        var config = Config(configurations: [])
+        XCTAssertFalse(config.matchDesktops)
+        let plain = String(decoding: try JSONEncoder().encode(config), as: UTF8.self)
+        XCTAssertFalse(plain.contains("matchDesktops"))
+        var edited = config
+        edited.matchDesktops = true
+        XCTAssertTrue(unsavedChanges(edited: edited, saved: config).general)
+        config.matchDesktops = true
+        let back = try JSONDecoder().decode(Config.self, from: try JSONEncoder().encode(config))
+        XCTAssertTrue(back.matchDesktops)
+    }
+
     func testADesktopWhoseOwnIsGoneDoesNotTakeASpareOne() {
         // Linked to a desktop macOS no longer has: it is looked for, not replaced.
         let r = resolveDesktops(configured: 2, links: ["U1", "U2"], live: ["UX", "U2"])

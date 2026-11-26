@@ -1112,6 +1112,21 @@ final class Engine {
         if returned { drawers.displaysReturned() }
         // macOS put the windows where they are: none of them was moved by hand.
         router.reset()
+        // With "Desktops follow the configuration", another desk first gets its desktops, and the
+        // windows are sorted once they are there. Not from inside this pass: Mission Control
+        // pumps the run loop.
+        if !returned, config?.matchDesktops == true, isRunning, !paused, !desktopsToMatch().isEmpty {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if self.asleep || Self.sessionIsLocked || self.desktopsToMatch().isEmpty {
+                    self.scheduleApply()
+                    self.router.sortAll(reason: .reapply)
+                } else {
+                    self.matchDesktops()
+                }
+            }
+            return
+        }
         scheduleApply()
         router.sortAll(reason: .reapply)
     }
@@ -1366,12 +1381,102 @@ final class Engine {
         suspended = true
         defer { suspended = false }
         var ok = true
-        for missing in missingDesktops {
-            guard let display = Displays.connected().first(where: { $0.identity == missing.display }) else { continue }
-            ok = Desktops.add(on: display, count: missing.needed - missing.present) && ok
+        Desktops.keepingMissionControlOpen {
+            for missing in missingDesktops {
+                guard let display = Displays.connected().first(where: { $0.identity == missing.display }) else { continue }
+                ok = Desktops.add(on: display, count: missing.needed - missing.present) && ok
+            }
         }
+        // A layout whose own desktop is gone would wait for it beside the new ones.
+        adoptSpareDesktops(evenOnly: false)
         scheduleApply()
         return ok
+    }
+
+    // MARK: - The desktops of the configuration, and no other
+
+    /// What matching the Mac to the configuration did. `complete`: nothing is left to do.
+    struct DesktopsMatched: Equatable {
+        var added = 0
+        var removed = 0
+        var complete = true
+    }
+
+    /// What each connected display lacks or has too many of, for its desktops to be those of the
+    /// configuration in use (`FremspaceCore.desktopsToMatch`). Only the displays where something
+    /// is to do. Read from the Spaces as they are now; nothing is kept.
+    func desktopsToMatch() -> [DisplayIdentity: DesktopsToMatch] {
+        guard let configuration else { return [:] }
+        let live = liveDesktops(Spaces.managed())
+        var result: [DisplayIdentity: DesktopsToMatch] = [:]
+        for spec in configuration.displays where !spec.ignored {
+            guard let uuids = live[spec.identity] else { continue }
+            let key = DesktopLinks.key(configuration: configuration.id, display: spec.identity)
+            let plan = FremspaceCore.desktopsToMatch(configured: spec.spaces.count,
+                                                     links: state.desktopLinks.links[key] ?? [], live: uuids)
+            if !plan.isEmpty { result[spec.identity] = plan }
+        }
+        return result
+    }
+
+    /// Gives every connected display the desktops of the configuration in use and no other:
+    /// the layouts whose desktop is gone take those nothing uses, the desktops still lacking are
+    /// added, and those no layout uses are removed, in one showing of Mission Control. The caller
+    /// asked the owner, or the owner asked for it at every change of displays: macOS moves the
+    /// windows of a removed desktop to another one and nothing undoes it. Then every window is
+    /// sorted again, since macOS put them where they are.
+    @discardableResult
+    func matchDesktops() -> DesktopsMatched {
+        guard configuration != nil, !desktopsToMatch().isEmpty else { return DesktopsMatched() }
+        // As for adding: no window may move under Mission Control.
+        suspended = true
+        var done = DesktopsMatched()
+        Desktops.keepingMissionControlOpen {
+            adoptSpareDesktops(evenOnly: false)
+            for (display, plan) in desktopsToMatch() where plan.add > 0 {
+                guard let connected = Displays.connected().first(where: { $0.identity == display }) else { continue }
+                let before = Desktops.counts()[display] ?? 0
+                _ = Desktops.add(on: connected, count: plan.add)
+                done.added += max(0, (Desktops.counts()[display] ?? before) - before)
+            }
+            // The new desktops go to the layouts that had none.
+            if done.added > 0 { adoptSpareDesktops(evenOnly: false) }
+            let live = liveDesktops(Spaces.managed())
+            for (display, plan) in desktopsToMatch() {
+                // By uuid, and the last first: the others keep their place and their number.
+                let uuids = plan.remove.compactMap { live[display]?[$0] }
+                for uuid in uuids.reversed() {
+                    guard removeFromMac(uuid: uuid, on: display) else { break }
+                    done.removed += 1
+                }
+            }
+        }
+        suspended = false
+        done.complete = desktopsToMatch().isEmpty
+        Log.engine.notice("desktops matched to the configuration: \(done.added) added, \(done.removed) removed\(done.complete ? "" : ", and something is left to do", privacy: .public)")
+        refreshDesktopMap()
+        router.reset()
+        scheduleApply()
+        router.sortAll(reason: .reapply)
+        return done
+    }
+
+    /// Removes the macOS desktop `uuid` of `display`, when no layout would use it. Looked up again
+    /// each time: the positions change as desktops go. A bar of Mission Control kept open from
+    /// one removal to the next may still show the desktops as they were, and nothing is removed
+    /// then: it is closed and the removal tried once more, in a bar read anew.
+    private func removeFromMac(uuid: String, on display: DisplayIdentity) -> Bool {
+        guard let connected = Displays.connected().first(where: { $0.identity == display }) else { return false }
+        for attempt in 0..<2 {
+            guard let position = liveDesktops(Spaces.managed())[display]?.firstIndex(of: uuid) else { return attempt > 0 }
+            guard desktopsToMatch()[display]?.remove.contains(position) == true else { return false }
+            let removed = Desktops.remove(on: connected, position: position)
+            let gone = liveDesktops(Spaces.managed())[display]?.contains(uuid) == false
+            if removed, !gone { Log.engine.error("remove desktop: a desktop went and it is not the one asked for") }
+            if removed || gone { return gone }
+            Desktops.closeMissionControlIfOpen()
+        }
+        return false
     }
 
     // MARK: - Desktops the configuration does not list

@@ -116,6 +116,58 @@ public func adoptedLinks(configured: Int, links: [String?], live: [String]) -> (
     return (next, min(homeless.count, spare.count), homeless.count == spare.count)
 }
 
+/// What it takes for a display to have the desktops its configuration lists, and no other.
+public struct DesktopsToMatch: Equatable {
+    /// How many desktops the display lacks.
+    public var add: Int
+    /// The real positions, in Mission Control order, of the desktops no layout would use.
+    public var remove: [Int]
+
+    public var isEmpty: Bool { add == 0 && remove.isEmpty }
+
+    public init(add: Int = 0, remove: [Int] = []) {
+        self.add = add
+        self.remove = remove
+    }
+}
+
+/// What to add to a display, or to remove from it, for its desktops to be the configured ones. The
+/// layouts whose macOS desktop is gone first take the desktops nothing uses, in order
+/// (`adoptedLinks`): what is still without a desktop after that is to add, what is still unused is
+/// to remove. Never both, and never the desktop without a uuid: nothing could check afterwards
+/// that it is the one that went.
+///
+/// Switching between a desk and the laptop alone leaves this to do every time: macOS keeps the
+/// desktops of the configuration that was in use and gives a display that comes back one desktop
+/// (owner, 2026-11-26: four to remove one by one on a display, five to add on two others).
+public func desktopsToMatch(configured: Int, links: [String?], live: [String]) -> DesktopsToMatch {
+    let adopted = adoptedLinks(configured: configured, links: links, live: live)?.links ?? links
+    let resolved = resolveDesktops(configured: configured, links: adopted, live: live)
+    let homeless = resolved.real.filter { $0 == nil }.count
+    guard homeless == 0 else { return DesktopsToMatch(add: homeless) }
+    let used = Set(resolved.real.compactMap { $0 })
+    // macOS keeps one desktop per display: a configuration that lists none leaves them all.
+    guard !used.isEmpty else { return DesktopsToMatch() }
+    return DesktopsToMatch(remove: live.indices.filter { !used.contains($0) && !live[$0].isEmpty })
+}
+
+/// What matching does, said to the owner before it is done: one sentence for what is added, one
+/// for what is removed ("Adds 4 desktops to Main and 1 desktop to Right.", "Removes Desktops 5,
+/// 6 and 7 of Laptop."), nil when there is nothing of the kind. `plans`: each display by its name,
+/// in the order of the configuration.
+public func matchSentences(_ plans: [(display: String, plan: DesktopsToMatch)]) -> (add: String?, remove: String?) {
+    func listed(_ words: [String]) -> String {
+        words.count < 2 ? words.joined() : words.dropLast().joined(separator: ", ") + " and " + (words.last ?? "")
+    }
+    let adds = plans.filter { $0.plan.add > 0 }.map {
+        "\($0.plan.add) desktop\($0.plan.add == 1 ? "" : "s") to \($0.display)"
+    }
+    let removes = plans.filter { !$0.plan.remove.isEmpty }.map {
+        "Desktop\($0.plan.remove.count == 1 ? "" : "s") \(listed($0.plan.remove.map { String($0 + 1) })) of \($0.display)"
+    }
+    return (adds.isEmpty ? nil : "Adds \(listed(adds)).", removes.isEmpty ? nil : "Removes \(listed(removes)).")
+}
+
 /// Links that put the configured desktops of a display in Mission Control's order, over the macOS
 /// desktops they use now: the first configured desktop on the first of those, and so on. nil when
 /// they already go that way, and when it cannot be done for sure: a configured desktop without a

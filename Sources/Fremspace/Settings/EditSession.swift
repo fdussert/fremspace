@@ -75,6 +75,9 @@ final class EditSession: ObservableObject {
     @Published private(set) var desktopCounts: [DisplayIdentity: Int] = [:]
     /// The macOS desktops that the configuration in use does not list, per display.
     @Published private(set) var unlistedDesktops: [DisplayIdentity: [Engine.UnlistedDesktop]] = [:]
+    /// What the Mac lacks or has too many of against the configuration in use, per display
+    /// (`Engine.desktopsToMatch`): read with the rest of the environment.
+    @Published private(set) var desktopsToMatch: [DisplayIdentity: DesktopsToMatch] = [:]
     /// Display → its configured desktops in Mission Control's order, where it is not the tabs'.
     @Published private(set) var desktopOrder: [DisplayIdentity: [Int]] = [:]
     /// The windows the drawers hold now, those sent by hand included.
@@ -175,6 +178,7 @@ final class EditSession: ObservableObject {
         desktopCounts = Desktops.counts()
         let onTheMac = engine.desktopsOnTheMac()
         unlistedDesktops = onTheMac.unlisted
+        desktopsToMatch = engine.desktopsToMatch()
         desktopOrder = onTheMac.order
         refreshDrawerMembers()
         refreshAttention()
@@ -910,6 +914,31 @@ final class EditSession: ObservableObject {
         status = removed
             ? Status(kind: .success, text: "Desktop removed from the Mac.")
             : Status(kind: .error, text: "Could not remove it: in Mission Control, hover the desktop at the top of the display, then click its \u{2715}.")
+    }
+
+    /// What "Match the Mac to the configuration" would do beyond `display`'s own banner, said in
+    /// the button's help; nil when the banner's own button does it all, and when the editor does
+    /// not show the configuration in use. `removing`: the banner is the one about desktops the
+    /// configuration does not list, where one desktop alone has its own button.
+    func matchOffer(from display: DisplaySpec, removing: Bool) -> String? {
+        guard let configuration, isActive(configuration), !desktopsToMatch.isEmpty else { return nil }
+        let removals = desktopsToMatch.values.reduce(0) { $0 + $1.remove.count }
+        let additions = desktopsToMatch.values.reduce(0) { $0 + $1.add }
+        // "Add N desktops" already adds on every display.
+        if !removing, removals == 0 { return nil }
+        if removing, additions == 0, removals == 1, desktopsToMatch[display.identity] != nil { return nil }
+        let said = matchSentences(engine.desktopsToMatchByName)
+        return [said.add, said.remove, "Asks first when desktops are removed."].compactMap { $0 }.joined(separator: " ")
+    }
+
+    /// Gives the Mac the desktops of the configuration in use, on every display: those it lacks
+    /// are added, those it does not list are removed after a question (`Engine.matchDesktopsAfterAsking`).
+    func matchDesktops() {
+        guard let done = engine.matchDesktopsAfterAsking() else { return }
+        refreshEnvironment()
+        status = done.complete
+            ? Status(kind: .success, text: done.said)
+            : Status(kind: .error, text: "\(done.said) Something is left to do. \(Engine.DesktopsMatched.byHand)")
     }
 
     /// Whether desktops of `display` were moved or removed and not saved yet: until then a position

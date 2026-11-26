@@ -19,7 +19,7 @@ final class LinkTests: XCTestCase {
 
     func testALinkNeverWritesTheConfigurationPausesParksAWindowOrPressesAMenu() {
         for id in ["slotSwapLeft", "slotSwapRight", "slotSwapUp", "slotSwapDown", "pause",
-                   "drawerSendLeft", "drawerSendRight", "splitNew"] {
+                   "drawerSendLeft", "drawerSendRight", "splitNew", "matchDesktops"] {
             XCTAssertFalse(linkMayRun(id), id)
         }
         // What is not known is refused too: a new command has to be let in.

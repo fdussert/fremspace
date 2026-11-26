@@ -23,6 +23,7 @@ enum ShortcutCatalog {
             Entry(id: "windowMenu", title: "Window menu, under the pointer", group: "General", fallback: Hotkeys.windowMenu),
             Entry(id: "palette", title: "Palette: find a window, an app, a desktop, a command", group: "General",
                   fallback: Hotkeys.palette),
+            Entry(id: "matchDesktops", title: "Give the Mac the desktops of the configuration", group: "General", fallback: nil),
             Entry(id: "focusToggle", title: "Enlarge the Focus slot, and back", group: "Slots", fallback: Hotkeys.focusToggle),
             Entry(id: "slotLeft", title: "Go to the slot on the left", group: "Slots", fallback: Hotkeys.slotLeft),
             Entry(id: "slotRight", title: "Go to the slot on the right", group: "Slots", fallback: Hotkeys.slotRight),

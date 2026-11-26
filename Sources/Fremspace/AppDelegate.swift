@@ -17,6 +17,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var notch = NotchController(engine: engine, palette: palette)
 
     /// Registers every command's shortcut: the owner's choice from the config file, else the default.
+    /// From the palette or a shortcut, where no page says how it went: a beep when nothing
+    /// differs, and what is left when Mission Control did not let it all be done.
+    private func matchDesktops() {
+        guard !engine.desktopsToMatch().isEmpty else { return NSSound.beep() }
+        guard let done = engine.matchDesktopsAfterAsking(), !done.complete else { return }
+        let alert = NSAlert()
+        alert.messageText = "The desktops of this Mac are not all those of the configuration."
+        alert.informativeText = "\(done.said) \(Engine.DesktopsMatched.byHand)"
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+
     private func registerHotkeys() {
         guard let hotkeys else { return }
         hotkeys.unregisterAll()
@@ -103,6 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "focusToggle": { [weak self] in self?.engine.toggleFocusOnFrontmostSpace() },
             "reapply": { [weak self] in self?.engine.reapplyCurrentSpaces() },
             "pause": { [weak self] in self?.engine.paused.toggle() },
+            "matchDesktops": { [weak self] in self?.matchDesktops() },
             "openAdmin": { [weak menu] in menu?.openAdmin() },
             "windowMenu": { [weak menu] in menu?.popUpWindowMenu() },
             "drawerLeft": { [weak self] in self?.engine.drawers.toggleOnDisplayUnderMouse(.left) },

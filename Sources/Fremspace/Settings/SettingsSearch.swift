@@ -36,7 +36,7 @@ enum SettingSection: String {
 /// The switches and commands of the settings pages. The pages take their names here and the search
 /// lists them, so a setting cannot be on a page without being found.
 enum SettingRow: String, CaseIterable {
-    case openAtLogin, paused, autoUpdates, checkForUpdates, noFloating, floatingApps, resizeLayouts, desktopNames, notchMap, windowPreviews, fullScreenCalls, paletteSources, hyperKey
+    case openAtLogin, paused, autoUpdates, checkForUpdates, noFloating, floatingApps, resizeLayouts, desktopNames, notchMap, windowPreviews, matchDesktops, fullScreenCalls, paletteSources, hyperKey
     case reapply, restoreEverything, bringBack, openConfigFile, reloadConfig, copyDiagnostics, dumpWindows, reportProblem
 
     var title: String {
@@ -51,6 +51,7 @@ enum SettingRow: String, CaseIterable {
         case .desktopNames: return "Show the desktop's name when switching"
         case .notchMap: return "Map of desktops at the notch"
         case .windowPreviews: return "Window previews"
+        case .matchDesktops: return "Desktops follow the configuration"
         case .fullScreenCalls: return "Calls in full screen"
         case .paletteSources: return "Palette sources"
         case .hyperKey: return "Use Caps Lock as ⌃⌥⌘"
@@ -68,7 +69,7 @@ enum SettingRow: String, CaseIterable {
     var page: SettingsPage {
         switch self {
         case .openAtLogin, .paused, .autoUpdates, .checkForUpdates, .noFloating, .floatingApps, .resizeLayouts, .desktopNames, .notchMap,
-             .windowPreviews, .fullScreenCalls, .paletteSources: return .general
+             .windowPreviews, .matchDesktops, .fullScreenCalls, .paletteSources: return .general
         case .hyperKey: return .shortcuts
         default: return .maintenance
         }
@@ -79,7 +80,7 @@ enum SettingRow: String, CaseIterable {
         case .openAtLogin, .paused, .autoUpdates, .checkForUpdates: return .generalFremspace
         case .noFloating, .floatingApps: return .generalFloating
         case .resizeLayouts: return .generalSlots
-        case .desktopNames, .notchMap, .windowPreviews: return .generalDesktops
+        case .desktopNames, .notchMap, .windowPreviews, .matchDesktops: return .generalDesktops
         case .fullScreenCalls: return .generalCalls
         case .paletteSources: return .generalPalette
         case .hyperKey: return .shortcutsHyper
@@ -103,6 +104,7 @@ enum SettingRow: String, CaseIterable {
         case .desktopNames: return ["banner", "label", "notch", "space", "display changes"]
         case .notchMap: return ["hover", "pointer", "resting", "encoche", "switcher", "overview"]
         case .windowPreviews: return ["picture", "thumbnail", "screen recording", "palette", "aperçu", "vignette"]
+        case .matchDesktops: return ["Mission Control", "add", "remove", "automatic", "displays change", "dock", "laptop", "spaces"]
         case .fullScreenCalls: return ["Teams", "Zoom", "meeting", "fullscreen"]
         case .paletteSources: return ["launcher", "script", "plugin", "extension", "session", "terminal", "tmux", "agent"]
         case .hyperKey: return ["hyper", "caps lock", "verr maj"]

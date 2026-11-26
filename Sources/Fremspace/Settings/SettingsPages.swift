@@ -269,6 +269,16 @@ struct SettingsPageView: View {
                     .padding(8)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
                 }
+                SwitchRow(title: SettingRow.matchDesktops.title,
+                          detail: "When other displays are connected, the Mac gets the desktops of the configuration then in use, and loses those it does not list.",
+                          more: "Mission Control opens for a moment, by itself. macOS moves the windows of a removed desktop to another one, and they are sorted again as usual; nothing brings a removed desktop back. Off, the editor says what differs and does it when you ask.",
+                          isOn: Binding(
+                            get: { session.config.matchDesktops },
+                            set: { on in
+                                session.checkpoint()
+                                session.config.matchDesktops = on
+                            }))
+                    .modifier(marked(.matchDesktops))
             }
             PageSection(.generalCalls,
                         badge: session.config.fullScreenCalls.isEmpty ? nil : "\(session.config.fullScreenCalls.count) on") {
