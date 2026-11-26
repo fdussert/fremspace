@@ -9,6 +9,8 @@ release renames that section, sets the version and is tagged `vX.Y.Z` (see `docs
 
 ## Unreleased
 
+## 0.1.5
+
 - The Mac gets the desktops of the configuration in one step. After a change of desk (the laptop
   alone, then its displays again) macOS keeps the desktops of the configuration that was in use
   and gives a display that comes back a single one: desktops had to be removed one by one on a
